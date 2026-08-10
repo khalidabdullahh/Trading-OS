@@ -1,0 +1,109 @@
+//@version=6
+strategy("VWAP + Stochastic RSI Cross Strategy v2", overlay=false,
+     initial_capital=100000, default_qty_type=strategy.percent_of_equity, default_qty_value=10,
+     commission_type=strategy.commission.percent, commission_value=0.03, slippage=2)
+
+// ============================================================
+// CORE INPUTS
+// ============================================================
+rsiLength   = input.int(14, "RSI Length", group="Stochastic RSI")
+stochLength = input.int(14, "Stochastic Length", group="Stochastic RSI")
+smoothK     = input.int(3, "K Smoothing", group="Stochastic RSI")
+smoothD     = input.int(3, "D Smoothing", group="Stochastic RSI")
+
+// ============================================================
+// NEW: TREND FILTER (ADX) -- চপি/ফ্ল্যাট মার্কেটে trade বন্ধ রাখতে
+// ============================================================
+useADXFilter  = input.bool(true, "Use ADX Trend Filter", group="Trend Filter")
+adxLength     = input.int(14, "ADX Length", group="Trend Filter")
+adxThreshold  = input.float(20, "Minimum ADX (trending market)", group="Trend Filter")
+
+// ADX ক্যালকুলেশন (Pine-এ built-in নেই, নিজে বানাতে হয়)
+dirmov(len) =>
+    up = ta.change(high)
+    down = -ta.change(low)
+    plusDM = na(up) ? na : (up > down and up > 0 ? up : 0)
+    minusDM = na(down) ? na : (down > up and down > 0 ? down : 0)
+    trur = ta.rma(ta.tr, len)
+    plus = fixnan(100 * ta.rma(plusDM, len) / trur)
+    minus = fixnan(100 * ta.rma(minusDM, len) / trur)
+    [plus, minus]
+
+adx(len) =>
+    [plus, minus] = dirmov(len)
+    sum = plus + minus
+    adxValue = 100 * ta.rma(math.abs(plus - minus) / (sum == 0 ? 1 : sum), len)
+    adxValue
+
+adxValue = adx(adxLength)
+trendOK = not useADXFilter or adxValue >= adxThreshold
+
+// ============================================================
+// NEW: STOP-LOSS / TAKE-PROFIT (ATR-based) -- unbounded risk আর না
+// ============================================================
+useStops     = input.bool(true, "Use ATR Stop-Loss / Take-Profit", group="Risk Management")
+atrLength    = input.int(14, "ATR Length", group="Risk Management")
+atrSLMult    = input.float(1.5, "Stop-Loss (x ATR)", group="Risk Management")
+atrTPMult    = input.float(3.0, "Take-Profit (x ATR)", group="Risk Management")
+
+atrValue = ta.atr(atrLength)
+
+// ============================================================
+// VWAP
+// ============================================================
+vwapValue = ta.vwap(hlc3)
+
+// ============================================================
+// STOCHASTIC RSI
+// ============================================================
+rsiValue    = ta.rsi(close, rsiLength)
+stochValue  = ta.stoch(rsiValue, rsiValue, rsiValue, stochLength)
+kLine       = ta.sma(stochValue, smoothK)
+dLine       = ta.sma(kLine, smoothD)
+
+// ============================================================
+// CONDITIONS -- এখন trendOK ফিল্টার যোগ হলো মূল শর্তের সাথে
+// ============================================================
+bullCross = ta.crossover(kLine, dLine)
+bearCross = ta.crossunder(kLine, dLine)
+
+priceAboveVWAP = close > vwapValue
+priceBelowVWAP = close < vwapValue
+
+longCondition  = priceAboveVWAP and bullCross and trendOK
+shortCondition = priceBelowVWAP and bearCross and trendOK
+
+// ============================================================
+// ENTRIES + STOPS
+// ============================================================
+if longCondition
+    strategy.entry("Long", strategy.long)
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+
+if useStops
+    longStop   = close - atrValue * atrSLMult
+    longTarget = close + atrValue * atrTPMult
+    shortStop   = close + atrValue * atrSLMult
+    shortTarget = close - atrValue * atrTPMult
+    strategy.exit("Long Exit", from_entry="Long", stop=longStop, limit=longTarget)
+    strategy.exit("Short Exit", from_entry="Short", stop=shortStop, limit=shortTarget)
+
+// ============================================================
+// PLOTS
+// ============================================================
+plot(vwapValue, "VWAP", color=color.orange, linewidth=2, force_overlay=true)
+
+plotshape(longCondition, title="Buy Signal", style=shape.triangleup,
+     location=location.belowbar, color=color.green, size=size.small, force_overlay=true)
+plotshape(shortCondition, title="Sell Signal", style=shape.triangledown,
+     location=location.abovebar, color=color.red, size=size.small, force_overlay=true)
+
+plot(kLine, "K", color=color.aqua)
+plot(dLine, "D", color=color.orange)
+hline(80, "Overbought", color=color.gray, linestyle=hline.style_dashed)
+hline(20, "Oversold", color=color.gray, linestyle=hline.style_dashed)
+
+plot(useADXFilter ? adxValue : na, "ADX", color=color.yellow)
+hline(useADXFilter ? adxThreshold : na, "ADX Threshold", color=color.yellow, linestyle=hline.style_dotted)
