@@ -1,0 +1,60 @@
+//@version=6
+strategy("VWAP + Stochastic RSI Cross Strategy", overlay=false,
+     initial_capital=1000, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ============================================================
+// INPUTS
+// ============================================================
+rsiLength   = input.int(14, "RSI Length", group="Stochastic RSI")
+stochLength = input.int(14, "Stochastic Length", group="Stochastic RSI")
+smoothK     = input.int(3, "K Smoothing", group="Stochastic RSI")
+smoothD     = input.int(3, "D Smoothing", group="Stochastic RSI")
+
+// ============================================================
+// VWAP -- প্রতিদিন সেশন শুরুতে অটোমেটিক রিসেট হয় (built-in ta.vwap)
+// ============================================================
+vwapValue = ta.vwap(hlc3)
+
+// ============================================================
+// STOCHASTIC RSI -- প্রথমে RSI বের করে, তারপর সেই RSI-এর উপর Stochastic ফর্মুলা প্রয়োগ
+// ============================================================
+rsiValue    = ta.rsi(close, rsiLength)
+stochValue  = ta.stoch(rsiValue, rsiValue, rsiValue, stochLength)
+kLine       = ta.sma(stochValue, smoothK)   // %K লাইন
+dLine       = ta.sma(kLine, smoothD)        // %D লাইন (K-এর moving average)
+
+// ============================================================
+// CONDITIONS
+// ============================================================
+bullCross = ta.crossover(kLine, dLine)      // K নিচ থেকে উপরে D কে cross করলো
+bearCross = ta.crossunder(kLine, dLine)     // K উপর থেকে নিচে D কে cross করলো
+
+priceAboveVWAP = close > vwapValue
+priceBelowVWAP = close < vwapValue
+
+longCondition  = priceAboveVWAP and bullCross
+shortCondition = priceBelowVWAP and bearCross
+
+// ============================================================
+// ENTRIES -- default netting mode-এ opposite entry আসলে আগের পজিশন অটো ক্লোজ/রিভার্স হয়ে যায়
+// ============================================================
+if longCondition
+    strategy.entry("Long", strategy.long)
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+
+// ============================================================
+// PLOTS
+// ============================================================
+plot(vwapValue, "VWAP", color=color.orange, linewidth=2, force_overlay=true)
+
+plotshape(longCondition, title="Buy Signal", style=shape.triangleup,
+     location=location.belowbar, color=color.green, size=size.small, force_overlay=true)
+plotshape(shortCondition, title="Sell Signal", style=shape.triangledown,
+     location=location.abovebar, color=color.red, size=size.small, force_overlay=true)
+
+plot(kLine, "K", color=color.aqua)
+plot(dLine, "D", color=color.orange)
+hline(80, "Overbought", color=color.gray, linestyle=hline.style_dashed)
+hline(20, "Oversold", color=color.gray, linestyle=hline.style_dashed)
