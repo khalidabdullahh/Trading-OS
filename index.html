@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading-OS — Algorithmic Strategy Backtester & Pine Script Vault</title>
+    <title>Trading-OS — AI Quantitative Strategy Lab & Pine Script Engine</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -44,13 +44,13 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 bg-clip-text text-transparent">Trading-OS</span>
-                        <span class="px-2 py-0.5 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">v2.4 PRO</span>
+                        <span class="px-2 py-0.5 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">AI 2.0 • $9 USDT</span>
                     </div>
-                    <p class="text-[11px] text-slate-400 font-medium">Algorithmic Backtester & Pine Script Engine</p>
+                    <p class="text-[11px] text-slate-400 font-medium">Gemini Strategy Lab & Pine Script Vault</p>
                 </div>
             </div>
 
-            <!-- Global Controls: Pair & Timeframe -->
+            <!-- Global Controls: Pair, Timeframe & Gemini API Key -->
             <div class="flex items-center flex-wrap gap-2 sm:gap-3">
                 <!-- Market Pair Selector -->
                 <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 focus-within:border-cyan-500">
@@ -72,6 +72,12 @@
                         <option value="1d">1D</option>
                     </select>
                 </div>
+
+                <!-- Gemini API Key Setup Button -->
+                <button id="openApiKeyModalBtn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+                    <span class="text-cyan-400">🔑</span>
+                    <span id="apiKeyBtnLabel">Gemini API</span>
+                </button>
 
                 <!-- Live Status Pill -->
                 <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-lg text-xs">
@@ -95,11 +101,11 @@
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/30 p-5 rounded-2xl border border-slate-800">
             <div>
                 <h1 class="text-xl font-extrabold text-white flex items-center gap-2">
-                    <span>Quantitative Strategy Laboratory</span>
-                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Free Backtest</span>
+                    <span>AI Strategy Engineering & Backtest Lab</span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Powered by Gemini AI</span>
                 </h1>
                 <p class="text-xs text-slate-400 mt-1 max-w-2xl">
-                    Backtest verified algorithmic trading strategies on live Binance market data with zero lookahead bias. Inspect performance analytics and unlock full TradingView Pine Script v5 code when you're satisfied.
+                    Describe any trading strategy in plain English or Bengali. <strong>Google Gemini AI</strong> will analyze your logic, convert it into an algorithmic backtest on live Binance market data, and generate the full TradingView Pine Script v5 code (Locked: $9 USDT).
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -113,36 +119,79 @@
         <!-- 2-Column Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            <!-- LEFT COLUMN: Strategy Config & Inputs (4 Cols) -->
+            <!-- LEFT COLUMN: AI Strategy Prompt & Controls (4 Cols) -->
             <div class="lg:col-span-4 space-y-6">
-                
-                <!-- Strategy Selection Card -->
+
+                <!-- 1. AI Strategy Creator (Prompt Mode & Preset Mode) -->
                 <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h2 class="text-sm font-bold text-white flex items-center gap-2">
-                            <span>1. Select Strategy</span>
+                            <span>1. Strategy Builder</span>
                         </h2>
-                        <span id="strategyBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Trend</span>
+                        <div class="flex bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]">
+                            <button id="modeAiBtn" class="px-2.5 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition">🤖 AI Prompt</button>
+                            <button id="modePresetBtn" class="px-2.5 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition">⚡ Presets</button>
+                        </div>
                     </div>
 
-                    <!-- Strategy Dropdown -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Algorithmic Strategy</label>
-                        <select id="strategySelect" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-100 focus:ring-1 focus:ring-cyan-500 outline-none">
-                            <!-- Populated by JS -->
-                        </select>
+                    <!-- AI Prompt View -->
+                    <div id="aiPromptSection" class="space-y-3">
+                        <label class="block text-xs font-semibold text-slate-300">
+                            Explain your strategy in natural language:
+                        </label>
+                        <div class="relative">
+                            <textarea id="aiPromptInput" rows="4" placeholder="e.g. Buy when RSI drops below 25 and 9 EMA crosses above 21 EMA. Take Profit is 3.5% and Stop Loss is 1.5% on 15m BTC." class="w-full bg-slate-950 border border-slate-700/90 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none leading-relaxed resize-none"></textarea>
+                        </div>
+
+                        <!-- Quick Prompt Templates -->
+                        <div class="space-y-1.5">
+                            <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Quick AI Templates:</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button class="quick-prompt-btn px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-[10px] text-cyan-300 transition" data-prompt="Buy when RSI(14) is under 28 and 9 EMA crosses above 21 EMA. Exit when RSI reaches 70 or price gains 3.5% (SL 1.2%).">
+                                    ⚡ 9/21 EMA + RSI
+                                </button>
+                                <button class="quick-prompt-btn px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-[10px] text-cyan-300 transition" data-prompt="Buy when price touches Lower Bollinger Band and RSI is oversold under 30. Take Profit 2.8%, Stop Loss 1.4%.">
+                                    🎯 Bollinger Reversal
+                                </button>
+                                <button class="quick-prompt-btn px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-[10px] text-cyan-300 transition" data-prompt="SuperTrend ATR trend breakout strategy. Buy on bullish flip, exit on bearish flip with 4% Take Profit.">
+                                    🚀 SuperTrend Breakout
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Analyze & Build with AI Button -->
+                        <button id="generateAiStrategyBtn" class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/40 transition flex items-center justify-center gap-2">
+                            <span class="text-sm">✨</span>
+                            <span id="aiBtnText">Analyze & Convert with Gemini AI</span>
+                        </button>
                     </div>
 
-                    <p id="strategyDescription" class="text-xs text-slate-400 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                        <!-- Strategy Description -->
-                    </p>
+                    <!-- Preset Selector View (Hidden by default) -->
+                    <div id="presetSection" class="space-y-3 hidden">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Pre-built Algorithmic Strategy</label>
+                            <select id="strategySelect" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-100 focus:ring-1 focus:ring-cyan-500 outline-none">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="strategyStatusCard" class="text-xs text-slate-400 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1">
+                        <div class="flex items-center justify-between text-slate-300 font-semibold">
+                            <span id="activeStrategyTitle">⚡ Dynamic EMA Ribbon Scalper</span>
+                            <span id="strategyBadge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Trend</span>
+                        </div>
+                        <p id="strategyDescription" class="text-[11px] text-slate-400 pt-1">
+                            Analyzed algorithmic rules ready for testing.
+                        </p>
+                    </div>
                 </div>
 
-                <!-- Dynamic Strategy Parameters Card -->
+                <!-- 2. Dynamic Strategy Parameters Card -->
                 <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h2 class="text-sm font-bold text-white">2. Strategy Parameters</h2>
-                        <button id="resetParamsBtn" class="text-[11px] text-cyan-400 hover:underline">Reset Defaults</button>
+                        <h2 class="text-sm font-bold text-white">2. Risk & Target Adjuster</h2>
+                        <button id="resetParamsBtn" class="text-[11px] text-cyan-400 hover:underline">Reset</button>
                     </div>
 
                     <div id="dynamicParamsContainer" class="space-y-3.5 text-xs">
@@ -150,10 +199,10 @@
                     </div>
                 </div>
 
-                <!-- Portfolio & Capital Settings Card -->
+                <!-- 3. Capital & Risk Controls -->
                 <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h2 class="text-sm font-bold text-white">3. Capital & Risk Controls</h2>
+                        <h2 class="text-sm font-bold text-white">3. Capital & Fees</h2>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 text-xs">
@@ -217,7 +266,7 @@
                         <div class="flex items-baseline gap-1 mt-1">
                             <span id="metricTotalTrades" class="text-lg font-black text-slate-100 font-mono">0</span>
                         </div>
-                        <span class="text-[10px] text-slate-500 mt-0.5 block">Orders Closed</span>
+                        <span class="text-[10px] text-slate-500 mt-0.5 block">Executed</span>
                     </div>
 
                     <!-- Sharpe Ratio -->
@@ -256,9 +305,9 @@
                     </div>
                 </div>
 
-                <!-- 3. Pine Script Code Vault (Locked Paywall Section) -->
+                <!-- 3. Pine Script Code Vault (Crypto Paywall: $9 USDT) -->
                 <div id="pineVaultContainer">
-                    <!-- Rendered by PineVault.js -->
+                    <!-- Rendered dynamically by PineVault.js -->
                 </div>
 
                 <!-- 4. Trade Execution Log Table -->
@@ -288,7 +337,7 @@
                             <tbody id="tradeLogTableBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
                                 <tr>
                                     <td colspan="8" class="text-center py-6 text-slate-500 font-sans">
-                                        Click "Run Free Backtest" to generate execution log.
+                                        Run a backtest to view trade executions.
                                     </td>
                                 </tr>
                             </tbody>
@@ -302,80 +351,51 @@
 
     </main>
 
-    <!-- Checkout / Payment Modal -->
+    <!-- Crypto Checkout Modal Container -->
     <div id="checkoutModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <!-- Rendered by PineVault.js -->
+    </div>
+
+    <!-- Gemini API Key Setup Modal -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <button onclick="document.getElementById('checkoutModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+            <button id="closeApiKeyModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
             
-            <div class="text-center mb-5">
-                <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-xl mx-auto mb-3">
-                    ⚡
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-xl mx-auto mb-2">
+                    🔑
                 </div>
-                <h3 class="text-lg font-bold text-white">Unlock Strategy Source Code</h3>
-                <p id="modalStrategyTitle" class="text-xs text-cyan-400 font-semibold mt-0.5">Strategy Name</p>
-                <div class="mt-3 flex items-center justify-center gap-2">
-                    <span id="modalPriceUSD" class="text-2xl font-black text-white">$19</span>
-                    <span id="modalPriceBDT" class="text-sm font-bold text-slate-400">৳1,999</span>
-                </div>
+                <h3 class="text-base font-extrabold text-white">Google Gemini API Key</h3>
+                <p class="text-xs text-slate-400 mt-1">Connect your Google Gemini API key for instant natural language strategy analysis.</p>
             </div>
 
-            <!-- Payment Methods -->
-            <div class="space-y-2.5 text-xs font-semibold">
-                <button data-method="bKash" class="payment-method-btn w-full py-3 px-4 bg-[#D12053]/15 hover:bg-[#D12053]/25 border border-[#D12053]/40 text-[#ff4b82] rounded-xl flex items-center justify-between transition">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#ff4b82]"></span>
-                        bKash Instant Pay
-                    </span>
-                    <span class="text-[11px] uppercase bg-[#D12053]/30 px-2 py-0.5 rounded">Personal/Merchant</span>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Your Gemini API Key:</label>
+                    <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-mono outline-none focus:border-cyan-500">
+                </div>
+
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                    💡 Get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-cyan-400 underline font-semibold">Google AI Studio</a>. (Your key is stored securely in your browser's local storage).
+                </div>
+
+                <button id="saveApiKeyBtn" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition">
+                    Save Key
                 </button>
-
-                <button data-method="Nagad" class="payment-method-btn w-full py-3 px-4 bg-[#F7931A]/15 hover:bg-[#F7931A]/25 border border-[#F7931A]/40 text-[#fca334] rounded-xl flex items-center justify-between transition">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#fca334]"></span>
-                        Nagad Pay
-                    </span>
-                    <span class="text-[11px] uppercase bg-[#F7931A]/30 px-2 py-0.5 rounded">Instant</span>
-                </button>
-
-                <button data-method="Crypto" class="payment-method-btn w-full py-3 px-4 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 rounded-xl flex items-center justify-between transition">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                        USDT (TRC20 / BEP20)
-                    </span>
-                    <span class="text-[11px] uppercase bg-emerald-500/30 px-2 py-0.5 rounded">Zero Fee</span>
-                </button>
-
-                <button data-method="Card" class="payment-method-btn w-full py-3 px-4 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 text-blue-300 rounded-xl flex items-center justify-between transition">
-                    <span class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
-                        Credit / Debit Card (Stripe)
-                    </span>
-                    <span class="text-[11px] uppercase bg-blue-500/30 px-2 py-0.5 rounded">International</span>
-                </button>
-            </div>
-
-            <p class="text-[10px] text-slate-500 text-center mt-4">
-                Instant delivery. Includes 100% full Pine Script v5 code, webhook compatibility, and lifetime strategy updates.
-            </p>
-
-            <!-- Processing Overlay -->
-            <div id="paymentProcessingOverlay" class="absolute inset-0 bg-slate-950/90 rounded-2xl flex flex-col items-center justify-center p-6 hidden">
-                <div class="w-10 h-10 border-4 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mb-3"></div>
-                <p class="text-sm font-bold text-white">Verifying Transaction...</p>
-                <p class="text-xs text-slate-400 mt-1">Generating Pine Script v5 License Key</p>
             </div>
         </div>
     </div>
 
     <!-- Scripts Inclusion -->
     <script src="js/indicators.js"></script>
+    <script src="js/geminiEngine.js"></script>
     <script src="js/strategies.js"></script>
     <script src="js/api.js"></script>
     <script src="js/backtestEngine.js"></script>
     <script src="js/chart.js"></script>
     <script src="js/pineVault.js"></script>
 
-    <!-- Main Application Glue Logic -->
+    <!-- Main Application Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             let currentCandles = [];
@@ -387,6 +407,7 @@
             const pairSelect = document.getElementById('pairSelect');
             const timeframeSelect = document.getElementById('timeframeSelect');
             const strategySelect = document.getElementById('strategySelect');
+            const activeStrategyTitle = document.getElementById('activeStrategyTitle');
             const strategyBadge = document.getElementById('strategyBadge');
             const strategyDesc = document.getElementById('strategyDescription');
             const dynamicParamsContainer = document.getElementById('dynamicParamsContainer');
@@ -394,13 +415,29 @@
             const runBtnText = document.getElementById('runBtnText');
             const apiStatusPill = document.getElementById('apiStatusPill');
 
-            // Tabs
+            // AI Mode elements
+            const modeAiBtn = document.getElementById('modeAiBtn');
+            const modePresetBtn = document.getElementById('modePresetBtn');
+            const aiPromptSection = document.getElementById('aiPromptSection');
+            const presetSection = document.getElementById('presetSection');
+            const aiPromptInput = document.getElementById('aiPromptInput');
+            const generateAiStrategyBtn = document.getElementById('generateAiStrategyBtn');
+            const aiBtnText = document.getElementById('aiBtnText');
+
+            // API Key Modal elements
+            const apiKeyModal = document.getElementById('apiKeyModal');
+            const openApiKeyModalBtn = document.getElementById('openApiKeyModalBtn');
+            const closeApiKeyModalBtn = document.getElementById('closeApiKeyModalBtn');
+            const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
+            const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+            const apiKeyBtnLabel = document.getElementById('apiKeyBtnLabel');
+
+            // Tabs & Metrics
             const tabCandlesBtn = document.getElementById('tabCandlesBtn');
             const tabEquityBtn = document.getElementById('tabEquityBtn');
             const candleChartWrapper = document.getElementById('candleChartWrapper');
             const equityChartWrapper = document.getElementById('equityChartWrapper');
 
-            // Metrics
             const metricWinRate = document.getElementById('metricWinRate');
             const metricWinCount = document.getElementById('metricWinCount');
             const metricNetProfit = document.getElementById('metricNetProfit');
@@ -414,7 +451,23 @@
             const tradeLogCountBadge = document.getElementById('tradeLogCountBadge');
             const pineVaultContainer = document.getElementById('pineVaultContainer');
 
-            // 1. Initialize Pair Dropdown
+            // 1. Initialize API Key state
+            const savedKey = GeminiEngine.getApiKey();
+            if (savedKey) {
+                geminiApiKeyInput.value = savedKey;
+                apiKeyBtnLabel.textContent = 'Gemini: Active ✅';
+            }
+
+            openApiKeyModalBtn.onclick = () => apiKeyModal.classList.remove('hidden');
+            closeApiKeyModalBtn.onclick = () => apiKeyModal.classList.add('hidden');
+            saveApiKeyBtn.onclick = () => {
+                const key = geminiApiKeyInput.value.trim();
+                GeminiEngine.setApiKey(key);
+                apiKeyBtnLabel.textContent = key ? 'Gemini: Active ✅' : 'Gemini API';
+                apiKeyModal.classList.add('hidden');
+            };
+
+            // 2. Populate Dropdowns
             MarketAPI.SUPPORTED_PAIRS.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.symbol;
@@ -422,7 +475,6 @@
                 pairSelect.appendChild(opt);
             });
 
-            // 2. Initialize Strategy Dropdown
             StrategyRegistry.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s.id;
@@ -430,23 +482,84 @@
                 strategySelect.appendChild(opt);
             });
 
-            // 3. Render Dynamic Strategy Params
+            // 3. Mode Toggle (AI vs Presets)
+            modeAiBtn.onclick = () => {
+                modeAiBtn.className = 'px-2.5 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                modePresetBtn.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                aiPromptSection.classList.remove('hidden');
+                presetSection.classList.add('hidden');
+            };
+
+            modePresetBtn.onclick = () => {
+                modePresetBtn.className = 'px-2.5 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                modeAiBtn.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                presetSection.classList.remove('hidden');
+                aiPromptSection.classList.add('hidden');
+            };
+
+            // Quick Prompt Buttons
+            document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
+                btn.onclick = () => {
+                    aiPromptInput.value = btn.dataset.prompt;
+                };
+            });
+
+            // 4. AI Strategy Generation Handler
+            generateAiStrategyBtn.onclick = async () => {
+                const prompt = aiPromptInput.value.trim();
+                if (!prompt) {
+                    alert('Please enter or select a trading strategy explanation first!');
+                    return;
+                }
+
+                aiBtnText.textContent = 'Gemini AI Analyzing... ⚡';
+                generateAiStrategyBtn.disabled = true;
+
+                const symbol = pairSelect.value;
+                const timeframe = timeframeSelect.value;
+
+                try {
+                    const aiStrategy = await GeminiEngine.generateStrategyFromPrompt(prompt, symbol, timeframe);
+                    currentStrategy = aiStrategy;
+                    currentParams = { ...currentStrategy.defaultParams };
+
+                    activeStrategyTitle.textContent = currentStrategy.name;
+                    strategyBadge.textContent = currentStrategy.category;
+                    strategyDesc.textContent = currentStrategy.description;
+
+                    renderDynamicParams();
+                    await runBacktest();
+                } catch (e) {
+                    console.error(e);
+                    alert('Error generating strategy: ' + e.message);
+                } finally {
+                    aiBtnText.textContent = 'Analyze & Convert with Gemini AI';
+                    generateAiStrategyBtn.disabled = false;
+                }
+            };
+
+            // 5. Render Dynamic Strategy Params
             function renderDynamicParams() {
                 dynamicParamsContainer.innerHTML = '';
-                currentStrategy.paramConfig.forEach(cfg => {
+                const configs = currentStrategy.paramConfig || [
+                    { key: 'takeProfitPct', label: 'Take Profit (%)', type: 'number', min: 0.5, max: 15, step: 0.1 },
+                    { key: 'stopLossPct', label: 'Stop Loss (%)', type: 'number', min: 0.3, max: 10, step: 0.1 }
+                ];
+
+                configs.forEach(cfg => {
                     const wrap = document.createElement('div');
                     wrap.className = 'space-y-1';
                     
                     const labelWrap = document.createElement('div');
                     labelWrap.className = 'flex justify-between text-slate-400 font-medium';
-                    labelWrap.innerHTML = `<span>${cfg.label}</span><span id="param_val_${cfg.key}" class="font-mono text-cyan-400 font-bold">${currentParams[cfg.key]}</span>`;
+                    labelWrap.innerHTML = `<span>${cfg.label}</span><span id="param_val_${cfg.key}" class="font-mono text-cyan-400 font-bold">${currentParams[cfg.key] || cfg.min}</span>`;
 
                     const input = document.createElement('input');
                     input.type = 'range';
                     input.min = cfg.min;
                     input.max = cfg.max;
                     input.step = cfg.step;
-                    input.value = currentParams[cfg.key];
+                    input.value = currentParams[cfg.key] || cfg.min;
                     input.className = 'w-full accent-cyan-500 bg-slate-800 rounded-lg cursor-pointer';
 
                     input.oninput = (e) => {
@@ -464,13 +577,13 @@
             strategySelect.onchange = (e) => {
                 currentStrategy = StrategyRegistry.find(s => s.id === e.target.value);
                 currentParams = { ...currentStrategy.defaultParams };
+                activeStrategyTitle.textContent = currentStrategy.name;
                 strategyBadge.textContent = currentStrategy.category;
                 strategyDesc.textContent = currentStrategy.description;
                 renderDynamicParams();
                 runBacktest();
             };
 
-            // Reset Params Handler
             document.getElementById('resetParamsBtn').onclick = () => {
                 currentParams = { ...currentStrategy.defaultParams };
                 renderDynamicParams();
@@ -498,7 +611,7 @@
                 }
             };
 
-            // 4. Backtest Execution Routine
+            // 6. Backtest Execution Routine
             async function runBacktest() {
                 runBtnText.textContent = 'Simulating...';
                 runBacktestBtn.disabled = true;
@@ -566,7 +679,7 @@
                     `).join('');
                 }
 
-                // Render Pine Script Code Vault Section
+                // Render Pine Script Code Vault Section ($9 USDT Crypto)
                 PineVault.renderVaultSection(currentStrategy, currentParams, symbol, timeframe, pineVaultContainer);
 
                 runBtnText.textContent = 'Run Free Backtest';
@@ -580,8 +693,6 @@
 
             // Initial Launch
             renderDynamicParams();
-            strategyBadge.textContent = currentStrategy.category;
-            strategyDesc.textContent = currentStrategy.description;
             runBacktest();
         });
     </script>

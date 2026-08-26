@@ -9,8 +9,8 @@ const StrategyRegistry = [
         name: '⚡ Dynamic EMA Ribbon Trend Scalper',
         category: 'Trend Following',
         badge: 'High Frequency',
-        priceUSD: 19,
-        priceBDT: 1999,
+        priceUSD: 9,
+        priceBDT: 999,
         description: 'Multi-EMA momentum scalper with dynamic 200 EMA trend filter and ATR-based trailing stop. Highly effective for 5m and 15m crypto scalping.',
         defaultParams: {
             fastEma: 9,
@@ -125,8 +125,8 @@ plotshape(longCondition, title="Long Alert", location=location.belowbar, color=c
         name: '💎 Smart Money RSI & MACD Divergence Hunter',
         category: 'Momentum & Reversal',
         badge: 'Institutional Alpha',
-        priceUSD: 29,
-        priceBDT: 2999,
+        priceUSD: 9,
+        priceBDT: 999,
         description: 'Identifies high-conviction liquidity sweeps and momentum shift traps using smoothed Wilder RSI oversold zones with MACD bullish histogram expansions.',
         defaultParams: {
             rsiLength: 14,
@@ -239,8 +239,8 @@ plotshape(longSignal, title="Buy Signal", location=location.belowbar, color=colo
         name: '🚀 SuperTrend ATR Volatility Breakout Pro',
         category: 'Volatility Breakout',
         badge: 'High Win Rate',
-        priceUSD: 24,
-        priceBDT: 2499,
+        priceUSD: 9,
+        priceBDT: 999,
         description: 'Adaptive ATR volatility expansion engine that rides multi-candle trends while locking in profits with dynamic step-trailing bands.',
         defaultParams: {
             atrPeriod: 10,
@@ -335,8 +335,8 @@ plotshape(buyCondition, title="Buy Signal", location=location.belowbar, color=co
         name: '🎯 Bollinger Band Mean Reversion & Stochastic Trap',
         category: 'Mean Reversion',
         badge: 'Range Trader',
-        priceUSD: 19,
-        priceBDT: 1999,
+        priceUSD: 9,
+        priceBDT: 999,
         description: 'Catches extreme deviation bottoms when price pierces below the Lower Bollinger Band while Stochastic Oscillator crosses upward in oversold territory.',
         defaultParams: {
             bbLength: 20,
