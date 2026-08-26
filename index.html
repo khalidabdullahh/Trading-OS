@@ -131,11 +131,11 @@
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/30 p-5 rounded-2xl border border-slate-800">
             <div>
                 <div class="flex items-center gap-2">
-                    <h1 id="activeStrategyTitle" class="text-lg font-extrabold text-white">⚡ Dynamic EMA Ribbon Trend Scalper</h1>
-                    <span id="strategyBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Trend Following</span>
+                    <h1 id="activeStrategyTitle" class="text-lg font-extrabold text-white">⚡ AI Quantitative Strategy Lab</h1>
+                    <span id="strategyBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Awaiting Strategy Prompt</span>
                 </div>
                 <p id="strategyDesc" class="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
-                    Quantitative multi-market research engine. Explain any trading idea to Gemini AI to generate backtests, analyze market regimes, test parameter sensitivity, and export TradingView Pine Script v5 code.
+                    Describe any trading strategy in plain natural language on the left. Gemini AI Copilot will analyze your custom rules, test on live market data, and generate Pine Script v5 code.
                 </p>
             </div>
             <div class="flex items-center gap-3 shrink-0">
@@ -212,7 +212,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
                                 <span class="text-[10px] text-slate-500 uppercase font-bold block mb-1">Execution Direction</span>
-                                <span id="ruleDirection" class="font-mono text-cyan-400 font-bold text-xs">LONG ONLY</span>
+                                <span id="ruleDirection" class="font-mono text-slate-400 font-bold text-xs">—</span>
                             </div>
                             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
                                 <span class="text-[10px] text-slate-500 uppercase font-bold block mb-1">Lookahead Bias Audit</span>
@@ -224,11 +224,11 @@
                         <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
                             <div>
                                 <span class="text-emerald-400 font-bold block text-[11px] mb-0.5">✓ Entry Trigger Conditions:</span>
-                                <p id="ruleEntryDesc" class="text-slate-300 text-xs">Fast EMA crosses above Slow EMA while price is above 200 Trend Filter.</p>
+                                <p id="ruleEntryDesc" class="text-slate-400 text-xs italic">No strategy loaded yet. Describe your strategy in the prompt box on the left and click "Convert with Gemini AI Copilot".</p>
                             </div>
                             <div class="pt-2 border-t border-slate-800/80">
                                 <span class="text-amber-400 font-bold block text-[11px] mb-0.5">🛑 Exit & Risk Brackets:</span>
-                                <p id="ruleExitDesc" class="text-slate-300 text-xs">Take Profit: 3.0%, Stop Loss: 1.5% with dynamic fee deduction.</p>
+                                <p id="ruleExitDesc" class="text-slate-400 text-xs italic">Awaiting strategy prompt...</p>
                             </div>
                         </div>
 
@@ -236,16 +236,14 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
                                 <span class="text-cyan-400 font-bold text-[11px] uppercase tracking-wider block">💡 Core Assumptions</span>
-                                <ul id="ruleAssumptionsList" class="text-slate-400 text-[11px] space-y-1 list-disc list-inside">
-                                    <li>Continuous financial market liquidity</li>
-                                    <li>Directional trend momentum persistence</li>
+                                <ul id="ruleAssumptionsList" class="text-slate-500 text-[11px] space-y-1 list-disc list-inside italic">
+                                    <li>Will be analyzed based on your strategy rules</li>
                                 </ul>
                             </div>
                             <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
                                 <span class="text-rose-400 font-bold text-[11px] uppercase tracking-wider block">⚠️ Potential Weaknesses</span>
-                                <ul id="ruleWeaknessesList" class="text-slate-400 text-[11px] space-y-1 list-disc list-inside">
-                                    <li>High vulnerability to whipsaws during low-volume ranging periods</li>
-                                    <li>Slippage risk during high-impact macroeconomic news events</li>
+                                <ul id="ruleWeaknessesList" class="text-slate-500 text-[11px] space-y-1 list-disc list-inside italic">
+                                    <li>Will be analyzed based on your strategy rules</li>
                                 </ul>
                             </div>
                         </div>
@@ -658,8 +656,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Global State
-            let currentStrategy = StrategyRegistry[0];
-            let currentParams = { ...currentStrategy.defaultParams };
+            let currentStrategy = null;
+            let currentParams = {};
             let latestCandles = [];
             let latestBacktest = null;
             let chartManager = new TradingViewManager('candlestickChartContainer', 'equityChartContainer');
@@ -846,6 +844,14 @@
             };
 
             function updateRuleInspector(strategy) {
+                if (!strategy) {
+                    ruleDirection.textContent = '—';
+                    ruleEntryDesc.innerHTML = '<span class="text-slate-400 text-xs italic">No strategy loaded yet. Describe your strategy in the prompt box on the left and click "Convert with Gemini AI Copilot".</span>';
+                    ruleExitDesc.innerHTML = '<span class="text-slate-400 text-xs italic">Awaiting strategy prompt...</span>';
+                    ruleAssumptionsList.innerHTML = '<li class="text-slate-500 text-[11px] italic">Will be analyzed based on your strategy rules</li>';
+                    ruleWeaknessesList.innerHTML = '<li class="text-slate-500 text-[11px] italic">Will be analyzed based on your strategy rules</li>';
+                    return;
+                }
                 const rules = strategy.structuredRules || {
                     direction: 'LONG',
                     entryTrigger: strategy.description || 'Dynamic indicator crossover',
@@ -889,6 +895,14 @@
 
             // Main Comprehensive Quant Backtest & Research Routine
             async function runComprehensiveQuantAnalysis() {
+                if (!currentStrategy) {
+                    if (aiPromptInput.value.trim().length > 5) {
+                        return triggerAiStrategy();
+                    }
+                    alert('Please describe your strategy in the prompt box on the left or click one of the quick templates first!');
+                    return;
+                }
+
                 runBtnText.textContent = 'Simulating...';
                 runBacktestBtn.disabled = true;
 
@@ -1163,20 +1177,47 @@
             };
 
             // Global Events
-            pairSelect.onchange = () => runComprehensiveQuantAnalysis();
-            timeframeSelect.onchange = () => runComprehensiveQuantAnalysis();
-            runBacktestBtn.onclick = () => {
-                if (!aiPromptSection.classList.contains('hidden') && aiPromptInput.value.trim().length > 5) {
-                    triggerAiStrategy();
-                } else {
-                    runComprehensiveQuantAnalysis();
+            pairSelect.onchange = async () => {
+                try {
+                    const res = await MarketAPI.fetchKlines(pairSelect.value, timeframeSelect.value, 500);
+                    latestCandles = res.data;
+                    chartManager.renderCandles(latestCandles);
+                    if (currentStrategy) {
+                        runComprehensiveQuantAnalysis();
+                    }
+                } catch (e) {
+                    console.error('Pair change fetch error:', e);
                 }
             };
 
-            // Initial Launch Sequence
-            updateRuleInspector(currentStrategy);
-            renderDynamicParams();
-            runComprehensiveQuantAnalysis();
+            timeframeSelect.onchange = async () => {
+                try {
+                    const res = await MarketAPI.fetchKlines(pairSelect.value, timeframeSelect.value, 500);
+                    latestCandles = res.data;
+                    chartManager.renderCandles(latestCandles);
+                    if (currentStrategy) {
+                        runComprehensiveQuantAnalysis();
+                    }
+                } catch (e) {
+                    console.error('Timeframe change fetch error:', e);
+                }
+            };
+
+            runBacktestBtn.onclick = () => {
+                if (aiPromptInput.value.trim().length > 5) {
+                    triggerAiStrategy();
+                } else if (currentStrategy) {
+                    runComprehensiveQuantAnalysis();
+                } else {
+                    alert('Please describe your strategy in the prompt box on the left or select a template first!');
+                }
+            };
+
+            // Initial Launch Sequence: Clean live chart load without default strategy simulation
+            MarketAPI.fetchKlines(pairSelect.value, timeframeSelect.value, 500).then(res => {
+                latestCandles = res.data;
+                chartManager.renderCandles(latestCandles);
+            }).catch(err => console.error('[Trading-OS] Initial candle load:', err));
         });
     </script>
 </body>
