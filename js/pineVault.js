@@ -45,14 +45,18 @@ const PineVault = {
     },
 
     init() {
+        // Ephemeral in-memory session only - never persists across refresh or page leave
+        this.unlockedStrategies = new Set();
         try {
-            const saved = localStorage.getItem('trading_os_unlocked_vault');
-            if (saved) {
-                const arr = JSON.parse(saved);
-                arr.forEach(id => this.unlockedStrategies.add(id));
-            }
-        } catch (e) {
-            console.warn('LocalStorage not available');
+            localStorage.removeItem('trading_os_unlocked_vault');
+            sessionStorage.removeItem('trading_os_unlocked_vault');
+        } catch (e) {}
+
+        // Reset to locked on page unload / page hide
+        if (typeof window !== 'undefined') {
+            window.addEventListener('pagehide', () => {
+                this.unlockedStrategies.clear();
+            });
         }
     },
 
@@ -61,17 +65,12 @@ const PineVault = {
     },
 
     unlock(strategyId) {
+        // Unlocked temporarily in memory for current view only
         this.unlockedStrategies.add(strategyId);
-        try {
-            localStorage.setItem('trading_os_unlocked_vault', JSON.stringify(Array.from(this.unlockedStrategies)));
-        } catch (e) {}
     },
 
     lock(strategyId) {
         this.unlockedStrategies.delete(strategyId);
-        try {
-            localStorage.setItem('trading_os_unlocked_vault', JSON.stringify(Array.from(this.unlockedStrategies)));
-        } catch (e) {}
     },
 
     /**
