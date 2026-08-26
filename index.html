@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading-OS — Algorithmic Strategy Backtester & Pine Script Vault</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            900: '#164e63',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- TradingView Lightweight Charts Library -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#060911] text-slate-200 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-[#090d16]/90 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
+                    ⚡
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 bg-clip-text text-transparent">Trading-OS</span>
+                        <span class="px-2 py-0.5 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">v2.4 PRO</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 font-medium">Algorithmic Backtester & Pine Script Engine</p>
+                </div>
+            </div>
+
+            <!-- Global Controls: Pair & Timeframe -->
+            <div class="flex items-center flex-wrap gap-2 sm:gap-3">
+                <!-- Market Pair Selector -->
+                <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 focus-within:border-cyan-500">
+                    <span class="text-xs text-slate-400 mr-2 font-medium">Pair:</span>
+                    <select id="pairSelect" class="bg-transparent text-xs font-bold text-slate-100 outline-none cursor-pointer">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <!-- Timeframe Selector -->
+                <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 focus-within:border-cyan-500">
+                    <span class="text-xs text-slate-400 mr-2 font-medium">Interval:</span>
+                    <select id="timeframeSelect" class="bg-transparent text-xs font-bold text-cyan-400 outline-none cursor-pointer">
+                        <option value="1m">1m</option>
+                        <option value="5m">5m</option>
+                        <option value="15m" selected>15m</option>
+                        <option value="1h">1h</option>
+                        <option value="4h">4h</option>
+                        <option value="1d">1D</option>
+                    </select>
+                </div>
+
+                <!-- Live Status Pill -->
+                <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-lg text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 live-indicator"></span>
+                    <span id="apiStatusPill" class="text-slate-300 font-mono text-[11px]">Binance Live Feed</span>
+                </div>
+
+                <!-- GitHub Author Link -->
+                <a href="https://github.com/khalidabdullahh/Trading-OS" target="_blank" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-medium border border-slate-700 transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    <span>Repo</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
+
+        <!-- Top Overview Banner -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/30 p-5 rounded-2xl border border-slate-800">
+            <div>
+                <h1 class="text-xl font-extrabold text-white flex items-center gap-2">
+                    <span>Quantitative Strategy Laboratory</span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Free Backtest</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-1 max-w-2xl">
+                    Backtest verified algorithmic trading strategies on live Binance market data with zero lookahead bias. Inspect performance analytics and unlock full TradingView Pine Script v5 code when you're satisfied.
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="runBacktestBtn" class="px-6 py-3 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/25 transition transform active:scale-95 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="runBtnText">Run Free Backtest</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2-Column Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT COLUMN: Strategy Config & Inputs (4 Cols) -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- Strategy Selection Card -->
+                <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span>1. Select Strategy</span>
+                        </h2>
+                        <span id="strategyBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Trend</span>
+                    </div>
+
+                    <!-- Strategy Dropdown -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Algorithmic Strategy</label>
+                        <select id="strategySelect" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-100 focus:ring-1 focus:ring-cyan-500 outline-none">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+
+                    <p id="strategyDescription" class="text-xs text-slate-400 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                        <!-- Strategy Description -->
+                    </p>
+                </div>
+
+                <!-- Dynamic Strategy Parameters Card -->
+                <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-sm font-bold text-white">2. Strategy Parameters</h2>
+                        <button id="resetParamsBtn" class="text-[11px] text-cyan-400 hover:underline">Reset Defaults</button>
+                    </div>
+
+                    <div id="dynamicParamsContainer" class="space-y-3.5 text-xs">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Portfolio & Capital Settings Card -->
+                <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-sm font-bold text-white">3. Capital & Risk Controls</h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="block text-slate-400 mb-1 font-medium">Initial Capital ($)</label>
+                            <input type="number" id="capitalInput" value="10000" step="100" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono font-bold outline-none focus:border-cyan-500">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1 font-medium">Taker Fee (%)</label>
+                            <input type="number" id="feeInput" value="0.075" step="0.01" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono font-bold outline-none focus:border-cyan-500">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Analytics, Charts & Pine Script Vault (8 Cols) -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- 1. Performance Metrics Scorecard -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <!-- Win Rate -->
+                    <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-[11px] text-slate-400 font-medium block">Win Rate</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="metricWinRate" class="text-lg font-black text-emerald-400 font-mono">0.0%</span>
+                        </div>
+                        <span id="metricWinCount" class="text-[10px] text-slate-500 mt-0.5 block font-mono">0W / 0L</span>
+                    </div>
+
+                    <!-- Net Profit -->
+                    <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-[11px] text-slate-400 font-medium block">Net Profit</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="metricNetProfit" class="text-lg font-black text-cyan-400 font-mono">+$0.00</span>
+                        </div>
+                        <span id="metricNetProfitPct" class="text-[10px] text-cyan-400/80 mt-0.5 block font-mono">+0.0%</span>
+                    </div>
+
+                    <!-- Profit Factor -->
+                    <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-[11px] text-slate-400 font-medium block">Profit Factor</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="metricProfitFactor" class="text-lg font-black text-slate-100 font-mono">0.00</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-0.5 block">Gross P/L Ratio</span>
+                    </div>
+
+                    <!-- Max Drawdown -->
+                    <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-[11px] text-slate-400 font-medium block">Max Drawdown</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="metricMaxDrawdown" class="text-lg font-black text-rose-400 font-mono">0.0%</span>
+                        </div>
+                        <span id="metricMaxDdAmt" class="text-[10px] text-rose-400/80 mt-0.5 block font-mono">$0.00</span>
+                    </div>
+
+                    <!-- Total Trades -->
+                    <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-[11px] text-slate-400 font-medium block">Total Trades</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="metricTotalTrades" class="text-lg font-black text-slate-100 font-mono">0</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-0.5 block">Orders Closed</span>
+                    </div>
+
+                    <!-- Sharpe Ratio -->
+                    <div class="glass-panel p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-[11px] text-slate-400 font-medium block">Sharpe Ratio</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="metricSharpe" class="text-lg font-black text-amber-400 font-mono">0.00</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-0.5 block">Risk-Adjusted</span>
+                    </div>
+                </div>
+
+                <!-- 2. Chart Section -->
+                <div class="glass-panel rounded-2xl p-5 shadow-2xl border border-slate-800">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+                                <button id="tabCandlesBtn" class="px-3 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition">Candlestick & Signals</button>
+                                <button id="tabEquityBtn" class="px-3 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition">Equity Growth Curve</button>
+                            </div>
+                        </div>
+                        <div id="chartLegend" class="text-xs text-slate-400 flex items-center gap-3 font-mono">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> BUY</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400"></span> EXIT</span>
+                        </div>
+                    </div>
+
+                    <!-- Candlestick Chart Canvas -->
+                    <div id="candleChartWrapper" class="w-full h-[440px] rounded-xl overflow-hidden relative">
+                        <div id="candleChartContainer" class="w-full h-full"></div>
+                    </div>
+
+                    <!-- Equity Chart Canvas -->
+                    <div id="equityChartWrapper" class="w-full h-[320px] rounded-xl overflow-hidden relative hidden">
+                        <div id="equityChartContainer" class="w-full h-full"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Pine Script Code Vault (Locked Paywall Section) -->
+                <div id="pineVaultContainer">
+                    <!-- Rendered by PineVault.js -->
+                </div>
+
+                <!-- 4. Trade Execution Log Table -->
+                <div class="glass-panel rounded-2xl p-5 shadow-xl border border-slate-800">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span>Trade Execution History</span>
+                            <span id="tradeLogCountBadge" class="px-2 py-0.5 text-[10px] font-bold bg-slate-800 text-slate-300 rounded-full">0 Trades</span>
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Verified Zero Lookahead Bias</span>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-64 border border-slate-800/80 rounded-xl">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] font-mono sticky top-0 border-b border-slate-800">
+                                <tr>
+                                    <th class="py-2.5 px-3">#</th>
+                                    <th class="py-2.5 px-3">Type</th>
+                                    <th class="py-2.5 px-3">Entry Price</th>
+                                    <th class="py-2.5 px-3">Exit Price</th>
+                                    <th class="py-2.5 px-3">Net PnL ($)</th>
+                                    <th class="py-2.5 px-3">Net PnL (%)</th>
+                                    <th class="py-2.5 px-3">Exit Reason</th>
+                                    <th class="py-2.5 px-3">Bars Held</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tradeLogTableBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+                                <tr>
+                                    <td colspan="8" class="text-center py-6 text-slate-500 font-sans">
+                                        Click "Run Free Backtest" to generate execution log.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Checkout / Payment Modal -->
+    <div id="checkoutModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="document.getElementById('checkoutModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+            
+            <div class="text-center mb-5">
+                <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-xl mx-auto mb-3">
+                    ⚡
+                </div>
+                <h3 class="text-lg font-bold text-white">Unlock Strategy Source Code</h3>
+                <p id="modalStrategyTitle" class="text-xs text-cyan-400 font-semibold mt-0.5">Strategy Name</p>
+                <div class="mt-3 flex items-center justify-center gap-2">
+                    <span id="modalPriceUSD" class="text-2xl font-black text-white">$19</span>
+                    <span id="modalPriceBDT" class="text-sm font-bold text-slate-400">৳1,999</span>
+                </div>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="space-y-2.5 text-xs font-semibold">
+                <button data-method="bKash" class="payment-method-btn w-full py-3 px-4 bg-[#D12053]/15 hover:bg-[#D12053]/25 border border-[#D12053]/40 text-[#ff4b82] rounded-xl flex items-center justify-between transition">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#ff4b82]"></span>
+                        bKash Instant Pay
+                    </span>
+                    <span class="text-[11px] uppercase bg-[#D12053]/30 px-2 py-0.5 rounded">Personal/Merchant</span>
+                </button>
+
+                <button data-method="Nagad" class="payment-method-btn w-full py-3 px-4 bg-[#F7931A]/15 hover:bg-[#F7931A]/25 border border-[#F7931A]/40 text-[#fca334] rounded-xl flex items-center justify-between transition">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#fca334]"></span>
+                        Nagad Pay
+                    </span>
+                    <span class="text-[11px] uppercase bg-[#F7931A]/30 px-2 py-0.5 rounded">Instant</span>
+                </button>
+
+                <button data-method="Crypto" class="payment-method-btn w-full py-3 px-4 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 rounded-xl flex items-center justify-between transition">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        USDT (TRC20 / BEP20)
+                    </span>
+                    <span class="text-[11px] uppercase bg-emerald-500/30 px-2 py-0.5 rounded">Zero Fee</span>
+                </button>
+
+                <button data-method="Card" class="payment-method-btn w-full py-3 px-4 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 text-blue-300 rounded-xl flex items-center justify-between transition">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
+                        Credit / Debit Card (Stripe)
+                    </span>
+                    <span class="text-[11px] uppercase bg-blue-500/30 px-2 py-0.5 rounded">International</span>
+                </button>
+            </div>
+
+            <p class="text-[10px] text-slate-500 text-center mt-4">
+                Instant delivery. Includes 100% full Pine Script v5 code, webhook compatibility, and lifetime strategy updates.
+            </p>
+
+            <!-- Processing Overlay -->
+            <div id="paymentProcessingOverlay" class="absolute inset-0 bg-slate-950/90 rounded-2xl flex flex-col items-center justify-center p-6 hidden">
+                <div class="w-10 h-10 border-4 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mb-3"></div>
+                <p class="text-sm font-bold text-white">Verifying Transaction...</p>
+                <p class="text-xs text-slate-400 mt-1">Generating Pine Script v5 License Key</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts Inclusion -->
+    <script src="js/indicators.js"></script>
+    <script src="js/strategies.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/backtestEngine.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/pineVault.js"></script>
+
+    <!-- Main Application Glue Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentCandles = [];
+            let chartManager = null;
+            let currentStrategy = StrategyRegistry[0];
+            let currentParams = { ...currentStrategy.defaultParams };
+
+            // DOM Elements
+            const pairSelect = document.getElementById('pairSelect');
+            const timeframeSelect = document.getElementById('timeframeSelect');
+            const strategySelect = document.getElementById('strategySelect');
+            const strategyBadge = document.getElementById('strategyBadge');
+            const strategyDesc = document.getElementById('strategyDescription');
+            const dynamicParamsContainer = document.getElementById('dynamicParamsContainer');
+            const runBacktestBtn = document.getElementById('runBacktestBtn');
+            const runBtnText = document.getElementById('runBtnText');
+            const apiStatusPill = document.getElementById('apiStatusPill');
+
+            // Tabs
+            const tabCandlesBtn = document.getElementById('tabCandlesBtn');
+            const tabEquityBtn = document.getElementById('tabEquityBtn');
+            const candleChartWrapper = document.getElementById('candleChartWrapper');
+            const equityChartWrapper = document.getElementById('equityChartWrapper');
+
+            // Metrics
+            const metricWinRate = document.getElementById('metricWinRate');
+            const metricWinCount = document.getElementById('metricWinCount');
+            const metricNetProfit = document.getElementById('metricNetProfit');
+            const metricNetProfitPct = document.getElementById('metricNetProfitPct');
+            const metricProfitFactor = document.getElementById('metricProfitFactor');
+            const metricMaxDrawdown = document.getElementById('metricMaxDrawdown');
+            const metricMaxDdAmt = document.getElementById('metricMaxDdAmt');
+            const metricTotalTrades = document.getElementById('metricTotalTrades');
+            const metricSharpe = document.getElementById('metricSharpe');
+            const tradeLogTableBody = document.getElementById('tradeLogTableBody');
+            const tradeLogCountBadge = document.getElementById('tradeLogCountBadge');
+            const pineVaultContainer = document.getElementById('pineVaultContainer');
+
+            // 1. Initialize Pair Dropdown
+            MarketAPI.SUPPORTED_PAIRS.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.symbol;
+                opt.textContent = p.name;
+                pairSelect.appendChild(opt);
+            });
+
+            // 2. Initialize Strategy Dropdown
+            StrategyRegistry.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                strategySelect.appendChild(opt);
+            });
+
+            // 3. Render Dynamic Strategy Params
+            function renderDynamicParams() {
+                dynamicParamsContainer.innerHTML = '';
+                currentStrategy.paramConfig.forEach(cfg => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'space-y-1';
+                    
+                    const labelWrap = document.createElement('div');
+                    labelWrap.className = 'flex justify-between text-slate-400 font-medium';
+                    labelWrap.innerHTML = `<span>${cfg.label}</span><span id="param_val_${cfg.key}" class="font-mono text-cyan-400 font-bold">${currentParams[cfg.key]}</span>`;
+
+                    const input = document.createElement('input');
+                    input.type = 'range';
+                    input.min = cfg.min;
+                    input.max = cfg.max;
+                    input.step = cfg.step;
+                    input.value = currentParams[cfg.key];
+                    input.className = 'w-full accent-cyan-500 bg-slate-800 rounded-lg cursor-pointer';
+
+                    input.oninput = (e) => {
+                        currentParams[cfg.key] = parseFloat(e.target.value);
+                        document.getElementById(`param_val_${cfg.key}`).textContent = currentParams[cfg.key];
+                    };
+
+                    wrap.appendChild(labelWrap);
+                    wrap.appendChild(input);
+                    dynamicParamsContainer.appendChild(wrap);
+                });
+            }
+
+            // Strategy Change Handler
+            strategySelect.onchange = (e) => {
+                currentStrategy = StrategyRegistry.find(s => s.id === e.target.value);
+                currentParams = { ...currentStrategy.defaultParams };
+                strategyBadge.textContent = currentStrategy.category;
+                strategyDesc.textContent = currentStrategy.description;
+                renderDynamicParams();
+                runBacktest();
+            };
+
+            // Reset Params Handler
+            document.getElementById('resetParamsBtn').onclick = () => {
+                currentParams = { ...currentStrategy.defaultParams };
+                renderDynamicParams();
+                runBacktest();
+            };
+
+            // Tab Switching
+            tabCandlesBtn.onclick = () => {
+                tabCandlesBtn.className = 'px-3 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                tabEquityBtn.className = 'px-3 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                candleChartWrapper.classList.remove('hidden');
+                equityChartWrapper.classList.add('hidden');
+            };
+
+            tabEquityBtn.onclick = () => {
+                tabEquityBtn.className = 'px-3 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                tabCandlesBtn.className = 'px-3 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                equityChartWrapper.classList.remove('hidden');
+                candleChartWrapper.classList.add('hidden');
+                if (chartManager && chartManager.equityChart) {
+                    chartManager.equityChart.applyOptions({
+                        width: document.getElementById('equityChartContainer').clientWidth,
+                        height: 320
+                    });
+                }
+            };
+
+            // 4. Backtest Execution Routine
+            async function runBacktest() {
+                runBtnText.textContent = 'Simulating...';
+                runBacktestBtn.disabled = true;
+
+                const symbol = pairSelect.value;
+                const timeframe = timeframeSelect.value;
+                const capital = parseFloat(document.getElementById('capitalInput').value) || 10000;
+                const feePct = parseFloat(document.getElementById('feeInput').value) || 0.075;
+
+                // Fetch Candles
+                const apiRes = await MarketAPI.fetchKlines(symbol, timeframe, 500);
+                currentCandles = apiRes.data;
+                apiStatusPill.textContent = apiRes.source;
+
+                // Run Backtesting Simulation
+                const result = BacktestEngine.run(currentCandles, currentStrategy, currentParams, {
+                    initialCapital: capital,
+                    feePct: feePct
+                });
+
+                // Update Metrics
+                const sum = result.summary;
+                metricWinRate.textContent = `${sum.winRate}%`;
+                metricWinCount.textContent = `${sum.winningTrades}W / ${sum.losingTrades}L`;
+
+                const isProfit = sum.netProfit >= 0;
+                metricNetProfit.textContent = `${isProfit ? '+' : '-'}$${Math.abs(sum.netProfit).toLocaleString()}`;
+                metricNetProfit.className = `text-lg font-black font-mono ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`;
+
+                metricNetProfitPct.textContent = `${isProfit ? '+' : ''}${sum.netProfitPct}%`;
+                metricNetProfitPct.className = `text-[10px] font-mono ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`;
+
+                metricProfitFactor.textContent = sum.profitFactor >= 90 ? '99.9' : sum.profitFactor.toFixed(2);
+                metricMaxDrawdown.textContent = `${sum.maxDrawdownPct}%`;
+                metricMaxDdAmt.textContent = `-$${sum.maxDrawdownAmt.toLocaleString()}`;
+                metricTotalTrades.textContent = sum.totalTrades;
+                metricSharpe.textContent = sum.sharpeRatio.toFixed(2);
+
+                // Render Chart & Signals
+                if (!chartManager) {
+                    chartManager = new TradingViewManager('candleChartContainer', 'equityChartContainer');
+                }
+
+                chartManager.renderCandles(currentCandles);
+                chartManager.renderMarkers(result.chartMarkers);
+                chartManager.renderOverlays(currentCandles, currentStrategy.id, currentParams);
+                chartManager.renderEquityCurve(result.equityCurve);
+
+                // Render Trade Log Table
+                tradeLogCountBadge.textContent = `${result.trades.length} Trades`;
+                if (result.trades.length === 0) {
+                    tradeLogTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-500 font-sans">No trades triggered with these parameters in this timeframe. Try adjusting thresholds!</td></tr>`;
+                } else {
+                    tradeLogTableBody.innerHTML = result.trades.map(t => `
+                        <tr class="trade-row transition">
+                            <td class="py-2 px-3 text-slate-400">#${t.tradeId}</td>
+                            <td class="py-2 px-3"><span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold text-[10px]">LONG</span></td>
+                            <td class="py-2 px-3">$${t.entryPrice.toLocaleString()}</td>
+                            <td class="py-2 px-3">$${t.exitPrice.toLocaleString()}</td>
+                            <td class="py-2 px-3 font-bold ${t.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${t.netPnl >= 0 ? '+' : ''}$${t.netPnl}</td>
+                            <td class="py-2 px-3 font-bold ${t.netPnlPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${t.netPnlPct >= 0 ? '+' : ''}${t.netPnlPct}%</td>
+                            <td class="py-2 px-3 text-slate-400 text-[11px] font-sans">${t.exitReason}</td>
+                            <td class="py-2 px-3 text-slate-400">${t.durationBars} bars</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Render Pine Script Code Vault Section
+                PineVault.renderVaultSection(currentStrategy, currentParams, symbol, timeframe, pineVaultContainer);
+
+                runBtnText.textContent = 'Run Free Backtest';
+                runBacktestBtn.disabled = false;
+            }
+
+            // Events
+            pairSelect.onchange = () => runBacktest();
+            timeframeSelect.onchange = () => runBacktest();
+            runBacktestBtn.onclick = () => runBacktest();
+
+            // Initial Launch
+            renderDynamicParams();
+            strategyBadge.textContent = currentStrategy.category;
+            strategyDesc.textContent = currentStrategy.description;
+            runBacktest();
+        });
+    </script>
+</body>
+</html>
