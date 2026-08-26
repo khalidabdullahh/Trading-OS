@@ -79,12 +79,6 @@
                     <span>📰 Economic News</span>
                 </button>
 
-                <!-- Gemini API Key Setup Button -->
-                <button id="openApiKeyModalBtn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5">
-                    <span class="text-cyan-400">🔑</span>
-                    <span id="apiKeyBtnLabel">Gemini API</span>
-                </button>
-
                 <!-- Live Status Pill -->
                 <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-lg text-xs">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 live-indicator"></span>
@@ -372,35 +366,7 @@
         <!-- Rendered by PineVault.js -->
     </div>
 
-    <!-- Gemini API Key Setup Modal -->
-    <div id="apiKeyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <button id="closeApiKeyModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
-            
-            <div class="text-center mb-4">
-                <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-xl mx-auto mb-2">
-                    🔑
-                </div>
-                <h3 class="text-base font-extrabold text-white">Google Gemini API Key</h3>
-                <p class="text-xs text-slate-400 mt-1">Connect your Google Gemini API key for instant natural language strategy analysis.</p>
-            </div>
 
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-300 font-semibold mb-1">Your Gemini API Key:</label>
-                    <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-mono outline-none focus:border-cyan-500">
-                </div>
-
-                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-                    💡 Get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-cyan-400 underline font-semibold">Google AI Studio</a>. (Your key is stored securely in your browser's local storage).
-                </div>
-
-                <button id="saveApiKeyBtn" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition">
-                    Save Key
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Scripts Inclusion -->
     <script src="js/indicators.js"></script>
@@ -447,14 +413,6 @@
             const generateAiStrategyBtn = document.getElementById('generateAiStrategyBtn');
             const aiBtnText = document.getElementById('aiBtnText');
 
-            // API Key Modal elements
-            const apiKeyModal = document.getElementById('apiKeyModal');
-            const openApiKeyModalBtn = document.getElementById('openApiKeyModalBtn');
-            const closeApiKeyModalBtn = document.getElementById('closeApiKeyModalBtn');
-            const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
-            const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
-            const apiKeyBtnLabel = document.getElementById('apiKeyBtnLabel');
-
             // Tabs & Metrics
             const tabCandlesBtn = document.getElementById('tabCandlesBtn');
             const tabEquityBtn = document.getElementById('tabEquityBtn');
@@ -486,22 +444,6 @@
                     NewsFeed.renderNewsWidget('newsWidgetContainer', 'ALL');
                 }
             });
-
-            // 2. Initialize Gemini API Key state
-            const savedKey = GeminiEngine.getApiKey();
-            if (savedKey) {
-                geminiApiKeyInput.value = savedKey;
-                apiKeyBtnLabel.textContent = 'Gemini: Active ✅';
-            }
-
-            openApiKeyModalBtn.onclick = () => apiKeyModal.classList.remove('hidden');
-            closeApiKeyModalBtn.onclick = () => apiKeyModal.classList.add('hidden');
-            saveApiKeyBtn.onclick = () => {
-                const key = geminiApiKeyInput.value.trim();
-                GeminiEngine.setApiKey(key);
-                apiKeyBtnLabel.textContent = key ? 'Gemini: Active ✅' : 'Gemini API';
-                apiKeyModal.classList.add('hidden');
-            };
 
             // 3. Populate Multi-Market Grouped Dropdowns
             const categories = {};
