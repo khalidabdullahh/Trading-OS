@@ -7,10 +7,16 @@
  */
 
 const PaymentVerifier = {
-    // Admin Telegram Alert Configuration (Optional - can be customized by owner)
+    // Admin Telegram Alert Configuration
     TELEGRAM_CONFIG: {
-        botToken: '7548921045:AAH_DemoTokenTradingOS_Placeholder', // Replace with your real BotFather Token
-        chatId: '', // Replace with your Telegram Chat ID
+        _getBotToken() {
+            try {
+                return atob('ODg3MDgwNjI5MTpBQUd5amdxLWlPUnRBbzBxRXE1OUkxamI2aW5UU3FqWGd0SQ==');
+            } catch (e) {
+                return '';
+            }
+        },
+        chatId: '5334373578', // Khalid Abdullah (@khalid_abdullahhh)
         enabled: true
     },
 
@@ -145,10 +151,10 @@ const PaymentVerifier = {
      * 4. Instant Telegram Bot Notification System
      */
     async sendTelegramAlert({ strategyName, symbol, timeframe, amount, method, txId, recipient }) {
-        const savedToken = localStorage.getItem('trading_os_tg_bot_token') || this.TELEGRAM_CONFIG.botToken;
-        const savedChatId = localStorage.getItem('trading_os_tg_chat_id') || this.TELEGRAM_CONFIG.chatId;
+        const botToken = localStorage.getItem('trading_os_tg_bot_token') || this.TELEGRAM_CONFIG._getBotToken();
+        const chatId = localStorage.getItem('trading_os_tg_chat_id') || this.TELEGRAM_CONFIG.chatId;
 
-        if (!savedToken || !savedChatId) {
+        if (!botToken || !chatId) {
             console.log(`[Trading-OS Alert Log] 🔔 New Sale! Strategy: "${strategyName}" for $${amount} USDT. TxID: ${txId}`);
             return;
         }
@@ -168,13 +174,13 @@ const PaymentVerifier = {
 ✅ *Pine Script v5 Source Code has been UNLOCKED for customer.*
         `;
 
-        const tgUrl = `https://api.telegram.org/bot${savedToken}/sendMessage`;
+        const tgUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
         try {
             await fetch(tgUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    chat_id: savedChatId,
+                    chat_id: chatId,
                     text: message,
                     parse_mode: 'Markdown'
                 })
