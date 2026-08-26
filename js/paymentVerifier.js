@@ -214,7 +214,7 @@ const PaymentVerifier = {
 
         const tgUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
         try {
-            await fetch(tgUrl, {
+            const resp = await fetch(tgUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -223,8 +223,17 @@ const PaymentVerifier = {
                     parse_mode: 'Markdown'
                 })
             });
+            const resData = await resp.json();
+            if (!resData.ok) {
+                console.warn('[Trading-OS] Telegram Bot Response:', resData);
+                if (resData.description && resData.description.includes("bot can't initiate conversation")) {
+                    console.info("💡 Telegram Tip: You must search your bot on Telegram and tap 'START' once so the bot has permission to message you!");
+                }
+            } else {
+                console.log('✅ [Trading-OS] Telegram Alert Delivered Successfully!');
+            }
         } catch (e) {
-            console.warn('[Trading-OS] Telegram dispatch failed:', e.message);
+            console.warn('[Trading-OS] Telegram dispatch network error:', e.message);
         }
     }
 };
