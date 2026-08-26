@@ -15,7 +15,7 @@ const PineVault = {
         currency: 'USDT'
     },
 
-    // Alternative On-chain Deposit Options
+    // Official Deposit Options
     CRYPTO_WALLETS: {
         'BINANCE-PAY': {
             network: 'Binance Pay (0% Fee)',
@@ -26,15 +26,21 @@ const PineVault = {
         },
         'USDT-TRC20': {
             network: 'Tron (TRC-20)',
-            address: 'TY8w9uKxR4gKz7QyR2mN3vB9pL6tY8qX2z',
-            label: 'Tron USDT Address',
-            badge: 'External Wallet'
+            address: 'TDH1vjLT9zcDoGd9sVEcEBcomp3Da5Rjjm',
+            label: 'Tron USDT (TRC-20) Address',
+            badge: 'Low Fee'
         },
         'USDT-BEP20': {
             network: 'BNB Smart Chain (BEP-20)',
-            address: '0x71C2B909D3E0eC58AC6139B8808E5F706173B492',
-            label: 'BNB Chain Address',
-            badge: 'MetaMask / TrustWallet'
+            address: '0xd6fa32d746d7044b281135f509a7494669a22472',
+            label: 'BNB Chain USDT (BEP-20) Address',
+            badge: 'BNB Chain'
+        },
+        'USDT-ERC20': {
+            network: 'Ethereum (ERC-20)',
+            address: '0xd6fa32d746d7044b281135f509a7494669a22472',
+            label: 'Ethereum USDT (ERC-20) Address',
+            badge: 'Ethereum'
         }
     },
 
@@ -224,7 +230,7 @@ const PineVault = {
                     <!-- Payment Method Tabs -->
                     <div class="space-y-1.5 mb-4">
                         <label class="block text-[11px] font-semibold text-slate-400">Payment Option:</label>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             ${Object.keys(this.CRYPTO_WALLETS).map(key => {
                                 const w = this.CRYPTO_WALLETS[key];
                                 const isSelected = key === selectedMethodKey;

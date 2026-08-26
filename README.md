@@ -29,11 +29,13 @@ Directly test and execute strategies across all global financial asset classes:
 
 ---
 
-### 4. 🔒 Official Binance Pay Integration (`js/pineVault.js`)
-- **Binance Pay ID / UID:** `716216436`
-- **Flat Price:** `$9.00 USDT` (0% Gas Fees via Binance Pay).
-- **Direct Support:** Send via Binance App ➔ Pay ➔ Pay ID (`716216436`).
-- **Instant Unlock:** Submit Order ID / Reference ➔ Unlocks Pine Script v5 with 1-Click Copy & `.pine` file download ready for TradingView and Webhook Bots.
+### 4. 🔒 Multi-Network Crypto & Binance Pay Integration (`js/pineVault.js`)
+- **Binance Pay ID / UID:** `716216436` (0% Gas Fees)
+- **USDT (TRC-20):** `TDH1vjLT9zcDoGd9sVEcEBcomp3Da5Rjjm`
+- **USDT (BEP-20):** `0xd6fa32d746d7044b281135f509a7494669a22472`
+- **USDT (ERC-20):** `0xd6fa32d746d7044b281135f509a7494669a22472`
+- **Flat Price:** `$9.00 USDT`
+- **Instant Unlock:** Submit Order ID / TxID ➔ Unlocks Pine Script v5 with 1-Click Copy & `.pine` file download ready for TradingView and Webhook Bots.
 
 ---
 
