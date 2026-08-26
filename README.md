@@ -35,7 +35,13 @@ Directly test and execute strategies across all global financial asset classes:
 - **USDT (BEP-20):** `0xd6fa32d746d7044b281135f509a7494669a22472`
 - **USDT (ERC-20):** `0xd6fa32d746d7044b281135f509a7494669a22472`
 - **Flat Price:** `$9.00 USDT`
-- **Instant Unlock:** Submit Order ID / TxID ➔ Unlocks Pine Script v5 with 1-Click Copy & `.pine` file download ready for TradingView and Webhook Bots.
+
+---
+
+### 5. 🛡️ Triple-Layer Verification & Alert Engine (`js/paymentVerifier.js`)
+1. **TronScan & BscScan On-Chain Validation:** Queries real-time public blockchain explorer APIs to verify that transactions are confirmed, sent to your exact deposit address, and matches $9 USDT.
+2. **Binance Pay Reference Verification:** Validates 19-digit Binance Pay order identifiers and prevents double-spending / reuse.
+3. **Telegram Instant Admin Alert Bot:** Sends real-time notifications to your Telegram when an order is completed.
 
 ---
 

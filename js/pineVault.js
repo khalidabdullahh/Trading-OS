@@ -319,7 +319,12 @@ const PineVault = {
             }
 
             document.getElementById('verifyBinancePayBtn').onclick = () => {
-                this.processBinancePayment(strategy, currentParams, symbol, timeframe, containerElement);
+                const txId = (document.getElementById('binanceOrderIdInput')?.value || '').trim();
+                if (!txId) {
+                    alert('Please enter your Binance Order ID or Transaction Hash (TxID) to verify.');
+                    return;
+                }
+                this.processBinancePayment(strategy, currentParams, symbol, timeframe, containerElement, selectedMethodKey, currentOption, txId);
             };
         };
 
@@ -327,25 +332,41 @@ const PineVault = {
         modal.classList.remove('hidden');
     },
 
-    processBinancePayment(strategy, currentParams, symbol, timeframe, containerElement) {
+    async processBinancePayment(strategy, currentParams, symbol, timeframe, containerElement, selectedMethodKey, currentOption, txId) {
         const modal = document.getElementById('checkoutModal');
         const processingOverlay = document.getElementById('paymentProcessingOverlay');
 
         if (processingOverlay) processingOverlay.classList.remove('hidden');
 
-        setTimeout(() => {
+        try {
+            // Run Triple-Layer Blockchain & Payment Verification
+            const result = await PaymentVerifier.verifyPayment({
+                method: selectedMethodKey,
+                txId: txId,
+                expectedRecipient: currentOption.address,
+                expectedAmount: 9.0,
+                strategyName: strategy.name,
+                symbol,
+                timeframe
+            });
+
+            setTimeout(() => {
+                if (processingOverlay) processingOverlay.classList.add('hidden');
+                if (modal) modal.classList.add('hidden');
+
+                // Unlock strategy
+                this.unlock(strategy.id);
+
+                // Re-render
+                this.renderVaultSection(strategy, currentParams, symbol, timeframe, containerElement);
+
+                // Show Toast
+                this.showToast(`🎉 Payment Verified ($9 USDT)! ${strategy.name} Pine Script v5 is now UNLOCKED!`);
+            }, 1200);
+        } catch (err) {
             if (processingOverlay) processingOverlay.classList.add('hidden');
-            if (modal) modal.classList.add('hidden');
-
-            // Unlock strategy
-            this.unlock(strategy.id);
-
-            // Re-render
-            this.renderVaultSection(strategy, currentParams, symbol, timeframe, containerElement);
-
-            // Show Toast
-            this.showToast(`🎉 Binance Pay Verified ($9 USDT)! ${strategy.name} Pine Script v5 is now UNLOCKED!`);
-        }, 1500);
+            alert(`⚠️ Verification Notice: ${err.message}`);
+        }
     },
 
     showToast(message) {
