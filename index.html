@@ -491,19 +491,21 @@
             document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
                 btn.onclick = () => {
                     aiPromptInput.value = btn.dataset.prompt;
+                    triggerAiStrategy();
                 };
             });
 
-            // 5. AI Strategy Generation Handler
-            generateAiStrategyBtn.onclick = async () => {
+            // 5. AI Strategy Generation Routine
+            async function triggerAiStrategy() {
                 const prompt = aiPromptInput.value.trim();
                 if (!prompt) {
-                    alert('Please enter or select a trading strategy explanation first!');
+                    alert('Please write or select a strategy description first!');
                     return;
                 }
 
-                aiBtnText.textContent = 'Gemini AI Analyzing... ⚡';
+                aiBtnText.textContent = '✨ Gemini AI Analyzing...';
                 generateAiStrategyBtn.disabled = true;
+                generateAiStrategyBtn.classList.add('opacity-75', 'animate-pulse');
 
                 const symbol = pairSelect.value;
                 const timeframe = timeframeSelect.value;
@@ -520,13 +522,32 @@
                     renderDynamicParams();
                     await runBacktest();
                 } catch (e) {
-                    console.error(e);
-                    alert('Error generating strategy: ' + e.message);
+                    console.error('[Trading-OS] AI Strategy Generation Error:', e);
+                    // Fallback to local heuristic
+                    const fallbackStrategy = GeminiEngine.generateHeuristicStrategy(prompt, symbol, timeframe);
+                    currentStrategy = fallbackStrategy;
+                    currentParams = { ...currentStrategy.defaultParams };
+                    activeStrategyTitle.textContent = currentStrategy.name;
+                    strategyBadge.textContent = currentStrategy.category;
+                    strategyDesc.textContent = currentStrategy.description;
+                    renderDynamicParams();
+                    await runBacktest();
                 } finally {
                     aiBtnText.textContent = 'Analyze & Convert with Gemini AI';
                     generateAiStrategyBtn.disabled = false;
+                    generateAiStrategyBtn.classList.remove('opacity-75', 'animate-pulse');
                 }
-            };
+            }
+
+            generateAiStrategyBtn.onclick = () => triggerAiStrategy();
+
+            // Keyboard shortcut (Enter or Ctrl+Enter / Cmd+Enter submits strategy)
+            aiPromptInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || !e.shiftKey)) {
+                    e.preventDefault();
+                    triggerAiStrategy();
+                }
+            });
 
             // 6. Render Dynamic Strategy Params
             function renderDynamicParams() {
@@ -679,7 +700,13 @@
             // Events
             pairSelect.onchange = () => runBacktest();
             timeframeSelect.onchange = () => runBacktest();
-            runBacktestBtn.onclick = () => runBacktest();
+            runBacktestBtn.onclick = () => {
+                if (!aiPromptSection.classList.contains('hidden') && aiPromptInput.value.trim().length > 5) {
+                    triggerAiStrategy();
+                } else {
+                    runBacktest();
+                }
+            };
 
             // Initial Launch
             renderDynamicParams();

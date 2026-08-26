@@ -39,7 +39,8 @@ const GeminiEngine = {
     async generateStrategyFromPrompt(promptText, symbol = 'BTCUSDT', timeframe = '15m') {
         const apiKey = this.getApiKey();
 
-        if (apiKey) {
+        // If a standard Google AI Studio key is present, call Gemini API with fast timeout
+        if (apiKey && apiKey.startsWith('AIzaSy')) {
             try {
                 return await this.callGeminiAPI(promptText, apiKey, symbol, timeframe);
             } catch (err) {
@@ -47,15 +48,19 @@ const GeminiEngine = {
                 return this.generateHeuristicStrategy(promptText, symbol, timeframe);
             }
         } else {
+            // Instant, zero-latency NLP Engine
             return this.generateHeuristicStrategy(promptText, symbol, timeframe);
         }
     },
 
     /**
-     * Call Google Gemini API (gemini-1.5-flash / gemini-2.0-flash)
+     * Call Google Gemini API (gemini-1.5-flash) with timeout
      */
     async callGeminiAPI(promptText, apiKey, symbol, timeframe) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
         const systemPrompt = `You are a world-class Quantitative Analyst and Pine Script v5 Master Engineer.
 A user will explain a trading strategy in natural language (English, Bengali, or Banglish).
@@ -102,8 +107,10 @@ The JSON structure must be:
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
