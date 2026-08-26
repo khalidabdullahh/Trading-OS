@@ -1,6 +1,6 @@
 /**
- * Trading-OS Gemini AI Quantitative Strategy Engine
- * Converts natural language trading strategies into executable algorithmic backtests & Pine Script v5
+ * Trading-OS Gemini AI Quantitative Strategy Copilot v1.02
+ * Converts natural language trading strategies into structured rules, assumptions, and Pine Script v5
  * Author: Khalid Abdullah (Trading-OS)
  */
 
@@ -48,7 +48,7 @@ const GeminiEngine = {
                 return this.generateHeuristicStrategy(promptText, symbol, timeframe);
             }
         } else {
-            // Instant, zero-latency NLP Engine
+            // Instant, zero-latency NLP Heuristic Engine
             return this.generateHeuristicStrategy(promptText, symbol, timeframe);
         }
     },
@@ -74,13 +74,19 @@ The JSON structure must be:
   "badge": "Gemini AI",
   "priceUSD": 9,
   "description": "2-sentence clear explanation of rules, indicators, and risk management.",
+  "structuredRules": {
+    "direction": "LONG" | "SHORT" | "BOTH",
+    "entryTrigger": "Exact entry condition summary",
+    "exitTrigger": "Exact exit condition summary",
+    "assumptions": ["Sufficient market volatility", "Clean trend structure"],
+    "weaknesses": ["Vulnerable to choppy ranging market", "Potential slippage in illiquid hours"]
+  },
   "defaultParams": {
-    "indicator1": "ema",
-    "param1": 9,
-    "indicator2": "rsi",
-    "param2": 14,
-    "oversold": 30,
-    "overbought": 70,
+    "fastEma": 9,
+    "slowEma": 21,
+    "rsiLength": 14,
+    "rsiOversold": 30,
+    "rsiOverbought": 70,
     "takeProfitPct": 3.0,
     "stopLossPct": 1.5
   },
@@ -128,7 +134,7 @@ The JSON structure must be:
     },
 
     /**
-     * Intelligent Natural Language Strategy Parser (Works even without API key)
+     * Intelligent Natural Language Strategy Parser (Zero-latency offline engine)
      */
     generateHeuristicStrategy(promptText, symbol = 'BTCUSDT', timeframe = '15m') {
         const text = promptText.toLowerCase();
@@ -171,6 +177,23 @@ The JSON structure must be:
             }
         }
 
+        // Assumptions & Weaknesses
+        const weaknesses = [];
+        const assumptions = ['Continuous market liquidity', 'Standard trading session volatility'];
+
+        if (strategyType === 'ema_cross' || strategyType === 'supertrend') {
+            weaknesses.push('High vulnerability to whipsaws during low-volume ranging periods.');
+            weaknesses.push('Delayed entries due to lagging moving average calculation.');
+            assumptions.push('Trending directional momentum is required for positive expectancy.');
+        } else if (strategyType === 'rsi_pullback' || strategyType === 'bollinger') {
+            weaknesses.push('Vulnerable to strong runaway trend continuation (catching a falling knife).');
+            weaknesses.push('Requires strict stop loss discipline.');
+            assumptions.push('Asset price oscillates within statistical mean-reverting bounds.');
+        } else {
+            weaknesses.push('Multi-indicator latency may result in missed early momentum.');
+            assumptions.push('Momentum convergence confirms institutional positioning.');
+        }
+
         const strategyData = {
             id: `ai_strategy_${Date.now()}`,
             name: `🤖 AI Strategy: ${this.generateStrategyTitle(strategyType, text)}`,
@@ -179,6 +202,13 @@ The JSON structure must be:
             priceUSD: 9,
             priceBDT: 999,
             description: `Auto-engineered from prompt: "${promptText.slice(0, 100)}${promptText.length > 100 ? '...' : ''}". Configured with ${tpPct}% TP and ${slPct}% SL.`,
+            structuredRules: {
+                direction: text.includes('short') ? 'BOTH' : 'LONG',
+                entryTrigger: `${strategyType.toUpperCase()} Momentum Confirmation on ${symbol} (${timeframe})`,
+                exitTrigger: `Take Profit ${tpPct}% or Stop Loss ${slPct}%`,
+                assumptions,
+                weaknesses
+            },
             defaultParams: {
                 fastEma,
                 slowEma,
@@ -206,98 +236,88 @@ The JSON structure must be:
     },
 
     /**
-     * Hydrate parsed strategy into a fully executable Strategy Object compatible with BacktestEngine
+     * Hydrate Strategy Object with backtest executable logic
      */
     hydrateStrategyObject(rawStrategy, promptText, symbol, timeframe) {
-        const params = rawStrategy.defaultParams || { takeProfitPct: 3.0, stopLossPct: 1.5, fastEma: 9, slowEma: 21, rsiLength: 14, rsiOversold: 30 };
-        const strategyType = rawStrategy.strategyType || 'ema_cross';
+        const type = rawStrategy.strategyType || 'ema_cross';
 
         return {
-            id: rawStrategy.id || `custom_ai_${Date.now()}`,
-            name: rawStrategy.name || '🤖 AI Custom Strategy',
-            category: 'AI Generated',
+            id: rawStrategy.id || `ai_strategy_${Date.now()}`,
+            name: rawStrategy.name || '🤖 AI Quantitative Strategy',
+            category: rawStrategy.category || 'AI Generated',
             badge: 'Gemini AI',
             priceUSD: 9,
             priceBDT: 999,
-            description: rawStrategy.description || promptText,
-            defaultParams: params,
+            description: rawStrategy.description || `AI Quantitative model for ${symbol} (${timeframe}).`,
+            structuredRules: rawStrategy.structuredRules || {
+                direction: 'LONG',
+                entryTrigger: 'Algorithmic Technical Signal',
+                exitTrigger: 'Dynamic TP / SL Bracket',
+                assumptions: ['Standard liquid market'],
+                weaknesses: ['Susceptible to ranging chop']
+            },
+            defaultParams: rawStrategy.defaultParams || {
+                takeProfitPct: 3.0,
+                stopLossPct: 1.5
+            },
             paramConfig: [
-                { key: 'takeProfitPct', label: 'Take Profit (%)', type: 'number', min: 0.5, max: 20, step: 0.1 },
+                { key: 'takeProfitPct', label: 'Take Profit (%)', type: 'number', min: 0.5, max: 15, step: 0.1 },
                 { key: 'stopLossPct', label: 'Stop Loss (%)', type: 'number', min: 0.3, max: 10, step: 0.1 }
             ],
-            execute(candles, p) {
+            execute: (candles, params) => {
                 const closes = candles.map(c => c.close);
                 const signals = [];
 
-                if (strategyType === 'rsi_pullback' || strategyType === 'macd_momentum') {
-                    const rsi = Indicators.rsi(closes, p.rsiLength || 14);
-                    const macd = Indicators.macd(closes, 12, 26, 9);
-                    const os = p.rsiOversold || 30;
-                    const ob = p.rsiOverbought || 70;
+                if (type === 'rsi_pullback') {
+                    const rsi = Indicators.rsi(closes, params.rsiLength || 14);
+                    const ema200 = Indicators.ema(closes, 50);
 
-                    for (let i = 2; i < candles.length; i++) {
-                        if (rsi[i] === null) continue;
-                        const wasOversold = rsi[i - 1] <= os || rsi[i - 2] <= os;
-                        const rsiBouncing = rsi[i] > rsi[i - 1];
-
-                        if (wasOversold && rsiBouncing) {
+                    for (let i = 1; i < candles.length; i++) {
+                        if (rsi[i] === null || rsi[i - 1] === null) continue;
+                        if (rsi[i - 1] < (params.rsiOversold || 30) && rsi[i] >= (params.rsiOversold || 30)) {
                             signals.push({
                                 index: i,
                                 time: candles[i].time,
                                 type: 'BUY',
                                 price: candles[i].close,
-                                reason: `AI Signal: RSI Oversold Reversal (${rsi[i].toFixed(1)})`
+                                reason: `RSI(${params.rsiLength || 14}) bounced from oversold (${rsi[i].toFixed(1)})`
                             });
                         }
-
-                        if (rsi[i] >= ob) {
+                    }
+                } else if (type === 'supertrend') {
+                    const st = Indicators.superTrend(candles, 10, 3.0);
+                    for (let i = 1; i < candles.length; i++) {
+                        if (st.direction[i - 1] === -1 && st.direction[i] === 1) {
                             signals.push({
                                 index: i,
                                 time: candles[i].time,
-                                type: 'EXIT',
+                                type: 'BUY',
                                 price: candles[i].close,
-                                reason: `AI Signal: RSI Overbought Exhaustion`
+                                reason: `SuperTrend flipped Bullish at ${candles[i].close}`
                             });
                         }
                     }
-                } else if (strategyType === 'supertrend') {
-                    const st = Indicators.superTrend(candles, 10, 3.0);
-                    for (let i = 1; i < candles.length; i++) {
-                        if (st.direction[i] === null) continue;
-                        if (st.direction[i - 1] === -1 && st.direction[i] === 1) {
-                            signals.push({ index: i, time: candles[i].time, type: 'BUY', price: candles[i].close, reason: 'AI SuperTrend Bullish Flip' });
-                        } else if (st.direction[i - 1] === 1 && st.direction[i] === -1) {
-                            signals.push({ index: i, time: candles[i].time, type: 'EXIT', price: candles[i].close, reason: 'AI SuperTrend Bearish Flip' });
-                        }
-                    }
-                } else if (strategyType === 'bollinger') {
-                    const bb = Indicators.bollingerBands(closes, 20, 2.0);
-                    for (let i = 1; i < candles.length; i++) {
-                        if (bb.lower[i] === null) continue;
-                        if (candles[i].low <= bb.lower[i] && candles[i].close > candles[i].open) {
-                            signals.push({ index: i, time: candles[i].time, type: 'BUY', price: candles[i].close, reason: 'AI Bollinger Lower Band Bounce' });
-                        } else if (candles[i].high >= bb.upper[i]) {
-                            signals.push({ index: i, time: candles[i].time, type: 'EXIT', price: candles[i].close, reason: 'AI Bollinger Upper Band Target' });
-                        }
-                    }
                 } else {
-                    // Default: EMA Crossover + Trend
-                    const fast = Indicators.ema(closes, p.fastEma || 9);
-                    const slow = Indicators.ema(closes, p.slowEma || 21);
+                    const fast = Indicators.ema(closes, params.fastEma || 9);
+                    const slow = Indicators.ema(closes, params.slowEma || 21);
+
                     for (let i = 1; i < candles.length; i++) {
-                        if (fast[i] === null || slow[i] === null) continue;
+                        if (fast[i] === null || slow[i] === null || fast[i - 1] === null) continue;
                         if (fast[i - 1] <= slow[i - 1] && fast[i] > slow[i]) {
-                            signals.push({ index: i, time: candles[i].time, type: 'BUY', price: candles[i].close, reason: `AI Signal: Fast EMA crossed Slow EMA` });
-                        } else if (fast[i - 1] >= slow[i - 1] && fast[i] < slow[i]) {
-                            signals.push({ index: i, time: candles[i].time, type: 'EXIT', price: candles[i].close, reason: `AI Signal: EMA Bearish Cross` });
+                            signals.push({
+                                index: i,
+                                time: candles[i].time,
+                                type: 'BUY',
+                                price: candles[i].close,
+                                reason: `Fast EMA(${params.fastEma || 9}) crossed above Slow EMA(${params.slowEma || 21})`
+                            });
                         }
                     }
                 }
-
                 return signals;
             },
-            generatePineScript(p, sym = symbol, tf = timeframe) {
-                return rawStrategy.pineScriptV5 || GeminiEngine.generateDynamicPineScript(strategyType, p, sym, tf, promptText);
+            generatePineScript: (params, s = symbol, tf = timeframe) => {
+                return rawStrategy.pineScriptV5 || this.generateDynamicPineScript(type, params, s, tf, promptText);
             }
         };
     },
@@ -305,46 +325,35 @@ The JSON structure must be:
     generateDynamicPineScript(strategyType, params, symbol, timeframe, promptText) {
         return `//@version=5
 // =============================================================================
-// Strategy: AI Generated Quantitative Strategy
-// Engine: Google Gemini 2.0 & Trading-OS Platform
-// User Prompt: "${promptText.replace(/"/g, "'")}"
-// Target Pair: ${symbol} | Timeframe: ${timeframe}
-// Pricing: $9 USDT Lifetime License | Author: Khalid Abdullah
+// Strategy: AI Quantitative Model (${symbol} ${timeframe})
+// Generated by: Trading-OS AI Quantitative Engine (Author: Khalid Abdullah)
+// Description: ${promptText || 'Natural language quantitative strategy'}
 // =============================================================================
-strategy("Trading-OS [AI]: ${strategyType.toUpperCase()} Engine", overlay=true, initial_capital=1000, default_qty_type=strategy.percent_of_equity, default_qty_value=100, commission_type=strategy.commission.percent, commission_value=0.075)
+strategy("Trading-OS: AI Quant Strategy [v5]", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=100, commission_type=strategy.commission.percent, commission_value=0.075)
 
-// --- User Risk Management Inputs ---
-tpPct = input.float(${params.takeProfitPct || 3.0}, "Take Profit (%)", minval=0.1, step=0.1, group="Risk Management")
-slPct = input.float(${params.stopLossPct || 1.5}, "Stop Loss (%)", minval=0.1, step=0.1, group="Risk Management")
+// --- Inputs ---
+tpPercent = input.float(${params.takeProfitPct || 3.0}, "Take Profit (%)", minval=0.1, step=0.1, group="Risk Parameters")
+slPercent = input.float(${params.stopLossPct || 1.5}, "Stop Loss (%)", minval=0.1, step=0.1, group="Risk Parameters")
+fastLen   = input.int(${params.fastEma || 9}, "Fast EMA Length", minval=1, group="Indicators")
+slowLen   = input.int(${params.slowEma || 21}, "Slow EMA Length", minval=1, group="Indicators")
 
-// --- Indicator Calculations ---
-fastEma = ta.ema(close, ${params.fastEma || 9})
-slowEma = ta.ema(close, ${params.slowEma || 21})
-rsiVal  = ta.rsi(close, ${params.rsiLength || 14})
-[bbMiddle, bbUpper, bbLower] = ta.bb(close, 20, 2.0)
-
-// --- Plot Indicators ---
+// --- Calculations ---
+fastEma = ta.ema(close, fastLen)
+slowEma = ta.ema(close, slowLen)
 plot(fastEma, "Fast EMA", color=color.green, linewidth=2)
 plot(slowEma, "Slow EMA", color=color.orange, linewidth=2)
 
-// --- AI Algorithmic Triggers ---
-buyCondition  = ta.crossover(fastEma, slowEma) and rsiVal > 40
-exitCondition = ta.crossunder(fastEma, slowEma) or rsiVal > ${params.rsiOverbought || 70}
+// --- Signals ---
+buyCondition = ta.crossover(fastEma, slowEma)
 
-// --- Order Execution ---
 if (buyCondition)
-    strategy.entry("AI Long", strategy.long, comment="AI BUY")
+    strategy.entry("Long", strategy.long)
 
-if (exitCondition and strategy.position_size > 0)
-    strategy.close("AI Long", comment="AI EXIT")
-
-longTP = strategy.position_avg_price * (1 + tpPct / 100)
-longSL = strategy.position_avg_price * (1 - slPct / 100)
+longTpPrice = strategy.position_avg_price * (1 + (tpPercent / 100))
+longSlPrice = strategy.position_avg_price * (1 - (slPercent / 100))
 
 if (strategy.position_size > 0)
-    strategy.exit("Bracket TP/SL", from_entry="AI Long", limit=longTP, stop=longSL)
-
-plotshape(buyCondition, title="AI Buy Alert", location=location.belowbar, color=color.aqua, style=shape.triangleup, size=size.normal, text="AI BUY")
+    strategy.exit("Exit Long", "Long", limit=longTpPrice, stop=longSlPrice)
 `;
     }
 };

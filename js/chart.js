@@ -1,5 +1,5 @@
 /**
- * Trading-OS Interactive TradingView Lightweight Charts Visualizer
+ * Trading-OS Interactive TradingView Lightweight Charts Visualizer v1.02
  * Author: Khalid Abdullah (Trading-OS)
  */
 
@@ -17,6 +17,7 @@ class TradingViewManager {
 
         this.equityChart = null;
         this.equitySeries = null;
+        this.oosEquitySeries = null;
 
         this.initCharts();
     }
@@ -100,7 +101,8 @@ class TradingViewManager {
                 topColor: 'rgba(6, 182, 212, 0.4)',
                 bottomColor: 'rgba(6, 182, 212, 0.0)',
                 lineColor: '#06B6D4',
-                lineWidth: 2
+                lineWidth: 2,
+                title: 'Total Equity'
             });
         }
 
@@ -118,7 +120,7 @@ class TradingViewManager {
             if (this.equityChart && this.equityContainer) {
                 this.equityChart.applyOptions({
                     width: this.equityContainer.clientWidth,
-                    height: this.equityContainer.clientHeight || 200
+                    height: this.equityContainer.clientHeight || 240
                 });
             }
         };
@@ -160,11 +162,11 @@ class TradingViewManager {
      */
     renderMarkers(markers) {
         if (!this.candleSeries) return;
-        this.candleSeries.setMarkers(markers);
+        this.candleSeries.setMarkers(markers || []);
     }
 
     /**
-     * Render Indicator Overlays (e.g. EMAs, SuperTrend, Bollinger)
+     * Render Indicator Overlays
      */
     renderOverlays(candles, strategyId, params) {
         // Clear previous overlays
@@ -172,28 +174,32 @@ class TradingViewManager {
         if (this.overlaySeries2) { this.mainChart.removeSeries(this.overlaySeries2); this.overlaySeries2 = null; }
         if (this.overlaySeries3) { this.mainChart.removeSeries(this.overlaySeries3); this.overlaySeries3 = null; }
 
+        if (!candles || candles.length === 0 || !params) return;
         const closes = candles.map(c => c.close);
 
-        if (strategyId === 'ema_scalp') {
-            const fast = Indicators.ema(closes, params.fastEma);
-            const slow = Indicators.ema(closes, params.slowEma);
-            const trend = Indicators.ema(closes, params.trendEma);
+        if (strategyId === 'ema_scalp' || (params.fastEma && params.slowEma)) {
+            const fast = Indicators.ema(closes, params.fastEma || 9);
+            const slow = Indicators.ema(closes, params.slowEma || 21);
 
-            this.overlaySeries1 = this.mainChart.addLineSeries({ color: '#10B981', lineWidth: 1.5, title: `Fast EMA (${params.fastEma})` });
-            this.overlaySeries2 = this.mainChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, title: `Slow EMA (${params.slowEma})` });
-            this.overlaySeries3 = this.mainChart.addLineSeries({ color: '#6366F1', lineWidth: 2, title: `Trend EMA (${params.trendEma})` });
+            this.overlaySeries1 = this.mainChart.addLineSeries({ color: '#10B981', lineWidth: 1.5, title: `Fast EMA (${params.fastEma || 9})` });
+            this.overlaySeries2 = this.mainChart.addLineSeries({ color: '#F59E0B', lineWidth: 1.5, title: `Slow EMA (${params.slowEma || 21})` });
 
             this.overlaySeries1.setData(candles.map((c, i) => ({ time: c.time, value: fast[i] })).filter(d => d.value !== null));
             this.overlaySeries2.setData(candles.map((c, i) => ({ time: c.time, value: slow[i] })).filter(d => d.value !== null));
-            this.overlaySeries3.setData(candles.map((c, i) => ({ time: c.time, value: trend[i] })).filter(d => d.value !== null));
+
+            if (params.trendEma) {
+                const trend = Indicators.ema(closes, params.trendEma);
+                this.overlaySeries3 = this.mainChart.addLineSeries({ color: '#6366F1', lineWidth: 2, title: `Trend EMA (${params.trendEma})` });
+                this.overlaySeries3.setData(candles.map((c, i) => ({ time: c.time, value: trend[i] })).filter(d => d.value !== null));
+            }
         } else if (strategyId === 'supertrend_breakout') {
-            const st = Indicators.superTrend(candles, params.atrPeriod, params.atrMultiplier);
-            this.overlaySeries1 = this.mainChart.addLineSeries({ color: '#06B6D4', lineWidth: 2, title: 'SuperTrend Line' });
+            const st = Indicators.superTrend(candles, params.atrPeriod || 10, params.atrMultiplier || 3.0);
+            this.overlaySeries1 = this.mainChart.addLineSeries({ color: '#06B6D4', lineWidth: 2, title: 'SuperTrend' });
             this.overlaySeries1.setData(candles.map((c, i) => ({ time: c.time, value: st.supertrend[i] })).filter(d => d.value !== null));
         } else if (strategyId === 'bollinger_stoch_reversion') {
-            const bb = Indicators.bollingerBands(closes, params.bbLength, params.bbMult);
+            const bb = Indicators.bollingerBands(closes, params.bbLength || 20, params.bbMult || 2.0);
             this.overlaySeries1 = this.mainChart.addLineSeries({ color: '#EF4444', lineWidth: 1, lineStyle: 2, title: 'BB Upper' });
-            this.overlaySeries2 = this.mainChart.addLineSeries({ color: '#64748B', lineWidth: 1, lineStyle: 3, title: 'BB Middle' });
+            this.overlaySeries2 = this.mainChart.addLineSeries({ color: '#64748B', lineWidth: 1, lineStyle: 3, title: 'BB Mid' });
             this.overlaySeries3 = this.mainChart.addLineSeries({ color: '#10B981', lineWidth: 1, lineStyle: 2, title: 'BB Lower' });
 
             this.overlaySeries1.setData(candles.map((c, i) => ({ time: c.time, value: bb.upper[i] })).filter(d => d.value !== null));
@@ -207,7 +213,7 @@ class TradingViewManager {
      */
     renderEquityCurve(equityData) {
         if (!this.equitySeries || !equityData || equityData.length === 0) return;
-        this.equitySeries.setData(equityData);
+        this.equitySeries.setData(equityData.map(d => ({ time: d.time, value: d.value })));
         if (this.equityChart) {
             this.equityChart.timeScale().fitContent();
         }
