@@ -1,6 +1,6 @@
 # ⚡ Trading-OS — AI Strategy Lab, Multi-Market Backtester & Economic Calendar
 
-A production-grade algorithmic trading strategy platform with Google Gemini AI natural language strategy conversion, multi-asset backtesting (Crypto, Forex, Gold, US Stocks), Forex Factory-style live economic calendar, and $9 USDT Pine Script code monetization.
+A production-grade algorithmic trading strategy platform with Google Gemini AI natural language strategy conversion, multi-asset backtesting (Crypto, Forex, Gold, US Stocks), Forex Factory-style live economic calendar, and $9 USDT Binance Pay (UID: 716216436) monetization.
 
 ---
 
@@ -29,11 +29,11 @@ Directly test and execute strategies across all global financial asset classes:
 
 ---
 
-### 4. 🔒 $9 USDT Crypto Payment Gateway (`js/pineVault.js`)
-- Proprietary algorithm source code remains protected during free backtests.
-- Flat **$9 USDT** price.
-- Supports **USDT (TRC-20, BEP-20, Solana)** with 1-click deposit address copy and transaction verification.
-- Instant unlock with **1-Click Copy Code** and **`.pine` File Download** ready for TradingView and Webhook Bots.
+### 4. 🔒 Official Binance Pay Integration (`js/pineVault.js`)
+- **Binance Pay ID / UID:** `716216436`
+- **Flat Price:** `$9.00 USDT` (0% Gas Fees via Binance Pay).
+- **Direct Support:** Send via Binance App ➔ Pay ➔ Pay ID (`716216436`).
+- **Instant Unlock:** Submit Order ID / Reference ➔ Unlocks Pine Script v5 with 1-Click Copy & `.pine` file download ready for TradingView and Webhook Bots.
 
 ---
 

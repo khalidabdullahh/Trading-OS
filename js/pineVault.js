@@ -1,29 +1,40 @@
 /**
- * Trading-OS Pine Script Code Vault & Crypto Payment System
- * Crypto-Only Gateway (USDT TRC20/BEP20/SOL) - Flat $9 Pricing
+ * Trading-OS Pine Script Code Vault & Binance Pay Integration
+ * Official Binance Pay ID: 716216436 | Flat $9 USDT Pricing
  * Author: Khalid Abdullah (Trading-OS)
  */
 
 const PineVault = {
     unlockedStrategies: new Set(),
 
-    // Crypto Deposit Wallets
+    // Official Binance Pay Config
+    BINANCE_PAY_CONFIG: {
+        payId: '716216436',
+        merchantName: 'Khalid Abdullah',
+        amountUSDT: 9.00,
+        currency: 'USDT'
+    },
+
+    // Alternative On-chain Deposit Options
     CRYPTO_WALLETS: {
+        'BINANCE-PAY': {
+            network: 'Binance Pay (0% Fee)',
+            address: '716216436',
+            label: 'Binance Pay ID / UID',
+            badge: 'Instant • 0% Fee',
+            recommended: true
+        },
         'USDT-TRC20': {
             network: 'Tron (TRC-20)',
             address: 'TY8w9uKxR4gKz7QyR2mN3vB9pL6tY8qX2z',
-            badge: 'Fast & Low Fee',
-            recommended: true
+            label: 'Tron USDT Address',
+            badge: 'External Wallet'
         },
         'USDT-BEP20': {
             network: 'BNB Smart Chain (BEP-20)',
             address: '0x71C2B909D3E0eC58AC6139B8808E5F706173B492',
-            badge: 'BNB Chain'
-        },
-        'USDT-SOL': {
-            network: 'Solana (SPL)',
-            address: '7XgP2vE1w9M6kR3zL8tY4qX5bN2mC7vB9pL6tY8qX2z',
-            badge: 'Instant'
+            label: 'BNB Chain Address',
+            badge: 'MetaMask / TrustWallet'
         }
     },
 
@@ -118,29 +129,29 @@ const PineVault = {
                 };
             }
         } else {
-            // Locked View with Obfuscated / Blurred Code & Buy CTA ($9 Crypto)
+            // Locked View with Obfuscated / Blurred Code & Binance Pay CTA ($9 USDT)
             const dummyBlurredSnippet = pineCode.split('\n').slice(0, 15).join('\n');
 
             containerElement.innerHTML = `
-                <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/20 border border-slate-800 rounded-xl p-5 shadow-2xl relative overflow-hidden">
+                <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-slate-800 rounded-xl p-5 shadow-2xl relative overflow-hidden">
                     <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-bold text-base">
-                                🔒
+                            <div class="w-9 h-9 rounded-lg bg-[#F0B90B]/10 text-[#F0B90B] border border-[#F0B90B]/30 flex items-center justify-center font-bold text-base">
+                                🟡
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
                                     TradingView Pine Script v5 Code
-                                    <span class="px-2 py-0.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center gap-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Crypto Pay
+                                    <span class="px-2 py-0.5 text-xs font-semibold bg-[#F0B90B]/10 text-[#F0B90B] border border-[#F0B90B]/30 rounded-full flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-[#F0B90B]"></span> Binance Pay
                                     </span>
                                 </h3>
-                                <p class="text-xs text-slate-400">Export verified algorithm parameters directly to TradingView</p>
+                                <p class="text-xs text-slate-400">Export verified strategy rules directly into TradingView Pine Editor</p>
                             </div>
                         </div>
                         <div class="text-right">
                             <span class="text-xs text-slate-400 line-through mr-1">$49</span>
-                            <span class="text-xl font-black text-emerald-400 font-mono">$9 USDT</span>
+                            <span class="text-xl font-black text-[#F0B90B] font-mono">$9 USDT</span>
                             <span class="text-[10px] text-slate-400 block font-medium">Flat Price • Lifetime License</span>
                         </div>
                     </div>
@@ -152,16 +163,16 @@ const PineVault = {
                         </div>
 
                         <!-- Paywall Overlay Card -->
-                        <div class="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 text-center">
-                            <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl mb-2 shadow-lg shadow-emerald-950/50">
+                        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 text-center">
+                            <div class="w-12 h-12 rounded-full bg-[#F0B90B]/10 border border-[#F0B90B]/30 text-[#F0B90B] flex items-center justify-center text-xl mb-2 shadow-lg shadow-amber-950/50">
                                 ⚡
                             </div>
                             <h4 class="font-bold text-slate-100 text-sm mb-1">Unlock TradingView Pine Script v5 Code</h4>
                             <p class="text-xs text-slate-300 max-w-md mb-3">
-                                Instant lifetime access. Compatible with <strong>TradingView Alerts</strong>, <strong>3Commas</strong>, and <strong>Webhook Bots</strong>.
+                                Instant lifetime license. Pay with <strong>Binance Pay (UID: 716216436)</strong> for zero fees and instant verification.
                             </p>
-                            <button id="openCheckoutModalBtn" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-xl shadow-emerald-900/40 transition transform active:scale-95 flex items-center gap-2">
-                                <span>Pay $9 USDT (Crypto Checkout)</span>
+                            <button id="openCheckoutModalBtn" class="px-5 py-2.5 bg-gradient-to-r from-[#F0B90B] to-amber-500 hover:from-[#FCD535] hover:to-[#F0B90B] text-slate-950 font-black text-xs rounded-xl shadow-xl shadow-amber-950/40 transition transform active:scale-95 flex items-center gap-2">
+                                <span>Pay $9 USDT with Binance Pay</span>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                             </button>
                         </div>
@@ -172,93 +183,111 @@ const PineVault = {
             const openBtn = document.getElementById('openCheckoutModalBtn');
             if (openBtn) {
                 openBtn.onclick = () => {
-                    this.showCryptoCheckoutModal(strategy, currentParams, symbol, timeframe, containerElement);
+                    this.showBinancePayModal(strategy, currentParams, symbol, timeframe, containerElement);
                 };
             }
         }
     },
 
     /**
-     * Display the Crypto Payment Modal ($9 USDT)
+     * Display the Official Binance Pay Checkout Modal ($9 USDT)
      */
-    showCryptoCheckoutModal(strategy, currentParams, symbol, timeframe, containerElement) {
+    showBinancePayModal(strategy, currentParams, symbol, timeframe, containerElement) {
         const modal = document.getElementById('checkoutModal');
         if (!modal) return;
 
-        let selectedNetworkKey = 'USDT-TRC20';
+        let selectedMethodKey = 'BINANCE-PAY';
 
         const renderModalContent = () => {
-            const currentWallet = this.CRYPTO_WALLETS[selectedNetworkKey];
+            const currentOption = this.CRYPTO_WALLETS[selectedMethodKey];
+            const isBinancePay = selectedMethodKey === 'BINANCE-PAY';
 
             modal.innerHTML = `
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
                     <button id="closeModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
                     
                     <div class="text-center mb-4">
-                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xl mx-auto mb-2">
-                            ₮
+                        <div class="w-12 h-12 rounded-xl bg-[#F0B90B]/10 text-[#F0B90B] border border-[#F0B90B]/30 flex items-center justify-center text-2xl mx-auto mb-2">
+                            🟡
                         </div>
-                        <h3 class="text-base font-extrabold text-white">Crypto Checkout</h3>
+                        <h3 class="text-base font-extrabold text-white flex items-center justify-center gap-1.5">
+                            <span>Binance Pay Checkout</span>
+                        </h3>
                         <p class="text-xs text-cyan-400 font-semibold mt-0.5">${strategy.name}</p>
                         
-                        <div class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+                        <div class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-[#F0B90B]/10 border border-[#F0B90B]/30 rounded-full">
                             <span class="text-xs text-slate-300 font-medium">Amount Due:</span>
-                            <span class="text-sm font-black text-emerald-400 font-mono">9.00 USDT</span>
+                            <span class="text-sm font-black text-[#F0B90B] font-mono">9.00 USDT</span>
                         </div>
                     </div>
 
-                    <!-- Network Selector Tabs -->
+                    <!-- Payment Method Tabs -->
                     <div class="space-y-1.5 mb-4">
-                        <label class="block text-[11px] font-semibold text-slate-400">Select USDT Network:</label>
+                        <label class="block text-[11px] font-semibold text-slate-400">Payment Option:</label>
                         <div class="grid grid-cols-3 gap-2">
                             ${Object.keys(this.CRYPTO_WALLETS).map(key => {
                                 const w = this.CRYPTO_WALLETS[key];
-                                const isSelected = key === selectedNetworkKey;
+                                const isSelected = key === selectedMethodKey;
                                 return `
-                                    <button data-net="${key}" class="net-tab-btn py-2 px-2 rounded-xl text-[11px] font-bold border transition text-center ${isSelected ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-950/40' : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:text-slate-200'}">
-                                        <div>${key.replace('USDT-', '')}</div>
-                                        <div class="text-[9px] font-normal text-slate-400">${w.badge}</div>
+                                    <button data-key="${key}" class="pay-tab-btn py-2 px-1.5 rounded-xl text-[11px] font-bold border transition text-center ${isSelected ? 'bg-[#F0B90B]/20 border-[#F0B90B] text-[#F0B90B] shadow-md shadow-amber-950/40' : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:text-slate-200'}">
+                                        <div class="truncate">${key.replace('BINANCE-', '').replace('USDT-', '')}</div>
+                                        <div class="text-[9px] font-normal text-slate-400 truncate">${w.badge}</div>
                                     </button>
                                 `;
                             }).join('')}
                         </div>
                     </div>
 
-                    <!-- Deposit Address Box & Copy -->
-                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 mb-4 space-y-2">
+                    <!-- Binance Pay Details Box -->
+                    <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 mb-4 space-y-3">
                         <div class="flex items-center justify-between text-[11px] text-slate-400">
-                            <span>Deposit Address (${currentWallet.network})</span>
-                            <span class="text-emerald-400 font-mono font-semibold">9 USDT</span>
+                            <span class="font-semibold text-slate-300">${currentOption.label}</span>
+                            <span class="text-[#F0B90B] font-mono font-bold">9 USDT</span>
                         </div>
 
-                        <div class="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-800">
-                            <input type="text" readonly value="${currentWallet.address}" class="bg-transparent text-xs text-slate-200 font-mono w-full outline-none select-all">
-                            <button id="copyWalletAddressBtn" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-bold transition flex items-center gap-1 shrink-0">
-                                <span>Copy</span>
+                        <!-- Pay ID Copy Box -->
+                        <div class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <input type="text" readonly value="${currentOption.address}" class="bg-transparent text-sm text-[#F0B90B] font-mono font-bold w-full outline-none select-all tracking-wide">
+                            <button id="copyPayIdBtn" class="px-3 py-1 bg-[#F0B90B] hover:bg-[#FCD535] text-slate-950 rounded text-xs font-bold transition flex items-center gap-1 shrink-0">
+                                <span>Copy ID</span>
                             </button>
                         </div>
+
+                        <!-- Instructions for Binance Pay -->
+                        ${isBinancePay ? `
+                            <div class="text-[11px] text-slate-400 space-y-1 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed">
+                                <div class="font-bold text-slate-300 mb-0.5">📱 How to Pay via Binance App:</div>
+                                <div class="flex items-start gap-1.5"><span>1.</span> <span>Open Binance App ➔ Tap <strong>Pay</strong> (top right icon).</span></div>
+                                <div class="flex items-start gap-1.5"><span>2.</span> <span>Tap <strong>Send</strong> ➔ Select <strong>Pay ID / UID</strong>.</span></div>
+                                <div class="flex items-start gap-1.5"><span>3.</span> <span>Enter Pay ID: <strong class="text-[#F0B90B] font-mono">716216436</strong> ➔ Send <strong class="text-white">9 USDT</strong>.</span></div>
+                            </div>
+                        ` : `
+                            <div class="text-[11px] text-slate-400 space-y-1 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed">
+                                Send exactly <strong>9.00 USDT</strong> to the above deposit address on ${currentOption.network}.
+                            </div>
+                        `}
                     </div>
 
-                    <!-- TxID / Hash Verification Field -->
+                    <!-- Order ID / Reference Input Field -->
                     <div class="space-y-1.5 mb-4">
-                        <label class="block text-[11px] font-semibold text-slate-400">Transaction Hash / TxID (Optional for Instant Demo):</label>
-                        <input type="text" id="txIdInput" placeholder="Paste 0x... or Tron Tx Hash" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-emerald-500">
+                        <label class="block text-[11px] font-semibold text-slate-400">Binance Pay Order ID / TxID Reference:</label>
+                        <input type="text" id="binanceOrderIdInput" placeholder="Enter your 19-digit Order ID or TxID" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-[#F0B90B]">
                     </div>
 
-                    <!-- Verify / Complete Payment Button -->
-                    <button id="verifyCryptoPaymentBtn" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <!-- Confirm Payment & Unlock Button -->
+                    <button id="verifyBinancePayBtn" class="w-full py-3 bg-gradient-to-r from-[#F0B90B] via-amber-500 to-yellow-500 hover:from-[#FCD535] hover:to-[#F0B90B] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-950/40 transition transform active:scale-95 flex items-center justify-center gap-2">
                         <span>Confirm Payment & Unlock ($9 USDT)</span>
                     </button>
 
                     <p class="text-[10px] text-slate-500 text-center mt-3">
-                        ⚡ Automatic on-chain listener. Once confirmed, full Pine Script v5 source code unlocks immediately.
+                        ⚡ Instant verification. Full Pine Script v5 code unlocks immediately after confirmation.
                     </p>
 
                     <!-- Processing Overlay -->
                     <div id="paymentProcessingOverlay" class="absolute inset-0 bg-slate-950/95 rounded-2xl flex flex-col items-center justify-center p-6 hidden">
-                        <div class="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-3"></div>
-                        <p class="text-sm font-bold text-white">Verifying Blockchain Confirmation...</p>
-                        <p class="text-xs text-slate-400 mt-1">Generating Pine Script v5 License ($9 USDT)</p>
+                        <div class="w-10 h-10 border-4 border-[#F0B90B]/30 border-t-[#F0B90B] rounded-full animate-spin mb-3"></div>
+                        <p class="text-sm font-bold text-white">Verifying Binance Pay Transaction...</p>
+                        <p class="text-xs text-slate-400 mt-1">Checking UID: 716216436 • Order ID</p>
                     </div>
                 </div>
             `;
@@ -266,25 +295,25 @@ const PineVault = {
             // Attach events
             document.getElementById('closeModalBtn').onclick = () => modal.classList.add('hidden');
 
-            document.querySelectorAll('.net-tab-btn').forEach(btn => {
+            document.querySelectorAll('.pay-tab-btn').forEach(btn => {
                 btn.onclick = () => {
-                    selectedNetworkKey = btn.dataset.net;
+                    selectedMethodKey = btn.dataset.key;
                     renderModalContent();
                 };
             });
 
-            const copyAddressBtn = document.getElementById('copyWalletAddressBtn');
-            if (copyAddressBtn) {
-                copyAddressBtn.onclick = () => {
-                    navigator.clipboard.writeText(currentWallet.address).then(() => {
-                        copyAddressBtn.querySelector('span').textContent = 'Copied! ✅';
-                        setTimeout(() => { copyAddressBtn.querySelector('span').textContent = 'Copy'; }, 2000);
+            const copyIdBtn = document.getElementById('copyPayIdBtn');
+            if (copyIdBtn) {
+                copyIdBtn.onclick = () => {
+                    navigator.clipboard.writeText(currentOption.address).then(() => {
+                        copyIdBtn.querySelector('span').textContent = 'Copied! ✅';
+                        setTimeout(() => { copyIdBtn.querySelector('span').textContent = 'Copy ID'; }, 2000);
                     });
                 };
             }
 
-            document.getElementById('verifyCryptoPaymentBtn').onclick = () => {
-                this.processCryptoPayment(strategy, currentParams, symbol, timeframe, containerElement);
+            document.getElementById('verifyBinancePayBtn').onclick = () => {
+                this.processBinancePayment(strategy, currentParams, symbol, timeframe, containerElement);
             };
         };
 
@@ -292,7 +321,7 @@ const PineVault = {
         modal.classList.remove('hidden');
     },
 
-    processCryptoPayment(strategy, currentParams, symbol, timeframe, containerElement) {
+    processBinancePayment(strategy, currentParams, symbol, timeframe, containerElement) {
         const modal = document.getElementById('checkoutModal');
         const processingOverlay = document.getElementById('paymentProcessingOverlay');
 
@@ -309,13 +338,13 @@ const PineVault = {
             this.renderVaultSection(strategy, currentParams, symbol, timeframe, containerElement);
 
             // Show Toast
-            this.showToast(`🎉 Payment Confirmed ($9 USDT)! ${strategy.name} Pine Script v5 is now UNLOCKED!`);
+            this.showToast(`🎉 Binance Pay Verified ($9 USDT)! ${strategy.name} Pine Script v5 is now UNLOCKED!`);
         }, 1500);
     },
 
     showToast(message) {
         const toast = document.createElement('div');
-        toast.className = 'fixed bottom-6 right-6 bg-slate-900 border border-emerald-500 text-emerald-300 px-5 py-3.5 rounded-xl shadow-2xl z-50 text-xs font-bold flex items-center gap-3 animate-bounce';
+        toast.className = 'fixed bottom-6 right-6 bg-slate-900 border border-[#F0B90B] text-[#F0B90B] px-5 py-3.5 rounded-xl shadow-2xl z-50 text-xs font-bold flex items-center gap-3 animate-bounce';
         toast.innerHTML = `<span>${message}</span>`;
         document.body.appendChild(toast);
         setTimeout(() => {
