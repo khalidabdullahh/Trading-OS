@@ -196,17 +196,6 @@
                             <!-- Populated by JS -->
                         </select>
                     </div>
-
-                    <!-- Dynamic Parameters Customizer -->
-                    <div class="space-y-3 pt-3 border-t border-slate-800/80">
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold text-slate-300">Strategy Parameters</span>
-                            <span class="text-[10px] text-slate-500 font-mono">Live Tune</span>
-                        </div>
-                        <div id="dynamicParamsContainer" class="space-y-2 text-xs">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Right: AI Structured Rule Inspector & Assumptions (7 Cols) -->
@@ -787,7 +776,9 @@
             generateAiStrategyBtn.onclick = () => triggerAiStrategy();
 
             aiPromptInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || !e.shiftKey)) {
+                // Only submit if Ctrl+Enter or Cmd+Enter is pressed.
+                // Standard Enter creates a clean new line!
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
                     triggerAiStrategy();
                 }
@@ -802,7 +793,6 @@
                     strategyBadge.textContent = s.category;
                     strategyDesc.textContent = s.description;
                     updateRuleInspector(s);
-                    renderDynamicParams();
                     runComprehensiveQuantAnalysis();
                 }
             };
@@ -825,37 +815,7 @@
             }
 
             function renderDynamicParams() {
-                dynamicParamsContainer.innerHTML = '';
-                const configs = currentStrategy.paramConfig || [
-                    { key: 'takeProfitPct', label: 'Take Profit (%)', type: 'number', min: 0.5, max: 15, step: 0.1 },
-                    { key: 'stopLossPct', label: 'Stop Loss (%)', type: 'number', min: 0.3, max: 10, step: 0.1 }
-                ];
-
-                configs.forEach(cfg => {
-                    const wrap = document.createElement('div');
-                    wrap.className = 'space-y-1';
-                    
-                    const labelWrap = document.createElement('div');
-                    labelWrap.className = 'flex justify-between text-slate-400 font-medium';
-                    labelWrap.innerHTML = `<span>${cfg.label}</span><span id="param_val_${cfg.key}" class="font-mono text-cyan-400 font-bold">${currentParams[cfg.key] || cfg.min}</span>`;
-
-                    const input = document.createElement('input');
-                    input.type = 'range';
-                    input.min = cfg.min;
-                    input.max = cfg.max;
-                    input.step = cfg.step;
-                    input.value = currentParams[cfg.key] || cfg.min;
-                    input.className = 'w-full accent-cyan-500 bg-slate-800 rounded-lg cursor-pointer';
-
-                    input.oninput = (e) => {
-                        currentParams[cfg.key] = parseFloat(e.target.value);
-                        document.getElementById(`param_val_${cfg.key}`).textContent = currentParams[cfg.key];
-                    };
-
-                    wrap.appendChild(labelWrap);
-                    wrap.appendChild(input);
-                    dynamicParamsContainer.appendChild(wrap);
-                });
+                // Parameters are directly derived from user's AI prompt / strategy logic
             }
 
             // Tab Switching (Chart vs Equity)
