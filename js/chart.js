@@ -209,13 +209,52 @@ class TradingViewManager {
     }
 
     /**
-     * Render Equity Curve
+     * Dynamically update chart theme (background, text, grid, and candle colors)
      */
-    renderEquityCurve(equityData) {
-        if (!this.equitySeries || !equityData || equityData.length === 0) return;
-        this.equitySeries.setData(equityData.map(d => ({ time: d.time, value: d.value })));
+    applyTheme(theme) {
+        if (!theme) return;
+        const chartOpts = {
+            layout: {
+                background: { color: theme.chartBg || theme.bgCard || '#090D16' },
+                textColor: theme.chartText || theme.textSecondary || '#94A3B8'
+            },
+            grid: {
+                vertLines: { color: theme.chartGrid || '#1E293B33' },
+                horzLines: { color: theme.chartGrid || '#1E293B33' }
+            },
+            rightPriceScale: {
+                borderColor: theme.chartBorder || theme.borderCard || '#1E293B'
+            },
+            timeScale: {
+                borderColor: theme.chartBorder || theme.borderCard || '#1E293B'
+            }
+        };
+
+        if (this.mainChart) {
+            this.mainChart.applyOptions(chartOpts);
+        }
+
+        if (this.candleSeries) {
+            this.candleSeries.applyOptions({
+                upColor: theme.bullColor || '#10B981',
+                downColor: theme.bearColor || '#EF4444',
+                borderUpColor: theme.bullColor || '#10B981',
+                borderDownColor: theme.bearColor || '#EF4444',
+                wickUpColor: theme.bullColor || '#10B981',
+                wickDownColor: theme.bearColor || '#EF4444'
+            });
+        }
+
         if (this.equityChart) {
-            this.equityChart.timeScale().fitContent();
+            this.equityChart.applyOptions(chartOpts);
+        }
+
+        if (this.equitySeries) {
+            this.equitySeries.applyOptions({
+                lineColor: theme.accentCyan || '#06B6D4',
+                topColor: (theme.accentCyan || '#06B6D4') + '55',
+                bottomColor: (theme.accentCyan || '#06B6D4') + '00'
+            });
         }
     }
 }

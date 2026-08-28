@@ -79,6 +79,11 @@
                     <span>📰 Economic News</span>
                 </button>
 
+                <!-- Theme Customizer Modal Trigger -->
+                <button id="openThemeModalBtn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500 text-slate-200 hover:text-cyan-300 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm" title="Switch Theme or Customize Colors">
+                    <span>🎨 Theme</span>
+                </button>
+
                 <!-- Live Status Pill -->
                 <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-lg text-xs">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 live-indicator"></span>
@@ -633,6 +638,11 @@
         <!-- Rendered by tradeExplainer.js -->
     </div>
 
+    <!-- Theme Customizer Modal -->
+    <div id="themeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <!-- Rendered by themeManager.js -->
+    </div>
+
     <!-- 7. Scripts Inclusion -->
     <script src="js/indicators.js"></script>
     <script src="js/api.js"></script>
@@ -648,6 +658,7 @@
     <script src="js/geminiEngine.js"></script>
     <script src="js/newsFeed.js"></script>
     <script src="js/chart.js"></script>
+    <script src="js/themeManager.js"></script>
     <script src="js/quantCharts.js"></script>
     <script src="js/paymentVerifier.js"></script>
     <script src="js/pineVault.js"></script>
@@ -661,6 +672,12 @@
             let latestCandles = [];
             let latestBacktest = null;
             let chartManager = new TradingViewManager('candlestickChartContainer', 'equityChartContainer');
+
+            // Initialize Theme System & Apply to Charts
+            if (typeof ThemeManager !== 'undefined') {
+                ThemeManager.init();
+                ThemeManager.updateChartTheme(chartManager, ThemeManager.currentTheme);
+            }
 
             // DOM Elements
             const pairSelect = document.getElementById('pairSelect');
@@ -694,6 +711,16 @@
             const newsModal = document.getElementById('newsModal');
             const openNewsModalBtn = document.getElementById('openNewsModalBtn');
             const closeNewsModalBtn = document.getElementById('closeNewsModalBtn');
+
+            // Theme Customizer Modal Trigger
+            const themeModal = document.getElementById('themeModal');
+            const openThemeModalBtn = document.getElementById('openThemeModalBtn');
+            if (openThemeModalBtn && themeModal) {
+                openThemeModalBtn.onclick = () => {
+                    ThemeManager.renderThemeModal('themeModal');
+                    themeModal.classList.remove('hidden');
+                };
+            }
 
             // Nav Tabs
             const navTabs = [
@@ -1217,6 +1244,9 @@
             MarketAPI.fetchKlines(pairSelect.value, timeframeSelect.value, 500).then(res => {
                 latestCandles = res.data;
                 chartManager.renderCandles(latestCandles);
+                if (typeof ThemeManager !== 'undefined' && ThemeManager.currentTheme) {
+                    ThemeManager.updateChartTheme(chartManager, ThemeManager.currentTheme);
+                }
             }).catch(err => console.error('[Trading-OS] Initial candle load:', err));
         });
     </script>
