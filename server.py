@@ -15,7 +15,28 @@ PORT = 8088
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 class CustomStaticServer(http.server.BaseHTTPRequestHandler):
+    verified_orders = {}
+
     def do_GET(self):
+        # Handle /api/verify-binance
+        if self.path.startswith('/api/verify-binance'):
+            import urllib.parse, json
+            query = urllib.parse.urlparse(self.path).query
+            params = urllib.parse.parse_qs(query)
+            order_id = params.get('orderId', [''])[0].strip()
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+
+            if order_id in self.verified_orders:
+                resp = json.dumps({"verified": True, "orderId": order_id, "amount": 9.0})
+            else:
+                resp = json.dumps({"verified": False, "message": f"Payment not found for Order ID: {order_id}"})
+            self.wfile.write(resp.encode('utf-8'))
+            return
+
         # Resolve clean path
         clean_path = self.path.split('?')[0].split('#')[0].lstrip('/')
         if not clean_path:
@@ -60,6 +81,31 @@ class CustomStaticServer(http.server.BaseHTTPRequestHandler):
             self.wfile.write(content)
         except Exception as e:
             self.send_error(500, f"Internal Error: {str(e)}")
+
+    def do_POST(self):
+        if self.path.startswith('/api/binance-webhook'):
+            import json
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                order_id = str(data.get('orderId', '')).strip()
+                if order_id:
+                    self.verified_orders[order_id] = True
+                    resp = json.dumps({"success": True, "orderId": order_id})
+                else:
+                    resp = json.dumps({"success": False, "error": "Missing orderId"})
+            except Exception as e:
+                resp = json.dumps({"success": False, "error": str(e)})
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(resp.encode('utf-8'))
+            return
+
+        self.send_error(404, "Not Found")
 
     def do_OPTIONS(self):
         self.send_response(200)

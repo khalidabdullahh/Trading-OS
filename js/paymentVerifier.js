@@ -86,26 +86,60 @@ const PaymentVerifier = {
     },
 
     /**
-     * 1. Strict Binance Pay Validation (UID: 716216436 • 19-Digit Numerical Format)
+     * 1. Strict Binance Pay Validation via Gmail Auto-Confirmation & Server API
      */
     async verifyBinancePay(orderId, expectedAmount) {
-        // Binance Pay Order IDs are strictly 19 numerical digits (e.g. 2589410294857102938)
-        const isNumeric = /^\d+$/.test(orderId);
+        const cleanId = String(orderId || '').trim();
+        // Binance Pay Order IDs are strictly 18-22 numerical digits (e.g. 2589410294857102938)
+        const isNumeric = /^\d+$/.test(cleanId);
         
-        if (!isNumeric || orderId.length < 18 || orderId.length > 22) {
+        if (!isNumeric || cleanId.length < 18 || cleanId.length > 22) {
             throw new Error(
-                "❌ Invalid Binance Order ID! Binance Pay Order IDs are exactly 19 numeric digits (e.g. 2589410294857102938). " +
+                "❌ Invalid Binance Order ID! Binance Pay Order IDs are strictly 19 numeric digits (e.g. 2589410294857102938). " +
                 "Please check your Binance App ➔ Pay ➔ Payment History to copy the genuine Order ID."
             );
         }
 
-        // Simulate cryptographic settlement verification delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Poll the serverless verification endpoint (/api/verify-binance)
+        const maxAttempts = 4;
+        let lastErrorMsg = '';
 
-        return {
-            verified: true,
-            details: `Binance Pay Verified (Merchant UID: 716216436 • Order #${orderId})`
-        };
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+                const res = await fetch(`/api/verify-binance?orderId=${cleanId}`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.verified) {
+                        return {
+                            verified: true,
+                            details: `Binance Pay Verified via Gmail (Merchant UID: 716216436 • Order #${cleanId})`
+                        };
+                    } else if (data && data.message) {
+                        lastErrorMsg = data.message;
+                    }
+                }
+            } catch (err) {
+                console.warn(`[Binance Pay Check] Polling attempt ${attempt}:`, err.message);
+            }
+
+            // Wait 2.5 seconds before polling again
+            if (attempt < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 2500));
+            }
+        }
+
+        // If after polling the order is not found in Gmail verified orders:
+        throw new Error(
+            `❌ Verification Failed: No matching $${expectedAmount.toFixed(2)} USDT payment found on Binance UID 716216436 for Order ID #${cleanId}.\n\n` +
+            "Please ensure you transferred $9 USDT to Binance Pay UID: 716216436, wait a few moments for the Gmail notification to settle, and try again."
+        );
     },
 
     /**
