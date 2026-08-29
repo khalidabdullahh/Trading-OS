@@ -36,11 +36,11 @@ const BacktestEngine = {
         const trailingStopDistancePct = (config.trailingStopPct || 1.0) / 100;
         const useBreakEven = config.useBreakEven || false;
         const breakEvenTriggerPct = (config.breakEvenTriggerPct || 1.5) / 100;
-        const partialTpRatio = config.usePartialTp ? 0.5 : 0; // 50% partial take profit
-        const allowShorts = config.allowShorts !== undefined ? config.allowShorts : false;
-
         // Generate raw strategy signals strictly on historical bars
         const rawSignals = strategy.execute(candles, params);
+        const hasSellSignals = Array.isArray(rawSignals) && rawSignals.some(s => s.type === 'SELL');
+        const isShortStrategy = strategy.structuredRules?.direction === 'SHORT' || strategy.structuredRules?.direction === 'BOTH' || hasSellSignals;
+        const allowShorts = config.allowShorts !== undefined ? config.allowShorts : isShortStrategy;
         
         // Map signals by bar index for O(1) bar-by-bar execution simulation
         const signalMap = new Map();

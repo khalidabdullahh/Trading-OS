@@ -304,6 +304,28 @@ const Indicators = {
         const d = this.sma(validK, dPeriod);
 
         return { k, d };
+    },
+
+    /**
+     * Volume Weighted Average Price (VWAP)
+     */
+    vwap(candles) {
+        if (!candles || candles.length === 0) return [];
+        const result = [];
+        let cumTypicalVolume = 0;
+        let cumVolume = 0;
+
+        for (let i = 0; i < candles.length; i++) {
+            const c = candles[i];
+            const typicalPrice = (c.high + c.low + c.close) / 3;
+            const vol = (c.volume && c.volume > 0) ? c.volume : 1;
+
+            cumTypicalVolume += typicalPrice * vol;
+            cumVolume += vol;
+
+            result.push(cumVolume > 0 ? cumTypicalVolume / cumVolume : c.close);
+        }
+        return result;
     }
 };
 

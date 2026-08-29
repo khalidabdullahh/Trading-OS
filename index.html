@@ -946,11 +946,13 @@
                     latestCandles = res.data;
 
                     // 2. Run Advanced Quantitative Backtest
+                    const allowShorts = currentStrategy.direction === 'SHORT' || currentStrategy.direction === 'BOTH' || currentStrategy.structuredRules?.direction === 'SHORT' || currentStrategy.structuredRules?.direction === 'BOTH';
                     const backtestResult = BacktestEngine.run(latestCandles, currentStrategy, currentParams, {
                         initialCapital,
                         feePct,
                         slippagePct,
-                        sizingModel
+                        sizingModel,
+                        allowShorts
                     });
                     latestBacktest = backtestResult;
 
@@ -990,7 +992,7 @@
                     }
 
                     // 3. Run Walk-Forward Testing
-                    const wf = WalkForwardEngine.runAnalysis(latestCandles, currentStrategy, currentParams, { initialCapital, feePct, slippagePct });
+                    const wf = WalkForwardEngine.runAnalysis(latestCandles, currentStrategy, currentParams, { initialCapital, feePct, slippagePct, allowShorts });
                     document.getElementById('wfeMetric').textContent = `${wf.metrics.wfePct}%`;
                     document.getElementById('oosPfMetric').textContent = `${wf.outOfSample.summary.profitFactor}`;
                     document.getElementById('degradationMetric').textContent = `${wf.metrics.pfDegradationPct}%`;
