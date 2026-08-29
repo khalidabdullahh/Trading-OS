@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading-OS v1.02 — AI-Assisted Quantitative Trading Research & Strategy Validation Platform</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            900: '#164e63',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- TradingView Lightweight Charts Library (v4.1.1 Standalone) -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#050811] text-slate-200 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+    <!-- 1. Top Institutional Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-[#080d18]/90 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 py-2.5">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <!-- Brand Logo & Positioning -->
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center font-black text-lg text-white shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
+                    ⚡
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-black text-base tracking-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 bg-clip-text text-transparent">Trading-OS</span>
+                        <span class="px-2 py-0.5 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full">v1.02 QUANT LAB</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 font-medium">AI Quantitative Research & Strategy Validation</p>
+                </div>
+            </div>
+
+            <!-- Global Controls: Market Selector, Timeframe, Calendar, Status -->
+            <div class="flex items-center flex-wrap gap-2 sm:gap-3">
+                <!-- Multi-Market Pair Selector -->
+                <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 focus-within:border-cyan-500">
+                    <span class="text-xs text-slate-400 mr-2 font-medium">Asset:</span>
+                    <select id="pairSelect" class="bg-transparent text-xs font-bold text-slate-100 outline-none cursor-pointer">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <!-- Timeframe Selector -->
+                <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 focus-within:border-cyan-500">
+                    <span class="text-xs text-slate-400 mr-2 font-medium">TF:</span>
+                    <select id="timeframeSelect" class="bg-transparent text-xs font-bold text-cyan-400 outline-none cursor-pointer">
+                        <option value="1m">1m</option>
+                        <option value="5m">5m</option>
+                        <option value="15m" selected>15m</option>
+                        <option value="1h">1h</option>
+                        <option value="4h">4h</option>
+                        <option value="1d">1D</option>
+                    </select>
+                </div>
+
+                <!-- Economic Calendar Modal Trigger -->
+                <button id="openNewsModalBtn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-red-500/30 text-red-300 hover:text-red-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 live-indicator"></span>
+                    <span>📰 Economic News</span>
+                </button>
+
+                <!-- Theme Customizer Modal Trigger -->
+                <button id="openThemeModalBtn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500 text-slate-200 hover:text-cyan-300 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm" title="Switch Theme or Customize Colors">
+                    <span>🎨 Theme</span>
+                </button>
+
+                <!-- Live Status Pill -->
+                <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-lg text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 live-indicator"></span>
+                    <span id="apiStatusPill" class="text-slate-300 font-mono text-[11px]">Live Multi-Asset Feed</span>
+                </div>
+
+                <!-- GitHub Author Link -->
+                <a href="https://github.com/khalidabdullahh/Trading-OS" target="_blank" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-medium border border-slate-700 transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    <span>Repo</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. Workspace Navigation Bar (Quant Modules) -->
+    <nav class="border-b border-slate-800 bg-slate-950/80 px-4 lg:px-8 py-2 overflow-x-auto">
+        <div class="max-w-7xl mx-auto flex items-center gap-2 text-xs font-semibold text-slate-400 shrink-0">
+            <button id="navTabStrategyLab" class="nav-tab-btn active px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>🔬 Strategy Lab & AI Copilot</span>
+            </button>
+            <button id="navTabAnalytics" class="nav-tab-btn px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>📊 Quant Analytics</span>
+            </button>
+            <button id="navTabWalkForward" class="nav-tab-btn px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>📈 Walk-Forward & OOS</span>
+            </button>
+            <button id="navTabRobustness" class="nav-tab-btn px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>🛡️ Monte Carlo Lab</span>
+            </button>
+            <button id="navTabSensitivity" class="nav-tab-btn px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>🎯 Sensitivity & Plateaus</span>
+            </button>
+            <button id="navTabRegimes" class="nav-tab-btn px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>🌐 Market Regimes</span>
+            </button>
+            <button id="navTabHealthScore" class="nav-tab-btn px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>🩺 Strategy Health</span>
+            </button>
+            <button id="navTabJournal" class="nav-tab-btn px-3 py-1.5 rounded-lg border border-transparent hover:text-white flex items-center gap-1.5">
+                <span>📓 Research Journal</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 3. Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
+
+        <!-- Top Header Card with Strategy Title & Run Button -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/30 p-5 rounded-2xl border border-slate-800">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 id="activeStrategyTitle" class="text-lg font-extrabold text-white">⚡ Quantitative Strategy Lab & Execution Terminal</h1>
+                    <span id="strategyBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Awaiting Custom Strategy</span>
+                </div>
+                <p id="strategyDesc" class="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+                    Specify your strategy rules, indicators, and risk targets below. The execution engine instantly compiles your algorithmic model, simulates bar-by-bar performance, and generates Pine Script v5 code.
+                </p>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <button id="runBacktestBtn" class="px-6 py-3 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/25 transition transform active:scale-95 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="runBtnText">Run Quant Backtest</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MODULE VIEW 1: STRATEGY LAB & BUILDER -->
+        <section id="moduleStrategyLab" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left: Custom Strategy Builder (5 Cols) -->
+                <div class="lg:col-span-5 glass-panel rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                            <span>1. Custom Strategy Builder</span>
+                        </h2>
+                        <div class="flex bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]">
+                            <button id="modeAiBtn" class="px-2.5 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition">⚡ Custom Rules</button>
+                            <button id="modePresetBtn" class="px-2.5 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition">⚡ Presets</button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Strategy Builder Section -->
+                    <div id="aiPromptSection" class="space-y-3">
+                        <label class="block text-xs font-semibold text-slate-300">
+                            Define your custom strategy rules & indicators:
+                        </label>
+                        <textarea id="aiPromptInput" rows="4" placeholder="e.g. Buy Gold (XAU/USD) or BTC on 15m when 9 EMA crosses above 21 EMA with RSI oversold under 30. Take profit 3%, Stop loss 1.5%." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none leading-relaxed resize-none"></textarea>
+
+                        <!-- Quick Templates -->
+                        <div class="space-y-1.5">
+                            <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Quick Research Templates:</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button class="quick-prompt-btn px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-[10px] text-cyan-300 transition" data-prompt="Buy Gold (XAU/USD) when 9 EMA crosses above 21 EMA with RSI > 45. Take Profit 2.5%, Stop Loss 1.0%.">
+                                    🏆 Gold/Forex EMA Scalp
+                                </button>
+                                <button class="quick-prompt-btn px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-[10px] text-cyan-300 transition" data-prompt="Buy when RSI(14) is oversold below 28 and bounces up. Take Profit 3.5%, Stop Loss 1.5%.">
+                                    💎 RSI Liquidity Sweep
+                                </button>
+                                <button class="quick-prompt-btn px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-[10px] text-cyan-300 transition" data-prompt="SuperTrend ATR trend breakout strategy. Buy on bullish flip with 4% Take Profit, 1.5% Stop Loss.">
+                                    🚀 SuperTrend ATR Breakout
+                                </button>
+                            </div>
+                        </div>
+
+                        <button id="generateAiStrategyBtn" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                            <span id="aiBtnText">⚡ Build & Run Strategy</span>
+                        </button>
+                    </div>
+
+                    <!-- Presets Section -->
+                    <div id="presetSection" class="space-y-3 hidden">
+                        <label class="block text-xs font-semibold text-slate-300">Select Algorithmic Preset:</label>
+                        <select id="strategySelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 outline-none">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Right: AI Structured Rule Inspector & Assumptions (7 Cols) -->
+                <div class="lg:col-span-7 glass-panel rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                            <span>2. Structured Rule Inspector & Weakness Auditor</span>
+                        </h2>
+                        <span class="text-[10px] font-mono text-cyan-400 font-semibold">Zero Black-Box</span>
+                    </div>
+
+                    <div id="ruleInspectorContent" class="space-y-3 text-xs leading-relaxed">
+                        <!-- Direction & Triggers -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block mb-1">Execution Direction</span>
+                                <span id="ruleDirection" class="font-mono text-slate-400 font-bold text-xs">—</span>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block mb-1">Lookahead Bias Audit</span>
+                                <span class="font-mono text-emerald-400 font-bold text-xs">✓ Audited (Next Bar Open)</span>
+                            </div>
+                        </div>
+
+                        <!-- Entry & Exit Condition Boxes -->
+                        <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                            <div>
+                                <span class="text-emerald-400 font-bold block text-[11px] mb-0.5">✓ Entry Trigger Conditions:</span>
+                                <p id="ruleEntryDesc" class="text-slate-400 text-xs italic">No strategy loaded yet. Enter your rules in the builder on the left and click "Build & Run Strategy".</p>
+                            </div>
+                            <div class="pt-2 border-t border-slate-800/80">
+                                <span class="text-amber-400 font-bold block text-[11px] mb-0.5">🛑 Exit & Risk Brackets:</span>
+                                <p id="ruleExitDesc" class="text-slate-400 text-xs italic">Awaiting strategy prompt...</p>
+                            </div>
+                        </div>
+
+                        <!-- Assumptions & Potential Weaknesses -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                                <span class="text-cyan-400 font-bold text-[11px] uppercase tracking-wider block">💡 Core Assumptions</span>
+                                <ul id="ruleAssumptionsList" class="text-slate-500 text-[11px] space-y-1 list-disc list-inside italic">
+                                    <li>Will be analyzed based on your strategy rules</li>
+                                </ul>
+                            </div>
+                            <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                                <span class="text-rose-400 font-bold text-[11px] uppercase tracking-wider block">⚠️ Potential Weaknesses</span>
+                                <ul id="ruleWeaknessesList" class="text-slate-500 text-[11px] space-y-1 list-disc list-inside italic">
+                                    <li>Will be analyzed based on your strategy rules</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Execution Config Sizing & Risk Controls -->
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+                            <div>
+                                <span class="text-slate-500 block">Initial Capital:</span>
+                                <input type="number" id="capitalInput" value="10000" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono">
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Fee Rate (%):</span>
+                                <input type="number" id="feeInput" value="0.075" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono">
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Slippage (%):</span>
+                                <input type="number" id="slippageInput" value="0.02" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono">
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Sizing Model:</span>
+                                <select id="sizingModelSelect" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono text-[10px]">
+                                    <option value="percent_equity">100% Equity</option>
+                                    <option value="risk_percent">1% Risk / Trade</option>
+                                    <option value="fixed_cash">Fixed $2,000</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE VIEW 2: QUANT ANALYTICS & CHARTS -->
+        <section id="moduleAnalytics" class="space-y-6">
+            <!-- 12 Core Quant Metrics Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="glass-panel p-3.5 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Win Rate</span>
+                    <div id="metricWinRate" class="text-lg font-mono font-black text-emerald-400">0.0%</div>
+                    <span id="metricWinCount" class="text-[10px] text-slate-400 block">0 / 0 trades</span>
+                </div>
+                <div class="glass-panel p-3.5 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Total Net Profit</span>
+                    <div id="metricNetProfit" class="text-lg font-mono font-black text-cyan-400">$0.00</div>
+                    <span id="metricNetProfitPct" class="text-[10px] text-slate-400 block">+0.0%</span>
+                </div>
+                <div class="glass-panel p-3.5 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Profit Factor</span>
+                    <div id="metricProfitFactor" class="text-lg font-mono font-black text-slate-100">0.00</div>
+                    <span id="metricPayoff" class="text-[10px] text-slate-400 block">Payoff: 0.00</span>
+                </div>
+                <div class="glass-panel p-3.5 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Max Drawdown</span>
+                    <div id="metricMaxDrawdown" class="text-lg font-mono font-black text-rose-400">0.0%</div>
+                    <span id="metricMaxDdAmt" class="text-[10px] text-slate-400 block">-$0.00</span>
+                </div>
+                <div class="glass-panel p-3.5 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Sharpe Ratio</span>
+                    <div id="metricSharpe" class="text-lg font-mono font-black text-slate-100">0.00</div>
+                    <span id="metricSortino" class="text-[10px] text-slate-400 block">Sortino: 0.00</span>
+                </div>
+                <div class="glass-panel p-3.5 rounded-xl">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Expectancy</span>
+                    <div id="metricExpectancy" class="text-lg font-mono font-black text-slate-100">+0.00R</div>
+                    <span id="metricTotalTrades" class="text-[10px] text-slate-400 block">0 Total Trades</span>
+                </div>
+            </div>
+
+            <!-- Candlestick Chart & Equity Curve Tabs -->
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-xs font-extrabold text-white uppercase tracking-wider">Historical Simulation Chart</h3>
+                        <div class="flex bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]">
+                            <button id="tabCandlesBtn" class="px-3 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition">Candles & Overlays</button>
+                            <button id="tabEquityBtn" class="px-3 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition">Equity Growth Curve</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Candlestick Container -->
+                <div id="candleChartWrapper" class="w-full">
+                    <div id="candlestickChartContainer" class="w-full h-[450px] rounded-xl overflow-hidden bg-[#090D16]"></div>
+                </div>
+
+                <!-- Equity Curve Container -->
+                <div id="equityChartWrapper" class="w-full hidden">
+                    <div id="equityChartContainer" class="w-full h-[320px] rounded-xl overflow-hidden bg-[#090D16]"></div>
+                </div>
+            </div>
+
+            <!-- Visual Performance Analytics Grid (4 Graphs: Donut, Underwater DD, R-Dist, Long/Short Split) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- 1. Win/Loss Donut -->
+                <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                        <span class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <span>🥧 Win / Loss Ratio</span>
+                        </span>
+                        <span class="text-[10px] font-mono text-cyan-400 font-bold">Payoff</span>
+                    </div>
+                    <div id="donutChartContainer" class="h-44 flex items-center justify-center"></div>
+                </div>
+
+                <!-- 2. Underwater Drawdown Graph -->
+                <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                        <span class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <span>🌊 Underwater Drawdown</span>
+                        </span>
+                        <span class="text-[10px] font-mono text-rose-400 font-bold">Depth %</span>
+                    </div>
+                    <div id="drawdownChartContainer" class="h-44 flex items-center justify-center"></div>
+                </div>
+
+                <!-- 3. R-Multiple Distribution Histogram -->
+                <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                        <span class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <span>📊 R-Multiple Spread</span>
+                        </span>
+                        <span class="text-[10px] font-mono text-emerald-400 font-bold">Risk/Reward</span>
+                    </div>
+                    <div id="rDistChartContainer" class="h-44 flex items-center justify-center"></div>
+                </div>
+
+                <!-- 4. Long vs Short Performance Split -->
+                <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                        <span class="text-xs font-extrabold text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <span>⚖️ Long vs Short Split</span>
+                        </span>
+                        <span class="text-[10px] font-mono text-amber-400 font-bold">Directional</span>
+                    </div>
+                    <div id="directionSplitChartContainer" class="h-44 flex items-center justify-center"></div>
+                </div>
+            </div>
+
+            <!-- Execution Logs Table with AI Trade Explainer trigger -->
+            <div class="glass-panel rounded-2xl p-5 space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-xs font-extrabold text-white uppercase tracking-wider">Trade Execution Log</h3>
+                        <span id="tradeLogCountBadge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">0 Trades</span>
+                    </div>
+                    <button id="exportCsvBtn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <span>📥 Export CSV</span>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto max-h-72">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="text-[10px] text-slate-400 bg-slate-950 uppercase border-b border-slate-800 sticky top-0">
+                            <tr>
+                                <th class="py-2 px-3">#</th>
+                                <th class="py-2 px-3">Type</th>
+                                <th class="py-2 px-3">Entry Price</th>
+                                <th class="py-2 px-3">Exit Price</th>
+                                <th class="py-2 px-3">Net PnL ($)</th>
+                                <th class="py-2 px-3">Return (%)</th>
+                                <th class="py-2 px-3">R-Multiple</th>
+                                <th class="py-2 px-3">Exit Trigger</th>
+                                <th class="py-2 px-3">Audit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradeLogTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                            <tr><td colspan="9" class="text-center py-6 text-slate-500 font-sans">Run backtest to view chronological trade logs.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE VIEW 3: WALK-FORWARD & OUT-OF-SAMPLE (OOS) VALIDATION -->
+        <section id="moduleWalkForward" class="space-y-6 hidden">
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                            <span>📈 Walk-Forward & Out-of-Sample (OOS) Validation</span>
+                            <span id="wfeBadge" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs">Robust Persistence</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Evaluates strategy persistence by training on 60% in-sample data and testing on 40% unseen data.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-slate-500 uppercase font-bold text-[10px] block">Walk-Forward Efficiency (WFE)</span>
+                        <div id="wfeMetric" class="text-2xl font-black font-mono text-cyan-400 mt-1">0.0%</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Ratio of unseen test return to training return.</p>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-slate-500 uppercase font-bold text-[10px] block">Out-of-Sample Profit Factor</span>
+                        <div id="oosPfMetric" class="text-2xl font-black font-mono text-slate-100 mt-1">0.00</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Edge maintained on completely unseen candles.</p>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-slate-500 uppercase font-bold text-[10px] block">Degradation Factor</span>
+                        <div id="degradationMetric" class="text-2xl font-black font-mono text-amber-400 mt-1">0.0%</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Percentage loss of edge from training to testing.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 text-xs">
+                    <span class="font-bold text-slate-200 block mb-1">Diagnostic Verdict:</span>
+                    <p id="wfeExplanation" class="text-slate-400 leading-relaxed">
+                        Run backtest to inspect in-sample versus out-of-sample performance consistency.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE VIEW 4: MONTE CARLO ROBUSTNESS LAB -->
+        <section id="moduleRobustness" class="space-y-6 hidden">
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                            <span>🛡️ Monte Carlo Robustness Stress Lab</span>
+                            <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs">1,000 Simulations</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Resamples trade sequences and adds ±15% random slippage/spread noise to test fragile paths.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-slate-500 uppercase font-bold text-[10px] block">Probability of Profit</span>
+                        <div id="mcProbProfit" class="text-xl font-black font-mono text-emerald-400 mt-1">0.0%</div>
+                        <span class="text-[10px] text-slate-500 block">Across 1,000 iterations</span>
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-slate-500 uppercase font-bold text-[10px] block">Probability of Ruin</span>
+                        <div id="mcProbRuin" class="text-xl font-black font-mono text-rose-400 mt-1">0.0%</div>
+                        <span class="text-[10px] text-slate-500 block">&gt;50% Capital Drawdown</span>
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-slate-500 uppercase font-bold text-[10px] block">Worst 5% Drawdown (VaR)</span>
+                        <div id="mcWorstDrawdown" class="text-xl font-black font-mono text-amber-400 mt-1">0.0%</div>
+                        <span class="text-[10px] text-slate-500 block">95th Percentile Stress</span>
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                        <span class="text-slate-500 uppercase font-bold text-[10px] block">Median Simulated Return</span>
+                        <div id="mcMedianReturn" class="text-xl font-black font-mono text-cyan-400 mt-1">+0.0%</div>
+                        <span class="text-[10px] text-slate-500 block">50th Percentile Path</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE VIEW 5: PARAMETER SENSITIVITY & PLATEAUS -->
+        <section id="moduleSensitivity" class="space-y-6 hidden">
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                            <span>🎯 Parameter Sensitivity & Plateau Stability Explorer</span>
+                            <span id="sensitivityVerdictBadge" class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs">Broad Plateau</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Tests adjacent parameter ranges to detect stable profit plateaus vs overfitted cliff-edge spikes.</p>
+                    </div>
+                </div>
+
+                <!-- 2D Sensitivity Heatmap Grid Container -->
+                <div id="sensitivityGridContainer" class="overflow-x-auto p-2">
+                    <p class="text-center py-6 text-slate-500 text-xs">Run backtest to generate 2D parameter sensitivity matrix.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE VIEW 6: MARKET REGIME ANALYSIS -->
+        <section id="moduleRegimes" class="space-y-6 hidden">
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                            <span>🌐 Market Regime Performance Segregation</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Evaluates strategy performance across trending, ranging, and high/low volatility market environments.</p>
+                    </div>
+                </div>
+
+                <!-- Regime Breakdown Cards -->
+                <div id="regimeCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 text-xs">
+                    <span class="font-bold text-cyan-400 block mb-1">Regime Insight:</span>
+                    <p id="regimeInsightText" class="text-slate-300 leading-relaxed">
+                        Run backtest to analyze performance across historical market regimes.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE VIEW 7: STRATEGY HEALTH SCORE -->
+        <section id="moduleHealthScore" class="space-y-6 hidden">
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                            <span>🩺 Strategy Health & Overfitting Diagnostics</span>
+                            <span id="healthGradeBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Grade A</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Transparent 0–100 multi-factor quantitative scoring matrix.</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-black font-mono text-cyan-400" id="overallHealthScore">85</span>
+                        <span class="text-[10px] text-slate-500 block">Overall Score / 100</span>
+                    </div>
+                </div>
+
+                <div id="healthPillarsContainer" class="space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE VIEW 8: RESEARCH JOURNAL & STRATEGY VERSIONS -->
+        <section id="moduleJournal" class="space-y-6 hidden">
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                            <span>📓 Research Journal & Strategy Versioning</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Save strategy versions (v1.0, v1.1, v2.0), research notes, and export execution data.</p>
+                    </div>
+                    <button id="saveCurrentStrategyBtn" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs rounded-lg transition flex items-center gap-1.5">
+                        <span>💾 Save Strategy Version</span>
+                    </button>
+                </div>
+
+                <div id="savedStrategiesList" class="space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. PINE SCRIPT VAULT & MONETIZATION SECTION ($9 USDT) -->
+        <div id="pineVaultContainer" class="pt-4">
+            <!-- Rendered dynamically by PineVault.js -->
+        </div>
+
+    </main>
+
+    <!-- 5. Prominent Financial Research Disclaimer -->
+    <footer class="disclaimer-banner py-6 px-4 text-center text-slate-400 text-xs space-y-2 mt-auto">
+        <div class="max-w-4xl mx-auto space-y-1">
+            <p class="font-bold text-slate-300">⚖️ Quantitative Research & Financial Disclaimer</p>
+            <p class="text-[11px] leading-relaxed text-slate-500">
+                Trading-OS is a quantitative research, educational, and decision-support platform. Backtested or simulated performance results have inherent limitations and do not guarantee future performance in live financial markets. Trading foreign exchange, equities, commodities, and digital assets involves substantial risk of loss.
+            </p>
+            <p class="text-[10px] text-slate-600 pt-2 font-mono">
+                Trading-OS v1.02 • Engineered by Khalid Abdullah • All Rights Reserved
+            </p>
+        </div>
+    </footer>
+
+    <!-- 6. Modals & Popups -->
+    
+    <!-- Economic Calendar Modal -->
+    <div id="newsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 live-indicator"></span>
+                    <h3 class="font-extrabold text-white text-base">Forex Factory Live Economic Calendar</h3>
+                </div>
+                <button id="closeNewsModalBtn" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+            <div id="newsWidgetContainer" class="overflow-y-auto flex-1 pr-1 space-y-3">
+                <!-- Rendered by newsFeed.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Crypto Checkout Modal ($9 USDT / Binance Pay) -->
+    <div id="checkoutModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <!-- Rendered by pineVault.js -->
+    </div>
+
+    <!-- AI Trade Explainer Modal -->
+    <div id="explainerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <!-- Rendered by tradeExplainer.js -->
+    </div>
+
+    <!-- Theme Customizer Modal -->
+    <div id="themeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <!-- Rendered by themeManager.js -->
+    </div>
+
+    <!-- 7. Scripts Inclusion -->
+    <script src="js/indicators.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/strategies.js"></script>
+    <script src="js/backtestEngine.js"></script>
+    <script src="js/walkForwardEngine.js"></script>
+    <script src="js/robustnessEngine.js"></script>
+    <script src="js/sensitivityEngine.js"></script>
+    <script src="js/overfittingEngine.js"></script>
+    <script src="js/regimeEngine.js"></script>
+    <script src="js/tradeExplainer.js"></script>
+    <script src="js/strategyJournal.js"></script>
+    <script src="js/geminiEngine.js"></script>
+    <script src="js/newsFeed.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/themeManager.js"></script>
+    <script src="js/quantCharts.js"></script>
+    <script src="js/paymentVerifier.js"></script>
+    <script src="js/pineVault.js"></script>
+
+    <!-- Main Application Orchestrator Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global State
+            let currentStrategy = null;
+            let currentParams = {};
+            let latestCandles = [];
+            let latestBacktest = null;
+            let chartManager = new TradingViewManager('candlestickChartContainer', 'equityChartContainer');
+
+            // Initialize Theme System & Apply to Charts
+            if (typeof ThemeManager !== 'undefined') {
+                ThemeManager.init();
+                ThemeManager.updateChartTheme(chartManager, ThemeManager.currentTheme);
+            }
+
+            // DOM Elements
+            const pairSelect = document.getElementById('pairSelect');
+            const timeframeSelect = document.getElementById('timeframeSelect');
+            const strategySelect = document.getElementById('strategySelect');
+            const runBacktestBtn = document.getElementById('runBacktestBtn');
+            const runBtnText = document.getElementById('runBtnText');
+
+            const activeStrategyTitle = document.getElementById('activeStrategyTitle');
+            const strategyBadge = document.getElementById('strategyBadge');
+            const strategyDesc = document.getElementById('strategyDesc');
+            const dynamicParamsContainer = document.getElementById('dynamicParamsContainer');
+
+            // Rule Inspector Elements
+            const ruleDirection = document.getElementById('ruleDirection');
+            const ruleEntryDesc = document.getElementById('ruleEntryDesc');
+            const ruleExitDesc = document.getElementById('ruleExitDesc');
+            const ruleAssumptionsList = document.getElementById('ruleAssumptionsList');
+            const ruleWeaknessesList = document.getElementById('ruleWeaknessesList');
+
+            // AI Prompt Elements
+            const modeAiBtn = document.getElementById('modeAiBtn');
+            const modePresetBtn = document.getElementById('modePresetBtn');
+            const aiPromptSection = document.getElementById('aiPromptSection');
+            const presetSection = document.getElementById('presetSection');
+            const aiPromptInput = document.getElementById('aiPromptInput');
+            const generateAiStrategyBtn = document.getElementById('generateAiStrategyBtn');
+            const aiBtnText = document.getElementById('aiBtnText');
+
+            // News Modal
+            const newsModal = document.getElementById('newsModal');
+            const openNewsModalBtn = document.getElementById('openNewsModalBtn');
+            const closeNewsModalBtn = document.getElementById('closeNewsModalBtn');
+
+            // Theme Customizer Modal Trigger
+            const themeModal = document.getElementById('themeModal');
+            const openThemeModalBtn = document.getElementById('openThemeModalBtn');
+            if (openThemeModalBtn && themeModal) {
+                openThemeModalBtn.onclick = () => {
+                    ThemeManager.renderThemeModal('themeModal');
+                    themeModal.classList.remove('hidden');
+                };
+            }
+
+            // Nav Tabs
+            const navTabs = [
+                { btn: document.getElementById('navTabStrategyLab'), section: document.getElementById('moduleStrategyLab') },
+                { btn: document.getElementById('navTabAnalytics'), section: document.getElementById('moduleAnalytics') },
+                { btn: document.getElementById('navTabWalkForward'), section: document.getElementById('moduleWalkForward') },
+                { btn: document.getElementById('navTabRobustness'), section: document.getElementById('moduleRobustness') },
+                { btn: document.getElementById('navTabSensitivity'), section: document.getElementById('moduleSensitivity') },
+                { btn: document.getElementById('navTabRegimes'), section: document.getElementById('moduleRegimes') },
+                { btn: document.getElementById('navTabHealthScore'), section: document.getElementById('moduleHealthScore') },
+                { btn: document.getElementById('navTabJournal'), section: document.getElementById('moduleJournal') }
+            ];
+
+            function switchNavTab(activeBtn) {
+                navTabs.forEach(t => {
+                    if (t.btn === activeBtn) {
+                        t.btn.classList.add('active');
+                        t.section.classList.remove('hidden');
+                    } else {
+                        t.btn.classList.remove('active');
+                        t.section.classList.add('hidden');
+                    }
+                });
+            }
+
+            navTabs.forEach(t => {
+                t.btn.onclick = () => switchNavTab(t.btn);
+            });
+
+            // Populate Asset Select
+            const categories = {};
+            MarketAPI.SUPPORTED_PAIRS.forEach(p => {
+                if (!categories[p.category]) categories[p.category] = [];
+                categories[p.category].push(p);
+            });
+
+            pairSelect.innerHTML = '';
+            Object.keys(categories).forEach(catName => {
+                const grp = document.createElement('optgroup');
+                grp.label = catName;
+                categories[catName].forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.symbol;
+                    opt.textContent = p.name;
+                    grp.appendChild(opt);
+                });
+                pairSelect.appendChild(grp);
+            });
+
+            // Populate Strategy Select
+            strategySelect.innerHTML = '';
+            StrategyRegistry.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                strategySelect.appendChild(opt);
+            });
+
+            // News Feed Setup
+            NewsFeed.renderNewsWidget('newsWidgetContainer', 'ALL');
+            openNewsModalBtn.onclick = () => {
+                NewsFeed.renderNewsWidget('newsWidgetContainer', 'ALL');
+                newsModal.classList.remove('hidden');
+            };
+            closeNewsModalBtn.onclick = () => newsModal.classList.add('hidden');
+
+            // Mode Toggle
+            modeAiBtn.onclick = () => {
+                modeAiBtn.className = 'px-2.5 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                modePresetBtn.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                aiPromptSection.classList.remove('hidden');
+                presetSection.classList.add('hidden');
+            };
+
+            modePresetBtn.onclick = () => {
+                modePresetBtn.className = 'px-2.5 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                modeAiBtn.className = 'px-2.5 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                presetSection.classList.remove('hidden');
+                aiPromptSection.classList.add('hidden');
+            };
+
+            // Quick Prompt Buttons
+            document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
+                btn.onclick = () => {
+                    aiPromptInput.value = btn.dataset.prompt;
+                    triggerAiStrategy();
+                };
+            });
+
+            // AI Strategy Trigger
+            async function triggerAiStrategy() {
+                const prompt = aiPromptInput.value.trim();
+                if (!prompt) {
+                    alert('Please write or select a strategy description first!');
+                    return;
+                }
+
+                aiBtnText.textContent = '⚡ Compiling Strategy...';
+                generateAiStrategyBtn.disabled = true;
+                generateAiStrategyBtn.classList.add('opacity-75', 'animate-pulse');
+
+                const symbol = pairSelect.value;
+                const timeframe = timeframeSelect.value;
+
+                try {
+                    const aiStrategy = await GeminiEngine.generateStrategyFromPrompt(prompt, symbol, timeframe);
+                    currentStrategy = aiStrategy;
+                    currentParams = { ...currentStrategy.defaultParams };
+
+                    activeStrategyTitle.textContent = currentStrategy.name;
+                    strategyBadge.textContent = currentStrategy.category;
+                    strategyDesc.textContent = currentStrategy.description;
+
+                    updateRuleInspector(currentStrategy);
+                    renderDynamicParams();
+                    await runComprehensiveQuantAnalysis();
+                } catch (e) {
+                    console.error('[Trading-OS] Strategy Generation Error:', e);
+                } finally {
+                    aiBtnText.textContent = '⚡ Build & Run Strategy';
+                    generateAiStrategyBtn.disabled = false;
+                    generateAiStrategyBtn.classList.remove('opacity-75', 'animate-pulse');
+                }
+            }
+
+            generateAiStrategyBtn.onclick = () => triggerAiStrategy();
+
+            aiPromptInput.addEventListener('keydown', (e) => {
+                // Only submit if Ctrl+Enter or Cmd+Enter is pressed.
+                // Standard Enter creates a clean new line!
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    triggerAiStrategy();
+                }
+            });
+
+            strategySelect.onchange = () => {
+                const s = StrategyRegistry.find(x => x.id === strategySelect.value);
+                if (s) {
+                    currentStrategy = s;
+                    currentParams = { ...s.defaultParams };
+                    activeStrategyTitle.textContent = s.name;
+                    strategyBadge.textContent = s.category;
+                    strategyDesc.textContent = s.description;
+                    updateRuleInspector(s);
+                    runComprehensiveQuantAnalysis();
+                }
+            };
+
+            function updateRuleInspector(strategy) {
+                if (!strategy) {
+                    ruleDirection.textContent = '—';
+                    ruleEntryDesc.innerHTML = '<span class="text-slate-400 text-xs italic">No strategy loaded yet. Enter your rules in the builder on the left and click "Build & Run Strategy".</span>';
+                    ruleExitDesc.innerHTML = '<span class="text-slate-400 text-xs italic">Awaiting strategy prompt...</span>';
+                    ruleAssumptionsList.innerHTML = '<li class="text-slate-500 text-[11px] italic">Will be analyzed based on your strategy rules</li>';
+                    ruleWeaknessesList.innerHTML = '<li class="text-slate-500 text-[11px] italic">Will be analyzed based on your strategy rules</li>';
+                    return;
+                }
+                const rules = strategy.structuredRules || {
+                    direction: 'LONG',
+                    entryTrigger: strategy.description || 'Dynamic indicator crossover',
+                    exitTrigger: `Take Profit ${currentParams.takeProfitPct || 3.0}%, Stop Loss ${currentParams.stopLossPct || 1.5}%`,
+                    assumptions: ['Continuous market liquidity', 'Directional trend persistence'],
+                    weaknesses: ['Susceptible to ranging chop', 'Potential slippage during news releases']
+                };
+
+                ruleDirection.textContent = rules.direction || 'LONG';
+                ruleEntryDesc.textContent = rules.entryTrigger || 'Dynamic technical crossover';
+                ruleExitDesc.textContent = rules.exitTrigger || `Take profit ${currentParams.takeProfitPct || 3.0}%, Stop loss ${currentParams.stopLossPct || 1.5}%`;
+
+                ruleAssumptionsList.innerHTML = (rules.assumptions || []).map(a => `<li>${a}</li>`).join('');
+                ruleWeaknessesList.innerHTML = (rules.weaknesses || []).map(w => `<li>${w}</li>`).join('');
+            }
+
+            function renderDynamicParams() {
+                // Parameters are directly derived from user's AI prompt / strategy logic
+            }
+
+            // Tab Switching (Chart vs Equity)
+            document.getElementById('tabCandlesBtn').onclick = () => {
+                document.getElementById('tabCandlesBtn').className = 'px-3 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                document.getElementById('tabEquityBtn').className = 'px-3 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                document.getElementById('candleChartWrapper').classList.remove('hidden');
+                document.getElementById('equityChartWrapper').classList.add('hidden');
+            };
+
+            document.getElementById('tabEquityBtn').onclick = () => {
+                document.getElementById('tabEquityBtn').className = 'px-3 py-1 bg-cyan-500/20 text-cyan-400 font-bold rounded-md transition';
+                document.getElementById('tabCandlesBtn').className = 'px-3 py-1 text-slate-400 hover:text-slate-200 font-medium rounded-md transition';
+                document.getElementById('equityChartWrapper').classList.remove('hidden');
+                document.getElementById('candleChartWrapper').classList.add('hidden');
+                if (chartManager && chartManager.equityChart) {
+                    chartManager.equityChart.applyOptions({
+                        width: document.getElementById('equityChartContainer').clientWidth,
+                        height: 320
+                    });
+                }
+            };
+
+            // Main Comprehensive Quant Backtest & Research Routine
+            async function runComprehensiveQuantAnalysis() {
+                if (!currentStrategy) {
+                    if (aiPromptInput.value.trim().length > 5) {
+                        return triggerAiStrategy();
+                    }
+                    alert('Please describe your strategy in the prompt box on the left or click one of the quick templates first!');
+                    return;
+                }
+
+                runBtnText.textContent = 'Simulating...';
+                runBacktestBtn.disabled = true;
+
+                const symbol = pairSelect.value;
+                const timeframe = timeframeSelect.value;
+                const initialCapital = parseFloat(document.getElementById('capitalInput').value) || 10000;
+                const feePct = parseFloat(document.getElementById('feeInput').value) || 0.075;
+                const slippagePct = parseFloat(document.getElementById('slippageInput').value) || 0.02;
+                const sizingModel = document.getElementById('sizingModelSelect').value || 'percent_equity';
+
+                try {
+                    // 1. Fetch Market Candles
+                    const res = await MarketAPI.fetchKlines(symbol, timeframe, 500);
+                    latestCandles = res.data;
+
+                    // 2. Run Advanced Quantitative Backtest
+                    const allowShorts = currentStrategy.direction === 'SHORT' || currentStrategy.direction === 'BOTH' || currentStrategy.structuredRules?.direction === 'SHORT' || currentStrategy.structuredRules?.direction === 'BOTH';
+                    const backtestResult = BacktestEngine.run(latestCandles, currentStrategy, currentParams, {
+                        initialCapital,
+                        feePct,
+                        slippagePct,
+                        sizingModel,
+                        allowShorts
+                    });
+                    latestBacktest = backtestResult;
+
+                    // Render Analytics
+                    const s = backtestResult.summary;
+                    document.getElementById('metricWinRate').textContent = `${s.winRate}%`;
+                    document.getElementById('metricWinCount').textContent = `${s.winCount} wins / ${s.lossCount} losses`;
+                    
+                    document.getElementById('metricNetProfit').textContent = `${s.totalNetProfit >= 0 ? '+' : ''}$${s.totalNetProfit.toLocaleString()}`;
+                    document.getElementById('metricNetProfit').className = `text-lg font-mono font-black ${s.totalNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+                    document.getElementById('metricNetProfitPct').textContent = `${s.totalNetProfitPct >= 0 ? '+' : ''}${s.totalNetProfitPct}%`;
+
+                    document.getElementById('metricProfitFactor').textContent = `${s.profitFactor}`;
+                    document.getElementById('metricPayoff').textContent = `Payoff: ${s.payoffRatio}`;
+
+                    document.getElementById('metricMaxDrawdown').textContent = `-${s.maxDrawdownPct}%`;
+                    document.getElementById('metricMaxDdAmt').textContent = `-$${s.maxDrawdownAmt.toLocaleString()}`;
+
+                    document.getElementById('metricSharpe').textContent = `${s.sharpeRatio}`;
+                    document.getElementById('metricSortino').textContent = `Sortino: ${s.sortinoRatio}`;
+
+                    document.getElementById('metricExpectancy').textContent = `${s.expectancyR >= 0 ? '+' : ''}${s.expectancyR}R`;
+                    document.getElementById('metricTotalTrades').textContent = `${s.totalTrades} Total Trades`;
+
+                    // Render Charts
+                    chartManager.renderCandles(latestCandles);
+                    chartManager.renderMarkers(backtestResult.chartMarkers);
+                    chartManager.renderOverlays(latestCandles, currentStrategy.id, currentParams);
+                    chartManager.renderEquityCurve(backtestResult.equityCurve);
+
+                    // Render Trade Execution Log Table
+                    renderTradeLogTable(backtestResult.trades);
+
+                    // Render Visual Performance Charts (Donut, Underwater DD, R-Dist, Long/Short Split)
+                    if (typeof QuantCharts !== 'undefined') {
+                        QuantCharts.renderAll(backtestResult);
+                    }
+
+                    // 3. Run Walk-Forward Testing
+                    const wf = WalkForwardEngine.runAnalysis(latestCandles, currentStrategy, currentParams, { initialCapital, feePct, slippagePct, allowShorts });
+                    document.getElementById('wfeMetric').textContent = `${wf.metrics.wfePct}%`;
+                    document.getElementById('oosPfMetric').textContent = `${wf.outOfSample.summary.profitFactor}`;
+                    document.getElementById('degradationMetric').textContent = `${wf.metrics.pfDegradationPct}%`;
+                    document.getElementById('wfeBadge').textContent = wf.metrics.verdict;
+                    document.getElementById('wfeExplanation').textContent = wf.metrics.explanation;
+
+                    // 4. Run Monte Carlo Robustness
+                    const mc = RobustnessEngine.runMonteCarlo(backtestResult.trades, initialCapital, 1000);
+                    if (mc.available) {
+                        document.getElementById('mcProbProfit').textContent = `${mc.metrics.probabilityOfProfitPct}%`;
+                        document.getElementById('mcProbRuin').textContent = `${mc.metrics.probabilityOfRuinPct}%`;
+                        document.getElementById('mcWorstDrawdown').textContent = `-${mc.metrics.worst5DrawdownPct}%`;
+                        document.getElementById('mcMedianReturn').textContent = `${mc.metrics.medianReturnPct >= 0 ? '+' : ''}${mc.metrics.medianReturnPct}%`;
+                    }
+
+                    // 5. Run Parameter Sensitivity Grid
+                    const sens = SensitivityEngine.run2DSensitivity(latestCandles, currentStrategy, currentParams);
+                    renderSensitivityGrid(sens);
+
+                    // 6. Run Market Regime Analysis
+                    const regimes = RegimeEngine.analyzeRegimes(latestCandles, backtestResult.trades);
+                    renderRegimesView(regimes);
+
+                    // 7. Evaluate Strategy Health Score
+                    const health = OverfittingEngine.evaluateHealth(s, wf, mc, sens);
+                    renderHealthScoreView(health);
+
+                    // 8. Render Pine Script Vault ($9 USDT)
+                    PineVault.renderVaultSection(currentStrategy, currentParams, symbol, timeframe, document.getElementById('pineVaultContainer'));
+
+                } catch (err) {
+                    console.error('[Trading-OS] Backtest Error:', err);
+                } finally {
+                    runBtnText.textContent = 'Run Quant Backtest';
+                    runBacktestBtn.disabled = false;
+                }
+            }
+
+            // Render Trade Log Table with Explainer
+            function renderTradeLogTable(trades) {
+                const tbody = document.getElementById('tradeLogTableBody');
+                document.getElementById('tradeLogCountBadge').textContent = `${trades.length} Trades`;
+
+                if (!trades || trades.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-500 font-sans">No trades triggered under current parameter configuration.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = trades.map(t => `
+                    <tr class="trade-row transition cursor-pointer" data-trade-id="${t.tradeId}">
+                        <td class="py-2 px-3 text-slate-400">#${t.tradeId}</td>
+                        <td class="py-2 px-3"><span class="px-1.5 py-0.5 rounded ${t.direction === 'LONG' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-amber-500/15 text-amber-300'} font-bold text-[10px]">${t.direction}</span></td>
+                        <td class="py-2 px-3">$${t.entryPrice.toLocaleString()}</td>
+                        <td class="py-2 px-3">$${t.exitPrice.toLocaleString()}</td>
+                        <td class="py-2 px-3 font-bold ${t.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${t.netPnl >= 0 ? '+' : ''}$${t.netPnl}</td>
+                        <td class="py-2 px-3 font-bold ${t.netPnlPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${t.netPnlPct >= 0 ? '+' : ''}${t.netPnlPct}%</td>
+                        <td class="py-2 px-3 text-slate-300 font-bold">${t.rMultiple || 0}R</td>
+                        <td class="py-2 px-3 text-slate-400 text-[11px] font-sans">${t.exitReason}</td>
+                        <td class="py-2 px-3">
+                            <button class="px-2 py-0.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-700/50 text-cyan-300 rounded text-[10px] font-bold">Audit 🔍</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Attach Trade Explainer Modal Triggers
+                tbody.querySelectorAll('.trade-row').forEach(row => {
+                    row.onclick = () => {
+                        const tradeId = parseInt(row.dataset.tradeId);
+                        const trade = trades.find(t => t.tradeId === tradeId);
+                        if (trade) {
+                            const expData = TradeExplainer.explainTrade(trade, latestCandles, currentStrategy, currentParams);
+                            const modal = document.getElementById('explainerModal');
+                            TradeExplainer.renderExplainerModal(expData, modal);
+                            modal.classList.remove('hidden');
+                        }
+                    };
+                });
+            }
+
+            // Render Parameter Sensitivity Heatmap Grid
+            function renderSensitivityGrid(sensData) {
+                const container = document.getElementById('sensitivityGridContainer');
+                if (!sensData || !sensData.matrix) return;
+
+                document.getElementById('sensitivityVerdictBadge').textContent = sensData.stats.stabilityVerdict;
+
+                let html = `
+                    <div class="text-xs space-y-2">
+                        <div class="flex justify-between items-center text-[11px] text-slate-400">
+                            <span>Matrix: <strong>${sensData.p1Name}</strong> (Rows) vs <strong>${sensData.p2Name}</strong> (Columns)</span>
+                            <span class="font-mono text-cyan-400 font-bold">Stable Plateau: ${sensData.stats.profitableRatioPct}%</span>
+                        </div>
+                        <table class="w-full text-center text-[11px] font-mono border-collapse">
+                            <thead>
+                                <tr>
+                                    <th class="p-1 text-slate-500 bg-slate-950 border border-slate-800 text-[10px]">${sensData.p1Name} \\ ${sensData.p2Name}</th>
+                                    ${sensData.p2Values.map(v => `<th class="p-1.5 bg-slate-900 border border-slate-800 text-slate-300 font-bold">${v}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                sensData.matrix.forEach((row, rIdx) => {
+                    html += `<tr><td class="p-1.5 bg-slate-900 border border-slate-800 text-slate-300 font-bold">${sensData.p1Values[rIdx]}</td>`;
+                    row.forEach(cell => {
+                        const isProfitable = cell.returnPct > 0;
+                        const bgCol = isProfitable ? `background-color: rgba(16, 185, 129, ${Math.min(0.8, 0.15 + (cell.returnPct / 40))});` : `background-color: rgba(244, 63, 94, ${Math.min(0.8, 0.15 + (Math.abs(cell.returnPct) / 40))});`;
+                        html += `<td style="${bgCol}" class="p-2 border border-slate-800/80 heatmap-cell text-white font-bold cursor-pointer" title="Return: ${cell.returnPct}% | WinRate: ${cell.winRate}%">${cell.returnPct >= 0 ? '+' : ''}${cell.returnPct.toFixed(1)}%</td>`;
+                    });
+                    html += `</tr>`;
+                });
+
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            }
+
+            // Render Regimes View
+            function renderRegimesView(regimesData) {
+                const container = document.getElementById('regimeCardsContainer');
+                if (!regimesData || !regimesData.regimeStats) return;
+
+                document.getElementById('regimeInsightText').textContent = regimesData.regimeInsight;
+
+                container.innerHTML = regimesData.regimeStats.map(r => `
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                        <span class="text-[10px] text-slate-400 font-bold block">${r.badge}</span>
+                        <div class="text-base font-mono font-black ${r.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${r.netProfit >= 0 ? '+' : ''}$${r.netProfit}</div>
+                        <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                            <span>Win: ${r.winRate}%</span>
+                            <span>PF: ${r.profitFactor}</span>
+                        </div>
+                        <span class="text-[9px] text-slate-500 block">${r.tradeCount} trades (${r.tradesSharePct}%)</span>
+                    </div>
+                `).join('');
+            }
+
+            // Render Health Score View
+            function renderHealthScoreView(healthData) {
+                const container = document.getElementById('healthPillarsContainer');
+                if (!healthData || !healthData.pillars) return;
+
+                document.getElementById('overallHealthScore').textContent = healthData.overallScore;
+                document.getElementById('healthGradeBadge').textContent = healthData.overallGrade;
+                document.getElementById('healthGradeBadge').className = `px-2.5 py-0.5 rounded-full text-xs font-bold ${healthData.gradeBadge}`;
+
+                container.innerHTML = healthData.pillars.map(p => `
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-200">${p.name} <span class="text-[10px] text-slate-500">(${p.weight})</span></span>
+                            <span class="font-mono font-bold ${p.score >= 75 ? 'text-emerald-400' : p.score >= 50 ? 'text-amber-400' : 'text-rose-400'}">${p.score} / 100</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden">
+                            <div class="h-2 rounded-full ${p.score >= 75 ? 'bg-emerald-500' : p.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}" style="width: ${p.score}%"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">${p.notes}</p>
+                    </div>
+                `).join('');
+            }
+
+            // Render Saved Strategies in Journal
+            function renderSavedJournalList() {
+                const container = document.getElementById('savedStrategiesList');
+                const saved = StrategyJournal.getSavedStrategies();
+
+                if (saved.length === 0) {
+                    container.innerHTML = `<p class="text-center py-6 text-slate-500 text-xs font-sans">No saved strategies yet. Click "Save Strategy Version" above to save your quantitative models.</p>`;
+                    return;
+                }
+
+                container.innerHTML = saved.map(s => `
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-white text-xs">${s.name}</h4>
+                                <span class="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-mono rounded font-bold">${s.version}</span>
+                                <span class="text-[10px] text-slate-500">${s.formattedDate}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1">${s.notes}</p>
+                            <div class="flex items-center gap-3 text-[11px] font-mono text-slate-300 mt-2">
+                                <span>Win Rate: <strong class="text-emerald-400">${s.summary.winRate}%</strong></span>
+                                <span>Net Profit: <strong class="text-cyan-400">${s.summary.totalNetProfitPct}%</strong></span>
+                                <span>PF: <strong class="text-slate-100">${s.summary.profitFactor}</strong></span>
+                            </div>
+                        </div>
+                        <button onclick="StrategyJournal.deleteStrategy('${s.id}'); document.getElementById('navTabJournal').click();" class="text-slate-500 hover:text-rose-400 text-xs transition">Delete</button>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('navTabJournal').addEventListener('click', renderSavedJournalList);
+
+            document.getElementById('saveCurrentStrategyBtn').onclick = () => {
+                if (!latestBacktest) {
+                    alert('Please run a backtest first before saving the strategy version.');
+                    return;
+                }
+                const note = prompt('Enter research notes for this strategy version:', 'Tested with dynamic slippage on live candles.');
+                if (note !== null) {
+                    StrategyJournal.saveStrategy(currentStrategy, latestBacktest.summary, note);
+                    renderSavedJournalList();
+                    alert('Strategy Version saved to Research Journal!');
+                }
+            };
+
+            document.getElementById('exportCsvBtn').onclick = () => {
+                if (latestBacktest && latestBacktest.trades) {
+                    StrategyJournal.exportTradesToCSV(latestBacktest.trades, currentStrategy.name, pairSelect.value);
+                } else {
+                    alert('No trade logs available to export.');
+                }
+            };
+
+            // Global Events
+            pairSelect.onchange = async () => {
+                try {
+                    const res = await MarketAPI.fetchKlines(pairSelect.value, timeframeSelect.value, 500);
+                    latestCandles = res.data;
+                    chartManager.renderCandles(latestCandles);
+                    if (currentStrategy) {
+                        runComprehensiveQuantAnalysis();
+                    }
+                } catch (e) {
+                    console.error('Pair change fetch error:', e);
+                }
+            };
+
+            timeframeSelect.onchange = async () => {
+                try {
+                    const res = await MarketAPI.fetchKlines(pairSelect.value, timeframeSelect.value, 500);
+                    latestCandles = res.data;
+                    chartManager.renderCandles(latestCandles);
+                    if (currentStrategy) {
+                        runComprehensiveQuantAnalysis();
+                    }
+                } catch (e) {
+                    console.error('Timeframe change fetch error:', e);
+                }
+            };
+
+            runBacktestBtn.onclick = () => {
+                if (aiPromptInput.value.trim().length > 5) {
+                    triggerAiStrategy();
+                } else if (currentStrategy) {
+                    runComprehensiveQuantAnalysis();
+                } else {
+                    alert('Please describe your strategy in the prompt box on the left or select a template first!');
+                }
+            };
+
+            // Initial Launch Sequence: Clean live chart load without default strategy simulation
+            MarketAPI.fetchKlines(pairSelect.value, timeframeSelect.value, 500).then(res => {
+                latestCandles = res.data;
+                chartManager.renderCandles(latestCandles);
+                if (typeof ThemeManager !== 'undefined' && ThemeManager.currentTheme) {
+                    ThemeManager.updateChartTheme(chartManager, ThemeManager.currentTheme);
+                }
+            }).catch(err => console.error('[Trading-OS] Initial candle load:', err));
+        });
+    </script>
+</body>
+</html>

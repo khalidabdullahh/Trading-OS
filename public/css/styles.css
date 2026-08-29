@@ -1,0 +1,386 @@
+/* Trading-OS v1.02 — Institutional Terminal Theme & Dynamic Theme System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-main: #050811;
+    --bg-surface: #090e1a;
+    --bg-card: #0d1527;
+    --border-card: #1e293b;
+    --border-focus: #38bdf8;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --accent-cyan: #06b6d4;
+    --accent-emerald: #10b981;
+    --accent-rose: #f43f5e;
+    --accent-amber: #f59e0b;
+    --accent-purple: #a855f7;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-surface);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-card);
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-cyan);
+}
+
+/* Glassmorphism Card */
+.glass-panel {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border-card);
+    transition: all 0.2s ease;
+}
+
+.glass-panel:hover {
+    border-color: var(--accent-cyan);
+}
+
+/* Tab Navigation */
+.nav-tab-btn {
+    transition: all 0.2s ease;
+}
+
+.nav-tab-btn.active {
+    background: rgba(6, 182, 212, 0.15);
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    font-weight: 700;
+}
+
+/* Live Pulse Animation */
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.4;
+        transform: scale(1.2);
+    }
+}
+
+.live-indicator {
+    animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* Trade Table Hover */
+.trade-row {
+    transition: background-color 0.15s ease;
+}
+
+.trade-row:hover {
+    background-color: rgba(30, 41, 59, 0.5);
+}
+
+/* Sensitivity Heatmap Cell Styling */
+.heatmap-cell {
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.06);
+    z-index: 10;
+    filter: brightness(1.2);
+}
+
+/* Financial Disclaimer Banner */
+.disclaimer-banner {
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-card);
+}
+
+/* ==========================================================================
+   PRISTINE WHITE / LIGHT THEME OVERRIDES ([data-theme="light"])
+   High-Contrast, Clean Day Palette with Zero Dark Artifacts
+   ========================================================================== */
+[data-theme="light"] {
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+    --border-card: #e2e8f0;
+    --border-focus: #0284c7;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --accent-cyan: #0284c7;
+}
+
+[data-theme="light"] body {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+/* 1. Reset ALL dark gradients to pristine light backgrounds */
+[data-theme="light"] [class*="bg-gradient-to-r from-slate-"],
+[data-theme="light"] [class*="from-slate-900"],
+[data-theme="light"] [class*="to-cyan-950"],
+[data-theme="light"] [class*="to-amber-950"] {
+    background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* 2. Reset ALL dark slate backgrounds (including Tailwind opacity modifiers e.g. /80, /90) */
+[data-theme="light"] [class*="bg-slate-950"],
+[data-theme="light"] [class*="bg-slate-900"],
+[data-theme="light"] [class*="bg-slate-800"],
+[data-theme="light"] [class*="bg-[#080d18]"],
+[data-theme="light"] [class*="bg-[#050811]"],
+[data-theme="light"] [class*="bg-[#090D16]"],
+[data-theme="light"] .bg-slate-950,
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-800 {
+    background-color: #f8fafc !important;
+    background-image: none !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* 3. Cards & Glass Panels */
+[data-theme="light"] .glass-panel {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme="light"] .glass-panel:hover {
+    border-color: #0284c7 !important;
+}
+
+/* 4. Top Strategy Lab Header Card */
+[data-theme="light"] #activeStrategyTitle {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] #strategyDesc {
+    color: #334155 !important;
+}
+
+[data-theme="light"] #strategyBadge {
+    background-color: #f1f5f9 !important;
+    color: #0369a1 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* 5. Rule Inspector Boxes (Inner Panels) */
+[data-theme="light"] #ruleInspectorContent [class*="bg-slate-"],
+[data-theme="light"] #ruleInspectorContent div.rounded-xl {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] #ruleDirection {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] #ruleEntryDesc,
+[data-theme="light"] #ruleExitDesc {
+    color: #1e293b !important;
+    font-weight: 500 !important;
+}
+
+[data-theme="light"] #ruleAssumptionsList,
+[data-theme="light"] #ruleWeaknessesList,
+[data-theme="light"] #ruleAssumptionsList li,
+[data-theme="light"] #ruleWeaknessesList li {
+    color: #334155 !important;
+}
+
+/* 6. Text Color Hierarchy */
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200 {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .text-slate-300,
+[data-theme="light"] .text-slate-400 {
+    color: #334155 !important;
+}
+
+[data-theme="light"] .text-slate-500 {
+    color: #64748b !important;
+}
+
+[data-theme="light"] .text-cyan-400,
+[data-theme="light"] .text-cyan-300 {
+    color: #0284c7 !important;
+}
+
+[data-theme="light"] .text-emerald-400 {
+    color: #16a34a !important;
+}
+
+[data-theme="light"] .text-rose-400 {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] .text-amber-400 {
+    color: #d97706 !important;
+}
+
+/* 7. Header Navigation & Controls */
+[data-theme="light"] header {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] header [class*="bg-slate-"] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] header select {
+    color: #0f172a !important;
+    background-color: transparent !important;
+}
+
+[data-theme="light"] #openNewsModalBtn {
+    background-color: #fef2f2 !important;
+    border-color: #fecaca !important;
+    color: #991b1b !important;
+}
+
+[data-theme="light"] #openThemeModalBtn {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] #openThemeModalBtn:hover {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+}
+
+[data-theme="light"] #apiStatusPill {
+    color: #166534 !important;
+}
+
+[data-theme="light"] header div:has(#apiStatusPill) {
+    background-color: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+}
+
+[data-theme="light"] header a[href*="github"] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* 8. Tabs */
+[data-theme="light"] .nav-tab-btn {
+    color: #475569 !important;
+}
+
+[data-theme="light"] .nav-tab-btn:hover {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .nav-tab-btn.active {
+    background-color: #e0f2fe !important;
+    color: #0284c7 !important;
+    border-color: #38bdf8 !important;
+    font-weight: 700 !important;
+}
+
+/* 9. Forms, Textareas & Inputs */
+[data-theme="light"] textarea,
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] select {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] textarea::placeholder,
+[data-theme="light"] input::placeholder {
+    color: #94a3b8 !important;
+}
+
+[data-theme="light"] .quick-prompt-btn {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #0284c7 !important;
+}
+
+[data-theme="light"] .quick-prompt-btn:hover {
+    background-color: #e0f2fe !important;
+    border-color: #7dd3fc !important;
+}
+
+/* 10. Tables & Trade Rows */
+[data-theme="light"] table thead tr {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+}
+
+[data-theme="light"] table tbody tr {
+    border-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .trade-row:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* 11. Modals */
+[data-theme="light"] #themeModal > div,
+[data-theme="light"] #newsModal > div,
+[data-theme="light"] #explainerModal > div,
+[data-theme="light"] #checkoutModal > div {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] #themeModal [class*="bg-slate-"],
+[data-theme="light"] #newsModal [class*="bg-slate-"],
+[data-theme="light"] #explainerModal [class*="bg-slate-"],
+[data-theme="light"] #checkoutModal [class*="bg-slate-"] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* 12. Chart containers & Metrics */
+[data-theme="light"] #candlestickChartContainer,
+[data-theme="light"] #equityChartContainer {
+    background-color: #ffffff !important;
+}
+
+[data-theme="light"] #metricProfitFactor,
+[data-theme="light"] #metricSharpe,
+[data-theme="light"] #metricExpectancy {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .disclaimer-banner {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #64748b !important;
+}
