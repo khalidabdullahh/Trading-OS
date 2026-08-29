@@ -373,14 +373,12 @@ const TradingDashboardContent = ({
   // Market state
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("15m");
-  const [prompt, setPrompt] = useState(
-    "Buy Gold (XAU/USD) or BTC when 9 EMA crosses above 21 EMA with RSI > 45. Take Profit 2.5%, Stop Loss 1.0%."
-  );
+  const [prompt, setPrompt] = useState("");
 
   // Direction: 'LONG' | 'SHORT' | 'BOTH'
   const [directionMode, setDirectionMode] = useState<"LONG" | "SHORT" | "BOTH">("LONG");
 
-  // Strategy & Backtest state
+  // Strategy & Backtest state (Starts completely clean - no default strategy)
   const [currentStrategy, setCurrentStrategy] = useState<any>(null);
   const [backtestResult, setBacktestResult] = useState<any>(null);
   const [candles, setCandles] = useState<any[]>([]);
@@ -392,10 +390,18 @@ const TradingDashboardContent = ({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
-  // Initial Strategy compilation & simulation on mount
+  // Load live market candles on symbol or timeframe switch (without auto-running any strategy)
   useEffect(() => {
-    handleCompileAndRun();
-  }, [symbol, timeframe, directionMode]);
+    const loadMarketData = async () => {
+      try {
+        const res = await MarketAPI.fetchKlines(symbol, timeframe, 500);
+        setCandles(res.data);
+      } catch (e) {
+        console.error("[Trading-OS] Failed to load market candles:", e);
+      }
+    };
+    loadMarketData();
+  }, [symbol, timeframe]);
 
   // Render Lightweight Chart when candles or backtest updates
   useEffect(() => {
@@ -449,24 +455,26 @@ const TradingDashboardContent = ({
         }))
       );
 
-      // Add Fast & Slow EMA overlays
-      const closes = candles.map((c) => c.close);
-      const fastEma = Indicators.ema(closes, currentStrategy?.defaultParams?.fastEma || 9);
-      const slowEma = Indicators.ema(closes, currentStrategy?.defaultParams?.slowEma || 21);
+      // Add Fast & Slow EMA overlays only if a strategy is active
+      if (currentStrategy) {
+        const closes = candles.map((c) => c.close);
+        const fastEma = Indicators.ema(closes, currentStrategy?.defaultParams?.fastEma || 9);
+        const slowEma = Indicators.ema(closes, currentStrategy?.defaultParams?.slowEma || 21);
 
-      const fastSeries = chart.addSeries(LineSeries, { color: "#06b6d4", lineWidth: 2 });
-      const slowSeries = chart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 2 });
+        const fastSeries = chart.addSeries(LineSeries, { color: "#06b6d4", lineWidth: 2 });
+        const slowSeries = chart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 2 });
 
-      fastSeries.setData(
-        candles
-          .map((c, i) => ({ time: c.time, value: fastEma[i] }))
-          .filter((pt) => pt.value !== null)
-      );
-      slowSeries.setData(
-        candles
-          .map((c, i) => ({ time: c.time, value: slowEma[i] }))
-          .filter((pt) => pt.value !== null)
-      );
+        fastSeries.setData(
+          candles
+            .map((c, i) => ({ time: c.time, value: fastEma[i] }))
+            .filter((pt) => pt.value !== null)
+        );
+        slowSeries.setData(
+          candles
+            .map((c, i) => ({ time: c.time, value: slowEma[i] }))
+            .filter((pt) => pt.value !== null)
+        );
+      }
 
       // Add Trade Markers if backtest completed
       if (backtestResult?.chartMarkers && backtestResult.chartMarkers.length > 0) {
@@ -598,17 +606,22 @@ const TradingDashboardContent = ({
     setTimeout(() => setCopiedPine(false), 2500);
   };
 
+  const hasRunBacktest = !!backtestResult;
   const summary = backtestResult?.summary || {
-    winRate: 64.2,
-    winCount: 18,
-    lossCount: 10,
-    totalNetProfit: 4230.5,
-    totalNetProfitPct: 42.3,
-    profitFactor: 2.14,
-    payoffRatio: 1.85,
-    maxDrawdownPct: 3.8,
-    maxDrawdownAmt: 380,
-    totalTrades: 28,
+    winRate: 0,
+    winCount: 0,
+    lossCount: 0,
+    totalNetProfit: 0,
+    totalNetProfitPct: 0,
+    profitFactor: 0,
+    payoffRatio: 0,
+    maxDrawdownPct: 0,
+    maxDrawdownAmt: 0,
+    totalTrades: 0,
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -621,7 +634,7 @@ const TradingDashboardContent = ({
               {currentStrategy ? currentStrategy.name : "⚡ Quantitative Strategy Terminal"}
             </h1>
             <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 text-[11px] font-bold">
-              {currentStrategy?.badge || "Pro Plan"}
+              {currentStrategy?.badge || "Live Quant Engine"}
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -640,9 +653,7 @@ const TradingDashboardContent = ({
             <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
             <option value="SOLUSDT">SOL / USDT (Solana)</option>
             <option value="XAUUSD">XAU / USD (Gold Spot)</option>
-            <option value="EURUSD">EUR / USD (Forex)</option>
-            <option value="NVDA">NVDA (NVIDIA US)</option>
-            <option value="TSLA">TSLA (Tesla US)</option>
+            <option value="EURUSD">EUR / USD (Euro Spot)</option>
           </select>
 
           <select
@@ -660,7 +671,7 @@ const TradingDashboardContent = ({
 
           <button
             onClick={() => setIsDark(!isDark)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-sm cursor-pointer"
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
@@ -668,7 +679,7 @@ const TradingDashboardContent = ({
           <button
             onClick={handleCompileAndRun}
             disabled={isSimulating}
-            className="px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+            className="px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
             <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
@@ -685,13 +696,14 @@ const TradingDashboardContent = ({
             </div>
             <span
               className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
-                summary.totalNetProfit >= 0
+                hasRunBacktest && summary.totalNetProfit >= 0
                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-rose-500/10 text-rose-500"
+                  : hasRunBacktest
+                  ? "bg-rose-500/10 text-rose-500"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-400"
               }`}
             >
-              {summary.totalNetProfitPct >= 0 ? "+" : ""}
-              {summary.totalNetProfitPct}%
+              {hasRunBacktest ? `${summary.totalNetProfitPct >= 0 ? "+" : ""}${summary.totalNetProfitPct}%` : "0.00%"}
             </span>
           </div>
           <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
@@ -699,13 +711,17 @@ const TradingDashboardContent = ({
           </h3>
           <p
             className={`text-2xl font-black font-mono ${
-              summary.totalNetProfit >= 0 ? "text-emerald-500" : "text-rose-500"
+              hasRunBacktest
+                ? summary.totalNetProfit >= 0
+                  ? "text-emerald-500"
+                  : "text-rose-500"
+                : "text-slate-900 dark:text-slate-100"
             }`}
           >
-            {summary.totalNetProfit >= 0 ? "+" : ""}${summary.totalNetProfit?.toLocaleString()}
+            {hasRunBacktest ? `${summary.totalNetProfit >= 0 ? "+" : ""}$${summary.totalNetProfit?.toLocaleString()}` : "$0.00"}
           </p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-            Historical Simulation on {symbol}
+            {hasRunBacktest ? `Historical Simulation on ${symbol}` : "Awaiting custom strategy backtest"}
           </p>
         </div>
 
@@ -715,17 +731,17 @@ const TradingDashboardContent = ({
               <Activity className="h-4 w-4" />
             </div>
             <span className="text-xs font-bold text-slate-600 dark:text-slate-300 font-mono">
-              {summary.totalTrades} Trades
+              {hasRunBacktest ? `${summary.totalTrades} Trades` : "0 Trades"}
             </span>
           </div>
           <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
             Strategy Win Rate
           </h3>
           <p className="text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
-            {summary.winRate}%
+            {hasRunBacktest ? `${summary.winRate}%` : "--"}
           </p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-            {summary.winCount} Wins / {summary.lossCount} Losses
+            {hasRunBacktest ? `${summary.winCount} Wins / ${summary.lossCount} Losses` : "Ready for custom rules"}
           </p>
         </div>
 
@@ -735,17 +751,17 @@ const TradingDashboardContent = ({
               <Sliders className="h-4 w-4" />
             </div>
             <span className="text-xs font-bold text-cyan-500 font-mono">
-              Payoff: {summary.payoffRatio}
+              Payoff: {hasRunBacktest ? summary.payoffRatio : "--"}
             </span>
           </div>
           <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
             Profit Factor
           </h3>
           <p className="text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
-            {summary.profitFactor}
+            {hasRunBacktest ? summary.profitFactor : "--"}
           </p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-            Expectancy: +0.48R per trade
+            {hasRunBacktest ? "Expectancy: +0.48R per trade" : "Awaiting strategy parameters"}
           </p>
         </div>
 
@@ -755,14 +771,14 @@ const TradingDashboardContent = ({
               <ShieldCheck className="h-4 w-4" />
             </div>
             <span className="text-xs font-bold text-rose-500 font-mono">
-              -${summary.maxDrawdownAmt}
+              {hasRunBacktest ? `-$${summary.maxDrawdownAmt}` : "$0.00"}
             </span>
           </div>
           <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
             Max Drawdown
           </h3>
           <p className="text-2xl font-black font-mono text-rose-500">
-            -{summary.maxDrawdownPct}%
+            {hasRunBacktest ? `-${summary.maxDrawdownPct}%` : "0.00%"}
           </p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
             Audited (Lookahead Bias Protected)
@@ -933,14 +949,14 @@ const TradingDashboardContent = ({
                       <span className="text-emerald-500 font-bold block mb-0.5">Entry Trigger:</span>
                       <p className="text-slate-700 dark:text-slate-300">
                         {currentStrategy?.structuredRules?.entryTrigger ||
-                          "9 EMA crosses above 21 EMA with momentum confirmation"}
+                          "Awaiting custom rules. Type in the prompt box above or select a template."}
                       </p>
                     </div>
                     <div className="text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
                       <span className="text-amber-500 font-bold block mb-0.5">Exit Bracket:</span>
                       <p className="text-slate-700 dark:text-slate-300">
                         {currentStrategy?.structuredRules?.exitTrigger ||
-                          "Take Profit 2.5%, Stop Loss 1.0%"}
+                          "Awaiting custom rules. Risk & profit targets will appear here."}
                       </p>
                     </div>
                   </div>
@@ -990,10 +1006,12 @@ const TradingDashboardContent = ({
                       </button>
                     </div>
 
-                    <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
-                      <span className="text-cyan-500 font-bold">● Fast EMA (9)</span>
-                      <span className="text-amber-500 font-bold">● Slow EMA (21)</span>
-                    </div>
+                    {currentStrategy && (
+                      <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
+                        <span className="text-cyan-500 font-bold">● Fast EMA ({currentStrategy?.defaultParams?.fastEma || 9})</span>
+                        <span className="text-amber-500 font-bold">● Slow EMA ({currentStrategy?.defaultParams?.slowEma || 21})</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2.5">
@@ -1178,6 +1196,61 @@ const TradingDashboardContent = ({
           </div>
         </>
       )}
+
+      {/* Institutional Platform Footer with Khalid Abdullah's Information */}
+      <footer className="w-full mt-10 py-3.5 px-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm flex flex-col sm:flex-row items-center justify-between flex-wrap gap-4 text-xs font-sans text-slate-500 dark:text-slate-400">
+        {/* Left: Creator Badge */}
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] inline-block animate-pulse"></span>
+          <span>
+            Created by <strong className="text-slate-900 dark:text-white font-bold">Khalid Abdullah</strong>
+          </span>
+        </div>
+
+        {/* Center: Social Links */}
+        <div className="flex items-center gap-4 flex-wrap text-emerald-600 dark:text-emerald-400 font-semibold">
+          <a
+            href="https://github.com/khalidabdullahh"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:opacity-80 transition"
+          >
+            <span>💻</span>
+            <span>GitHub</span>
+          </a>
+          <span className="text-slate-300 dark:text-slate-700">•</span>
+          <a
+            href="https://linkedin.com/in/khalid-abdullah-847724339"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:opacity-80 transition"
+          >
+            <span>🔗</span>
+            <span>LinkedIn</span>
+          </a>
+          <span className="text-slate-300 dark:text-slate-700">•</span>
+          <a
+            href="mailto:seamafridi123456789@gmail.com"
+            className="flex items-center gap-1 hover:opacity-80 transition"
+          >
+            <span>✉</span>
+            <span>Email</span>
+          </a>
+        </div>
+
+        {/* Right: Copyright & Smooth Back to Top */}
+        <div className="flex items-center gap-3">
+          <span>© {new Date().getFullYear()} Khalid Abdullah</span>
+          <button
+            onClick={scrollToTop}
+            title="Back to top"
+            className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 font-bold text-[11px] hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1 cursor-pointer"
+          >
+            <span>⬆</span>
+            <span>Top</span>
+          </button>
+        </div>
+      </footer>
     </div>
   );
 };
