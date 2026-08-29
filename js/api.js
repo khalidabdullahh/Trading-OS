@@ -19,24 +19,36 @@ const MarketAPI = {
         { symbol: 'LINKUSDT', name: 'Chainlink (LINK / USDT)', market: 'CRYPTO', basePrice: 13.8, category: '🪙 Crypto' },
         { symbol: 'NEARUSDT', name: 'NEAR Protocol (NEAR / USDT)', market: 'CRYPTO', basePrice: 5.1, category: '🪙 Crypto' },
 
-        // 💱 FOREX MAJORS (Global FX Feed)
+        // 💱 FOREX MAJORS & CROSSES
         { symbol: 'EURUSD', name: 'EUR / USD (Euro vs US Dollar)', market: 'FOREX', basePrice: 1.0885, category: '💱 Forex' },
         { symbol: 'GBPUSD', name: 'GBP / USD (British Pound vs US Dollar)', market: 'FOREX', basePrice: 1.2950, category: '💱 Forex' },
         { symbol: 'USDJPY', name: 'USD / JPY (US Dollar vs Japanese Yen)', market: 'FOREX', basePrice: 154.20, category: '💱 Forex' },
         { symbol: 'AUDUSD', name: 'AUD / USD (Aussie Dollar vs US Dollar)', market: 'FOREX', basePrice: 0.6680, category: '💱 Forex' },
         { symbol: 'USDCAD', name: 'USD / CAD (US Dollar vs Canadian Dollar)', market: 'FOREX', basePrice: 1.3650, category: '💱 Forex' },
+        { symbol: 'USDCHF', name: 'USD / CHF (US Dollar vs Swiss Franc)', market: 'FOREX', basePrice: 0.8840, category: '💱 Forex' },
+        { symbol: 'GBPJPY', name: 'GBP / JPY (Pound vs Japanese Yen)', market: 'FOREX', basePrice: 199.50, category: '💱 Forex' },
+        { symbol: 'EURJPY', name: 'EUR / JPY (Euro vs Japanese Yen)', market: 'FOREX', basePrice: 167.80, category: '💱 Forex' },
 
-        // 🪙 COMMODITIES & PRECIOUS METALS
-        { symbol: 'XAUUSD', name: 'Gold Spot (XAU / USD)', market: 'COMMODITIES', basePrice: 2480.0, category: '🏆 Metals & Commodities' },
-        { symbol: 'XAGUSD', name: 'Silver Spot (XAG / USD)', market: 'COMMODITIES', basePrice: 29.5, category: '🏆 Metals & Commodities' },
-        { symbol: 'USOIL', name: 'WTI Crude Oil (Oil / USD)', market: 'COMMODITIES', basePrice: 77.8, category: '🏆 Metals & Commodities' },
+        // 📈 GLOBAL STOCK INDICES
+        { symbol: 'SPX500', name: 'S&P 500 Index (SPX500)', market: 'INDICES', basePrice: 5650.0, category: '📈 Indices' },
+        { symbol: 'NAS100', name: 'Nasdaq 100 Index (NAS100)', market: 'INDICES', basePrice: 19780.0, category: '📈 Indices' },
+        { symbol: 'US30', name: 'Dow Jones 30 (US30 / Wall Street)', market: 'INDICES', basePrice: 41250.0, category: '📈 Indices' },
+        { symbol: 'GER40', name: 'Germany DAX 40 (GER40)', market: 'INDICES', basePrice: 18620.0, category: '📈 Indices' },
+        { symbol: 'UK100', name: 'FTSE 100 Index (UK100)', market: 'INDICES', basePrice: 8360.0, category: '📈 Indices' },
 
-        // 📈 US STOCKS & INDICES
-        { symbol: 'AAPL', name: 'Apple Inc. (AAPL)', market: 'STOCKS', basePrice: 224.5, category: '📈 US Equities' },
-        { symbol: 'TSLA', name: 'Tesla Inc. (TSLA)', market: 'STOCKS', basePrice: 218.0, category: '📈 US Equities' },
-        { symbol: 'NVDA', name: 'Nvidia Corp. (NVDA)', market: 'STOCKS', basePrice: 125.5, category: '📈 US Equities' },
-        { symbol: 'SPY', name: 'S&P 500 ETF (SPY)', market: 'STOCKS', basePrice: 555.0, category: '📈 US Equities' },
-        { symbol: 'MSFT', name: 'Microsoft Corp. (MSFT)', market: 'STOCKS', basePrice: 442.0, category: '📈 US Equities' }
+        // 🏢 BLUE-CHIP US EQUITIES / STOCKS
+        { symbol: 'NVDA', name: 'NVIDIA Corp. (NVDA)', market: 'STOCKS', basePrice: 128.5, category: '🏢 US Stocks' },
+        { symbol: 'AAPL', name: 'Apple Inc. (AAPL)', market: 'STOCKS', basePrice: 228.0, category: '🏢 US Stocks' },
+        { symbol: 'TSLA', name: 'Tesla Inc. (TSLA)', market: 'STOCKS', basePrice: 220.0, category: '🏢 US Stocks' },
+        { symbol: 'MSFT', name: 'Microsoft Corp. (MSFT)', market: 'STOCKS', basePrice: 448.0, category: '🏢 US Stocks' },
+        { symbol: 'AMZN', name: 'Amazon.com Inc. (AMZN)', market: 'STOCKS', basePrice: 185.0, category: '🏢 US Stocks' },
+        { symbol: 'GOOGL', name: 'Alphabet Inc. (GOOGL)', market: 'STOCKS', basePrice: 166.0, category: '🏢 US Stocks' },
+        { symbol: 'META', name: 'Meta Platforms Inc. (META)', market: 'STOCKS', basePrice: 518.0, category: '🏢 US Stocks' },
+
+        // 🏆 METALS & ENERGY COMMODITIES
+        { symbol: 'XAUUSD', name: 'Gold Spot (XAU / USD)', market: 'COMMODITIES', basePrice: 2510.0, category: '🏆 Commodities' },
+        { symbol: 'XAGUSD', name: 'Silver Spot (XAG / USD)', market: 'COMMODITIES', basePrice: 29.8, category: '🏆 Commodities' },
+        { symbol: 'USOIL', name: 'WTI Crude Oil (Oil / USD)', market: 'COMMODITIES', basePrice: 76.5, category: '🏆 Commodities' }
     ],
 
     // Supported Intervals

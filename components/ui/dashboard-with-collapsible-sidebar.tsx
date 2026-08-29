@@ -649,11 +649,53 @@ const TradingDashboardContent = ({
             onChange={(e) => setSymbol(e.target.value)}
             className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-sm cursor-pointer"
           >
-            <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
-            <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
-            <option value="SOLUSDT">SOL / USDT (Solana)</option>
-            <option value="XAUUSD">XAU / USD (Gold Spot)</option>
-            <option value="EURUSD">EUR / USD (Euro Spot)</option>
+            <optgroup label="🪙 Crypto (Binance Public API)">
+              <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
+              <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
+              <option value="SOLUSDT">SOL / USDT (Solana)</option>
+              <option value="BNBUSDT">BNB / USDT (BNB)</option>
+              <option value="XRPUSDT">XRP / USDT (Ripple)</option>
+              <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
+              <option value="ADAUSDT">ADA / USDT (Cardano)</option>
+              <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
+              <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
+              <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
+            </optgroup>
+
+            <optgroup label="💱 Forex Majors & Crosses">
+              <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
+              <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
+              <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
+              <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
+              <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
+              <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
+              <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
+              <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
+            </optgroup>
+
+            <optgroup label="📈 Global Stock Indices">
+              <option value="SPX500">S&P 500 Index (SPX500)</option>
+              <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
+              <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
+              <option value="GER40">Germany DAX 40 (GER40)</option>
+              <option value="UK100">UK FTSE 100 (UK100)</option>
+            </optgroup>
+
+            <optgroup label="🏢 Blue-Chip US Stocks">
+              <option value="NVDA">NVDA (NVIDIA Corp)</option>
+              <option value="AAPL">AAPL (Apple Inc)</option>
+              <option value="TSLA">TSLA (Tesla Inc)</option>
+              <option value="MSFT">MSFT (Microsoft Corp)</option>
+              <option value="AMZN">AMZN (Amazon.com Inc)</option>
+              <option value="GOOGL">GOOGL (Alphabet Inc)</option>
+              <option value="META">META (Meta Platforms Inc)</option>
+            </optgroup>
+
+            <optgroup label="🏆 Commodities & Precious Metals">
+              <option value="XAUUSD">XAU / USD (Gold Spot)</option>
+              <option value="XAGUSD">XAG / USD (Silver Spot)</option>
+              <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
+            </optgroup>
           </select>
 
           <select
@@ -1197,18 +1239,18 @@ const TradingDashboardContent = ({
         </>
       )}
 
-      {/* Institutional Platform Footer with Khalid Abdullah's Information */}
-      <footer className="w-full mt-10 py-3.5 px-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm flex flex-col sm:flex-row items-center justify-between flex-wrap gap-4 text-xs font-sans text-slate-500 dark:text-slate-400">
+      {/* Institutional Platform Footer with Khalid Abdullah's Information (Compact) */}
+      <footer className="w-full mt-6 py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-xs flex flex-col sm:flex-row items-center justify-between flex-wrap gap-2 text-[11px] font-sans text-slate-500 dark:text-slate-400">
         {/* Left: Creator Badge */}
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] inline-block animate-pulse"></span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] inline-block animate-pulse"></span>
           <span>
             Created by <strong className="text-slate-900 dark:text-white font-bold">Khalid Abdullah</strong>
           </span>
         </div>
 
         {/* Center: Social Links */}
-        <div className="flex items-center gap-4 flex-wrap text-emerald-600 dark:text-emerald-400 font-semibold">
+        <div className="flex items-center gap-3 flex-wrap text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">
           <a
             href="https://github.com/khalidabdullahh"
             target="_blank"
@@ -1239,12 +1281,12 @@ const TradingDashboardContent = ({
         </div>
 
         {/* Right: Copyright & Smooth Back to Top */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 text-[11px]">
           <span>© {new Date().getFullYear()} Khalid Abdullah</span>
           <button
             onClick={scrollToTop}
             title="Back to top"
-            className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 font-bold text-[11px] hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1 cursor-pointer"
+            className="px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1 cursor-pointer"
           >
             <span>⬆</span>
             <span>Top</span>
