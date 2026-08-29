@@ -79,10 +79,10 @@ Available indicators in our engine:
 
 Respond ONLY with a strictly valid JSON object without markdown fences or codeblocks:
 {
-  "id": "ai_strategy_${Date.now()}",
+  "id": "strat_${Date.now()}",
   "name": "Short, descriptive name",
-  "category": "AI Generated",
-  "badge": "Gemini AI",
+  "category": "Custom Strategy",
+  "badge": "User Defined",
   "priceUSD": 9,
   "description": "Clear 2-sentence explanation of rules, indicators, and risk management.",
   "direction": "LONG" | "SHORT" | "BOTH",
@@ -234,13 +234,13 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
         const { entryDesc, exitDesc, assumptions, weaknesses } = this.generateRuleMetadata(strategyType, direction, tpPct, slPct, fastEma, slowEma, rsiLength, rsiOversold, rsiOverbought);
 
         const strategyData = {
-            id: `ai_strategy_${Date.now()}`,
-            name: `🤖 AI: ${strategyTitle}`,
-            category: 'AI Generated',
-            badge: 'Gemini AI',
+            id: `strat_${Date.now()}`,
+            name: `${strategyTitle}`,
+            category: 'Custom Strategy',
+            badge: 'User Defined',
             priceUSD: 9,
             priceBDT: 999,
-            description: `Auto-engineered model for ${symbol} (${timeframe}) based on prompt: "${promptText.slice(0, 90)}${promptText.length > 90 ? '...' : ''}". Configured with ${tpPct}% TP and ${slPct}% SL.`,
+            description: `Quantitative model for ${symbol} (${timeframe}) based on rules: "${promptText.slice(0, 90)}${promptText.length > 90 ? '...' : ''}". Configured with ${tpPct}% TP and ${slPct}% SL.`,
             direction,
             strategyType,
             structuredRules: {
@@ -356,13 +356,13 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
         };
 
         return {
-            id: rawStrategy.id || `ai_strategy_${Date.now()}`,
-            name: rawStrategy.name || '🤖 AI Quantitative Strategy',
-            category: rawStrategy.category || 'AI Generated',
-            badge: 'Gemini AI',
+            id: rawStrategy.id || `strat_${Date.now()}`,
+            name: rawStrategy.name || '⚡ Quantitative Strategy',
+            category: rawStrategy.category || 'Custom Strategy',
+            badge: rawStrategy.badge || 'User Defined',
             priceUSD: 9,
             priceBDT: 999,
-            description: rawStrategy.description || `AI Quantitative model for ${symbol} (${timeframe}).`,
+            description: rawStrategy.description || `Quantitative model for ${symbol} (${timeframe}).`,
             direction,
             strategyType: type,
             structuredRules: rawStrategy.structuredRules || {
