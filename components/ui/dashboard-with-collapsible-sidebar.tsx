@@ -51,7 +51,7 @@ import GeminiEngine from "@/js/geminiEngine.js";
 import MarketAPI from "@/js/api.js";
 
 export const Example = () => {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
   const [selectedNav, setSelectedNav] = useState("Dashboard");
 
   // Modals state
@@ -1056,94 +1056,347 @@ const TradingDashboardContent = ({
 // 3. SPECIALIZED CONTENT SECTIONS (Economic News, Analytics, Vault)
 // =============================================================================
 const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
+  const [activeModalNews, setActiveModalNews] = useState<any>(null);
+
   const newsItems = [
     {
+      id: "cpi",
       time: "14:30 EST",
       currency: "USD",
-      title: "US Core CPI Inflation Rate (MoM)",
+      title: "US Core CPI Inflation Rate (MoM & YoY)",
       impact: "HIGH",
       forecast: "0.3%",
       previous: "0.2%",
       bias: "Bullish Volatility for Gold & Crypto",
+      summary:
+        "The US Consumer Price Index (CPI) measures the overall change in consumer prices based on a representative basket of goods and services. Core CPI strips out volatile food and energy components, making it the Federal Reserve's preferred benchmark for tracking structural underlying inflation trends. Institutional desks closely watch this release to price in upcoming FOMC interest rate cuts or hikes.",
+      cryptoImpact:
+        "Historically, a lower-than-forecast Core CPI (<0.2%) prompts aggressive Bitcoin & altcoin breakout rallies due to falling real Treasury yields and expanding market liquidity. If CPI comes in hotter than expected (>0.4%), expect liquidity flushes toward key support demand blocks.",
+      goldImpact:
+        "Gold (XAU/USD) shares an inverse correlation with US real yields and the US Dollar Index (DXY). Softer inflation numbers typically accelerate safe-haven and store-of-value bids, driving Gold toward all-time highs.",
+      forexImpact:
+        "Soft inflation weakens the Greenback, sending EUR/USD and GBP/USD surging. A hot CPI figure causes Dollar dominance and strong downward pressure on major currency pairs.",
+      tradingRule:
+        "Expect instantaneous 1.2% - 2.5% volatility spikes within the first 3 minutes of release. Automated quant algorithms should avoid executing market orders during the initial 60 seconds to prevent severe slippage. Wait for the 5-minute candle close before confirming momentum direction.",
     },
     {
+      id: "fomc",
       time: "18:00 EST",
       currency: "USD",
-      title: "FOMC Federal Reserve Interest Rate Decision",
+      title: "FOMC Federal Reserve Interest Rate Decision & Press Conference",
       impact: "CRITICAL",
       forecast: "5.25%",
       previous: "5.50%",
       bias: "Major Macro Catalyst across all markets",
+      summary:
+        "The Federal Open Market Committee determines the benchmark target range for the federal funds rate. In addition to the rate decision, Fed Chair Jerome Powell's press conference and the dot-plot economic projections provide the ultimate macroeconomic framework for global interest rates, liquidity cycles, and systemic leverage.",
+      cryptoImpact:
+        "A dovish pivot or rate reduction triggers rapid capital rotation into digital assets. Crypto markets often stage aggressive multi-week continuation trends following dovish FOMC forward guidance.",
+      goldImpact:
+        "As a non-yielding asset, Gold thrives in lower interest rate environments. Subdued Fed terminal rate expectations unlock heavy institutional inflows into physical and paper Gold.",
+      forexImpact:
+        "Directly resets global interest rate differentials. A dovish stance triggers significant Dollar sell-offs, whereas a hawkish pause boosts DXY strength.",
+      tradingRule:
+        "Highest volatility event on the economic calendar. Do not trade the headline release blind. Powell's press conference (30 mins after rate release) often produces violent two-way whipsaws. Maintain conservative leverage (1x - 3x) and strictly enforced stop losses.",
     },
     {
+      id: "nfp",
       time: "08:30 EST",
-      currency: "EUR",
-      title: "ECB President Lagarde Speech",
-      impact: "MEDIUM",
-      forecast: "—",
-      previous: "—",
-      bias: "Forex EUR/USD liquidity surge",
+      currency: "USD",
+      title: "US Non-Farm Payrolls (NFP) & Average Hourly Earnings",
+      impact: "HIGH",
+      forecast: "175K",
+      previous: "187K",
+      bias: "Labor Market Health & Wage Inflation",
+      summary:
+        "The Non-Farm Payrolls report calculates the net number of paid workers in the US, excluding farm employees, private households, and non-profit personnel. The accompanying Average Hourly Earnings data measures wage inflation, which central bankers monitor closely for wage-price spiral indicators.",
+      cryptoImpact:
+        "A cooling labor market (<150k jobs) signals economic deceleration, raising expectations for Fed policy easing and boosting speculative crypto demand.",
+      goldImpact:
+        "Weak job prints lead to immediate Gold surges as bond yields pull back. A blowout job report (>220k) triggers brief Dollar rallies that press Gold toward local discount zones.",
+      forexImpact:
+        "Forex pairs experience heavy liquidity order flow. EUR/USD, GBP/USD, and USD/JPY experience their widest trading ranges of the week on NFP Fridays.",
+      tradingRule:
+        "The 15-minute high/low range formed immediately after NFP often establishes the market trend for the following 48 to 72 hours. Consider utilizing breakout brackets or mean-reversion scalp strategies once the initial spread normalizes.",
     },
     {
+      id: "ecb",
+      time: "08:15 EST",
+      currency: "EUR",
+      title: "ECB Governing Council Monetary Policy & Lagarde Speech",
+      impact: "HIGH",
+      forecast: "3.75%",
+      previous: "4.00%",
+      bias: "Forex EUR/USD Liquidity Surge",
+      summary:
+        "The European Central Bank determines benchmark interest rates for the 20 European Union nations sharing the Euro currency. President Christine Lagarde's press statements outline economic resilience, inflation outlooks, and banking system stability across Europe.",
+      cryptoImpact:
+        "Global liquidity conditions are influenced by European central bank easing. Dovish ECB sentiment adds to global aggregate M2 money supply, providing supportive tailwinds for crypto assets.",
+      goldImpact:
+        "Gold priced in Euros (XAU/EUR) frequently achieves new records when the ECB cuts rates aggressively, preserving wealth against European currency depreciation.",
+      forexImpact:
+        "The dominant fundamental driver for EUR/USD, EUR/GBP, and EUR/JPY. Policy divergence between the Fed and ECB creates high-conviction swing trading opportunities.",
+      tradingRule:
+        "Monitor EUR/USD order books closely. Watch for liquidity sweeps around psychological round numbers (e.g. 1.0800, 1.0900) before initiating trend continuation positions.",
+    },
+    {
+      id: "btc_epoch",
       time: "04:00 EST",
       currency: "BTC",
-      title: "Bitcoin Network Hashrate & Difficulty Adjustment",
-      impact: "LOW",
-      forecast: "+1.2%",
+      title: "Bitcoin Network Difficulty Adjustment & Hashrate Index",
+      impact: "MEDIUM",
+      forecast: "+1.5%",
       previous: "+0.8%",
-      bias: "Miner capitulation risk low",
+      bias: "Miner Capital & Fundamental Security",
+      summary:
+        "The Bitcoin network automatically recalibrates mining difficulty every 2,016 blocks (~14 days) to maintain a steady 10-minute block production tempo. Increases in difficulty reflect rising institutional computational capacity and miner balance sheet resilience.",
+      cryptoImpact:
+        "Rising difficulty confirms network health and prevents miner capitulation risks. Post-halving difficulty stability is historically correlated with long-term structural bull markets.",
+      goldImpact:
+        "Reinforces Bitcoin's digital store-of-value thesis alongside physical Gold, attracting family offices and macro funds seeking hard, inflation-resistant assets.",
+      forexImpact:
+        "Minimal direct impact on traditional fiat currency pairs, but influences broader fintech and institutional liquidity sentiment.",
+      tradingRule:
+        "On-chain miner capitulation metric. When difficulty increases during price consolidation, it signals high accumulation by long-term holders. Ideal for spot accumulation and trend-following strategies.",
+    },
+    {
+      id: "opec",
+      time: "10:00 EST",
+      currency: "OIL",
+      title: "OPEC+ Ministerial Meeting & Crude Oil Supply Policy",
+      impact: "HIGH",
+      forecast: "Quota Rollover",
+      previous: "Voluntary Cuts",
+      bias: "Headline Energy Inflation Shocks",
+      summary:
+        "OPEC and allied oil-producing nations coordinate petroleum supply quotas to balance global oil inventories. Supply restrictions or surprise quota cuts directly elevate transportation and manufacturing costs globally, feeding directly into core inflation indicators.",
+      cryptoImpact:
+        "High oil prices sustain sticky inflation prints, potentially delaying interest rate cuts and exerting temporary pressure on high-beta speculative assets.",
+      goldImpact:
+        "Energy price inflation bolsters Gold's appeal as a classic commodity and purchasing power hedge. Geopolitical tension around oil shipping routes triggers immediate flight-to-safety bids.",
+      forexImpact:
+        "Significant impact on commodity currencies such as the Canadian Dollar (USD/CAD) and Norwegian Krone. Higher oil prices can also weigh on energy-importing economies in Europe and Asia.",
+      tradingRule:
+        "Energy news often creates persistent multiday trends rather than immediate mean-reversion. Incorporate SuperTrend or EMA trend-following models to capture prolonged momentum.",
     },
   ];
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-6 shadow-sm space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
           <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Globe className="h-5 w-5 text-cyan-500" />
             <span>High-Impact Macroeconomic News & Events</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real-time economic catalysts impacting Crypto, Gold (XAU), and Forex volatility
+            Real-time economic catalysts impacting Crypto, Gold (XAU), and Forex volatility. প্রতিটি নিউজে ক্লিক করে বিস্তারিত বিশ্লেষণ ও ট্রেডিং গাইড পড়ুন।
           </p>
         </div>
-        <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-500 text-xs font-bold flex items-center gap-1.5">
+        <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold flex items-center gap-1.5 shrink-0">
           <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
-          Live Feed
+          Live Economic Feed
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {newsItems.map((item, idx) => (
+      {/* Grid of News Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {newsItems.map((item) => (
           <div
-            key={idx}
-            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-2 hover:border-cyan-500/40 transition-colors"
+            key={item.id}
+            onClick={() => setActiveModalNews(item)}
+            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] hover:border-cyan-500/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 group"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold text-slate-500">{item.time}</span>
-              <span
-                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  item.impact === "CRITICAL"
-                    ? "bg-rose-500/20 text-rose-500"
-                    : item.impact === "HIGH"
-                    ? "bg-amber-500/20 text-amber-500"
-                    : "bg-blue-500/20 text-blue-500"
-                }`}
-              >
-                {item.impact}
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+                  {item.time}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">
+                    {item.currency}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      item.impact === "CRITICAL"
+                        ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
+                        : item.impact === "HIGH"
+                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                        : "bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                    }`}
+                  >
+                    {item.impact}
+                  </span>
+                </div>
+              </div>
+
+              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                {item.title}
+              </h4>
+
+              <div className="flex items-center gap-3 text-xs font-mono text-slate-500 dark:text-slate-400">
+                <span>Forecast: <strong className="text-slate-800 dark:text-slate-200">{item.forecast}</strong></span>
+                <span>Prior: <strong className="text-slate-800 dark:text-slate-200">{item.previous}</strong></span>
+              </div>
+
+              <div className="text-[11px] text-cyan-700 dark:text-cyan-400 font-medium line-clamp-2">
+                💡 {item.bias}
+              </div>
             </div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{item.title}</h4>
-            <div className="flex items-center gap-4 text-xs font-mono text-slate-500 dark:text-slate-400">
-              <span>Currency: <strong>{item.currency}</strong></span>
-              <span>Forecast: <strong>{item.forecast}</strong></span>
-              <span>Prior: <strong>{item.previous}</strong></span>
-            </div>
-            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">
-              💡 {item.bias}
-            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveModalNews(item);
+              }}
+              className="w-full py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[11px] hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/30 transition flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <span>বিস্তারিত পড়ুন (Full Analysis)</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         ))}
+      </div>
+
+      {/* DETAILED NEWS MODAL */}
+      {activeModalNews && (
+        <NewsDetailModal
+          news={activeModalNews}
+          onClose={() => setActiveModalNews(null)}
+          isDark={isDark}
+        />
+      )}
+    </div>
+  );
+};
+
+// =============================================================================
+// DETAILED NEWS MODAL (Bistarito Porar Jonno)
+// =============================================================================
+const NewsDetailModal = ({
+  news,
+  onClose,
+  isDark,
+}: {
+  news: any;
+  onClose: () => void;
+  isDark: boolean;
+}) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        {/* Modal Header */}
+        <div className="border-b border-slate-200 dark:border-slate-800 pb-4 pr-8">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span
+              className={`px-2.5 py-0.5 rounded text-xs font-bold ${
+                news.impact === "CRITICAL"
+                  ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
+                  : news.impact === "HIGH"
+                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                  : "bg-blue-500/20 text-blue-600 dark:text-blue-400"
+              }`}
+            >
+              {news.impact} IMPACT
+            </span>
+            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+              {news.currency}
+            </span>
+            <span className="text-xs font-mono text-slate-400">
+              Release Time: {news.time}
+            </span>
+          </div>
+
+          <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-snug">
+            {news.title}
+          </h2>
+
+          <div className="flex items-center gap-6 text-xs font-mono text-slate-600 dark:text-slate-400 mt-2">
+            <span>Forecast: <strong className="text-slate-900 dark:text-slate-100">{news.forecast}</strong></span>
+            <span>Previous: <strong className="text-slate-900 dark:text-slate-100">{news.previous}</strong></span>
+            <span>Bias: <strong className="text-cyan-600 dark:text-cyan-400">{news.bias}</strong></span>
+          </div>
+        </div>
+
+        {/* Section 1: Detailed Overview / Context */}
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <Info className="h-4 w-4 text-cyan-500" />
+            <span>১. ম্যাক্রো প্রেক্ষাপট ও মূল তাৎপর্য (Macro Context & Importance)</span>
+          </h3>
+          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+            {news.summary}
+          </p>
+        </div>
+
+        {/* Section 2: Asset by Asset Market Impact */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-cyan-500" />
+            <span>২. বিভিন্ন মার্কেটের ওপর সরাসরি প্রভাব (Asset Impact Matrix)</span>
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            {/* Crypto Card */}
+            <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-1.5">
+              <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                🪙 Crypto (BTC / ETH)
+              </span>
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                {news.cryptoImpact}
+              </p>
+            </div>
+
+            {/* Gold Card */}
+            <div className="p-3.5 rounded-xl border border-yellow-500/20 bg-yellow-500/5 space-y-1.5">
+              <span className="font-bold text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+                🏆 Gold (XAU/USD)
+              </span>
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                {news.goldImpact}
+              </p>
+            </div>
+
+            {/* Forex Card */}
+            <div className="p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-1.5">
+              <span className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                💶 Forex (EUR/USD, DXY)
+              </span>
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                {news.forexImpact}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Algorithmic Execution Rules */}
+        <div className="p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-cyan-500" />
+            <span>৩. কোয়ান্ট ট্রেডিং ও রিস্ক ম্যানেজমেন্ট গাইড (Quant Strategy Rules)</span>
+          </h3>
+          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+            {news.tradingRule}
+          </p>
+        </div>
+
+        {/* Footer Button */}
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-950 font-bold text-xs rounded-xl transition shadow"
+          >
+            ফিরে যান (Back to Terminal)
+          </button>
+        </div>
       </div>
     </div>
   );
