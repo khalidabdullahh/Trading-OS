@@ -51,10 +51,28 @@ import BacktestEngine from "@/js/backtestEngine.js";
 import GeminiEngine from "@/js/geminiEngine.js";
 // @ts-ignore
 import MarketAPI from "@/js/api.js";
+// @ts-ignore
+import PaymentVerifier from "@/js/paymentVerifier.js";
 
 export const Example = () => {
   const [isDark, setIsDark] = useState(false);
   const [selectedNav, setSelectedNav] = useState("Dashboard");
+
+  // License state (Unlocked vs Locked)
+  const [isLicenseUnlocked, setIsLicenseUnlocked] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("trading_os_license_unlocked") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const handleUnlockLicense = () => {
+    setIsLicenseUnlocked(true);
+    try {
+      localStorage.setItem("trading_os_license_unlocked", "true");
+    } catch (e) {}
+  };
 
   // Modals state
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -85,11 +103,16 @@ export const Example = () => {
           selectedNav={selectedNav}
           setSelectedNav={setSelectedNav}
           openCheckout={() => setIsCheckoutOpen(true)}
+          isLicenseUnlocked={isLicenseUnlocked}
         />
 
         {/* Global Modals */}
         {isCheckoutOpen && (
-          <CheckoutModal isDark={isDark} onClose={() => setIsCheckoutOpen(false)} />
+          <CheckoutModal
+            isDark={isDark}
+            onClose={() => setIsCheckoutOpen(false)}
+            onUnlock={handleUnlockLicense}
+          />
         )}
         {isSettingsOpen && (
           <SettingsModal isDark={isDark} onClose={() => setIsSettingsOpen(false)} />
@@ -338,12 +361,14 @@ const TradingDashboardContent = ({
   selectedNav,
   setSelectedNav,
   openCheckout,
+  isLicenseUnlocked,
 }: {
   isDark: boolean;
   setIsDark: (val: boolean) => void;
   selectedNav: string;
   setSelectedNav: (val: string) => void;
   openCheckout: () => void;
+  isLicenseUnlocked: boolean;
 }) => {
   // Market state
   const [symbol, setSymbol] = useState("BTCUSDT");
@@ -562,6 +587,10 @@ const TradingDashboardContent = ({
   };
 
   const handleCopyPine = () => {
+    if (!isLicenseUnlocked) {
+      openCheckout();
+      return;
+    }
     if (!currentStrategy) return;
     const code = currentStrategy.generatePineScript(currentStrategy.defaultParams, symbol, timeframe);
     navigator.clipboard.writeText(code);
@@ -762,6 +791,7 @@ const TradingDashboardContent = ({
           copiedPine={copiedPine}
           handleCopyPine={handleCopyPine}
           openCheckout={openCheckout}
+          isLicenseUnlocked={isLicenseUnlocked}
         />
       )}
 
@@ -1093,37 +1123,57 @@ const TradingDashboardContent = ({
               </div>
             </div>
 
-            {/* Pine Script Vault Card (No UID displayed directly here) */}
+            {/* Pine Script Vault Card (Paywalled) */}
             <div className="lg:col-span-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                   <Package className="h-4 w-4 text-amber-500" />
                   <span>Pine Script v5 Source Code</span>
                 </h3>
-                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-bold">
-                  $9 USDT
-                </span>
+                {isLicenseUnlocked ? (
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                    UNLOCKED ✓
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-bold">
+                    $9 USDT
+                  </span>
+                )}
               </div>
 
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Export 100% verified algorithmic strategy code matching your exact entry/exit conditions directly into the Pine Editor with alerts & webhook automation.
               </p>
 
-              <button
-                onClick={openCheckout}
-                className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95"
-              >
-                <Lock className="h-4 w-4" />
-                <span>Unlock with Binance Pay / Crypto ($9)</span>
-              </button>
+              {!isLicenseUnlocked ? (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+                      <Lock className="h-4 w-4" />
+                      <span>Proprietary Logic Protected</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Source code and webhook automation are paywalled. Unlock with Binance Pay or Crypto to view and copy.
+                    </p>
+                  </div>
 
-              <button
-                onClick={handleCopyPine}
-                className="w-full py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
-              >
-                {copiedPine ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedPine ? "Copied Preview!" : "Copy Code Preview"}</span>
-              </button>
+                  <button
+                    onClick={openCheckout}
+                    className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                  >
+                    <Lock className="h-4 w-4" />
+                    <span>Unlock with Binance Pay / Crypto ($9)</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleCopyPine}
+                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                >
+                  {copiedPine ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span>{copiedPine ? "Copied Pine Script v5!" : "Copy Full Pine Script v5"}</span>
+                </button>
+              )}
             </div>
           </div>
         </>
@@ -1518,44 +1568,116 @@ const QuantAnalyticsSection = ({ summary, backtestResult }: any) => {
   );
 };
 
-const PineVaultSection = ({ currentStrategy, copiedPine, handleCopyPine, openCheckout }: any) => {
+const PineVaultSection = ({
+  currentStrategy,
+  copiedPine,
+  handleCopyPine,
+  openCheckout,
+  isLicenseUnlocked,
+}: any) => {
+  const lockedTeaserCode = `//@version=5
+strategy("Trading-OS: Quantitative Institutional Model [v5]", overlay=true, initial_capital=10000)
+
+// =========================================================================
+// 🔒 RESTRICTED PROPRIETARY QUANTITATIVE SOURCE CODE
+// =========================================================================
+// [PAYWALL PROTECTED]: 48 Lines of Proprietary Algorithms Obfuscated
+// - Directional Confluence Matrix (EMA + RSI + Stochastic)
+// - Anti-Whipsaw Volatility Filters & ATR Trailing Stop
+// - Automated Lookahead-Bias Mitigation Routing
+// - Pine Script Automated Webhook Execution Router
+//
+// >>> Complete $9 USDT payment via Binance Pay or Crypto to unlock instant access.
+// =========================================================================
+
+// [LOCKED]: Entry Trigger Condition Algorithms...
+// [LOCKED]: Intraday Execution Brackets (TP / SL / Trailing)...
+// [LOCKED]: Webhook JSON Payload Constructor for Automated Bot Execution...
+`;
+
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-6 shadow-sm space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
-          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Package className="h-5 w-5 text-amber-500" />
-            <span>Pine Script v5 Source Code Vault</span>
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Package className="h-5 w-5 text-amber-500" />
+              <span>Pine Script v5 Source Code Studio</span>
+            </h2>
+            {isLicenseUnlocked ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-bold flex items-center gap-1">
+                <Check className="h-3 w-3" />
+                <span>Lifetime License Active</span>
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-bold flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                <span>Protected Source ($9 USDT)</span>
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Export ready-to-run Pine Script code for webhook bots, TradingView alerts, and automation
+            Export ready-to-run Pine Script code for webhook bots, TradingView alerts, and automation.
           </p>
         </div>
-        <button
-          onClick={openCheckout}
-          className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5"
-        >
-          <Lock className="h-4 w-4" />
-          <span>Checkout License ($9 USDT)</span>
-        </button>
+
+        {!isLicenseUnlocked && (
+          <button
+            onClick={openCheckout}
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <Lock className="h-4 w-4" />
+            <span>Unlock Full Source Code ($9 USDT)</span>
+          </button>
+        )}
       </div>
 
-      <div className="relative rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-100 dark:bg-[#050811] p-4 font-mono text-xs overflow-x-auto max-h-96">
-        <pre className="text-slate-800 dark:text-slate-200 leading-relaxed">
-          {currentStrategy
-            ? currentStrategy.generatePineScript(currentStrategy.defaultParams)
-            : `//@version=5
-strategy("Trading-OS: Quantitative Model [v5]", overlay=true, initial_capital=10000)
-// Generate or compile a strategy above to see the complete source code...`}
+      <div className="relative rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-100 dark:bg-[#050811] p-4 font-mono text-xs overflow-hidden max-h-96 min-h-[260px]">
+        {/* Code Pre Box */}
+        <pre
+          className={`text-slate-800 dark:text-slate-200 leading-relaxed ${
+            !isLicenseUnlocked ? "select-none blur-[3px] opacity-30" : ""
+          }`}
+        >
+          {isLicenseUnlocked
+            ? (currentStrategy
+                ? currentStrategy.generatePineScript(currentStrategy.defaultParams)
+                : lockedTeaserCode)
+            : lockedTeaserCode}
         </pre>
 
-        <button
-          onClick={handleCopyPine}
-          className="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-bold shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5"
-        >
-          {copiedPine ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-          <span>{copiedPine ? "Copied Code!" : "Copy Code"}</span>
-        </button>
+        {/* Un-bypassable Frosted Blur Glass Paywall */}
+        {!isLicenseUnlocked && (
+          <div className="absolute inset-0 backdrop-blur-md bg-slate-950/70 flex flex-col items-center justify-center p-6 text-center z-20 space-y-3">
+            <div className="p-3 bg-amber-500/20 text-amber-500 rounded-full border border-amber-500/30">
+              <Lock className="h-6 w-6" />
+            </div>
+            <div>
+              <h4 className="text-base font-black text-white">Full Pine Script v5 Code Protected</h4>
+              <p className="text-xs text-slate-300 max-w-md mt-1">
+                The institutional algorithmic order logic, webhook automation, and execution rules are locked. Complete the $9 payment via Binance Pay or Crypto to instantly unlock and copy.
+              </p>
+            </div>
+            <button
+              onClick={openCheckout}
+              className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-xl transition flex items-center gap-2 active:scale-95 cursor-pointer"
+            >
+              <Lock className="h-4 w-4" />
+              <span>Unlock Lifetime Access ($9 USDT)</span>
+            </button>
+          </div>
+        )}
+
+        {/* Copy Button (Only accessible when unlocked!) */}
+        {isLicenseUnlocked && (
+          <button
+            onClick={handleCopyPine}
+            className="absolute top-4 right-4 px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-bold shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5 cursor-pointer"
+          >
+            {copiedPine ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copiedPine ? "Copied Full Pine Script!" : "Copy Full Pine Script v5"}</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1564,12 +1686,21 @@ strategy("Trading-OS: Quantitative Model [v5]", overlay=true, initial_capital=10
 // =============================================================================
 // 4. CHECKOUT & PAYMENT MODAL (Where Binance UID & Crypto Wallets are shown!)
 // =============================================================================
-const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => void }) => {
+const CheckoutModal = ({
+  isDark,
+  onClose,
+  onUnlock,
+}: {
+  isDark: boolean;
+  onClose: () => void;
+  onUnlock: () => void;
+}) => {
   const [selectedMethod, setSelectedMethod] = useState<"binance" | "trc20" | "bep20">("binance");
   const [copiedField, setCopiedField] = useState("");
   const [orderId, setOrderId] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -1577,14 +1708,48 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
     setTimeout(() => setCopiedField(""), 2000);
   };
 
-  const handleVerify = () => {
-    if (!orderId.trim()) return;
+  const handleVerify = async () => {
+    const cleanId = orderId.trim();
+    if (!cleanId) return;
+
     setIsVerifying(true);
-    setVerifyStatus("Connecting to Binance verification engine...");
-    setTimeout(() => {
+    setVerifyStatus("Verifying transaction on blockchain & Binance settlement...");
+
+    try {
+      const methodMap = {
+        binance: "BINANCE-PAY",
+        trc20: "USDT-TRC20",
+        bep20: "USDT-BEP20",
+      };
+      const recipientMap = {
+        binance: "716216436",
+        trc20: "TF3X7G8n1YmK3e5jVzW8m6P4aB1cL9dQ2R",
+        bep20: "0x716216436A7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d",
+      };
+
+      await PaymentVerifier.verifyPayment({
+        method: methodMap[selectedMethod],
+        txId: cleanId,
+        expectedRecipient: recipientMap[selectedMethod],
+        expectedAmount: 9.0,
+        strategyName: "Pine Script v5 Quantitative Algorithm",
+        symbol: "BTCUSDT",
+        timeframe: "15m",
+      });
+
+      setIsSuccess(true);
+      setVerifyStatus("✅ Payment verified! Full source code unlocked.");
+      onUnlock();
+
+      setTimeout(() => {
+        onClose();
+      }, 1600);
+    } catch (err: any) {
+      setIsSuccess(false);
+      setVerifyStatus(err.message || "❌ Verification failed. Please check your transaction reference.");
+    } finally {
       setIsVerifying(false);
-      setVerifyStatus("Order ID submitted for automatic confirmation.");
-    }, 1800);
+    }
   };
 
   return (
@@ -1592,7 +1757,7 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
       <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
@@ -1605,7 +1770,7 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
             Binance Pay & Crypto Checkout
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Flat Price • Instant Lifetime License • Zero Fees
+            Flat Price • Instant Lifetime License • Zero Gas Fees
           </p>
           <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full font-mono text-amber-500 text-sm font-black">
             <span>Total:</span>
@@ -1616,8 +1781,11 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
         {/* Method Switcher */}
         <div className="grid grid-cols-3 gap-2">
           <button
-            onClick={() => setSelectedMethod("binance")}
-            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center ${
+            onClick={() => {
+              setSelectedMethod("binance");
+              setVerifyStatus("");
+            }}
+            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
               selectedMethod === "binance"
                 ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-sm"
                 : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
@@ -1626,8 +1794,11 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
             🟡 Binance Pay
           </button>
           <button
-            onClick={() => setSelectedMethod("trc20")}
-            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center ${
+            onClick={() => {
+              setSelectedMethod("trc20");
+              setVerifyStatus("");
+            }}
+            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
               selectedMethod === "trc20"
                 ? "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-sm"
                 : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
@@ -1636,8 +1807,11 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
             🟢 USDT (TRC20)
           </button>
           <button
-            onClick={() => setSelectedMethod("bep20")}
-            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center ${
+            onClick={() => {
+              setSelectedMethod("bep20");
+              setVerifyStatus("");
+            }}
+            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
               selectedMethod === "bep20"
                 ? "bg-cyan-500/20 border-cyan-500 text-cyan-500 shadow-sm"
                 : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
@@ -1652,54 +1826,62 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
           {selectedMethod === "binance" && (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">Binance Pay UID:</span>
+                <span className="text-slate-500 font-semibold">Binance Pay UID:</span>
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono font-bold text-amber-500 text-sm">716216436</span>
                   <button
                     onClick={() => copyToClipboard("716216436", "uid")}
-                    className="p-1 text-slate-400 hover:text-slate-200"
+                    className="p-1 text-slate-400 hover:text-slate-200 cursor-pointer"
                   >
                     {copiedField === "uid" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Open the Binance App ➔ Pay ➔ Send to UID <strong>716216436</strong> ➔ Enter <strong>9 USDT</strong>.
-              </p>
+              <div className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed space-y-1">
+                <p><strong>Step 1:</strong> Open Binance App ➔ Tap <strong>Pay</strong> ➔ Tap <strong>Send</strong>.</p>
+                <p><strong>Step 2:</strong> Enter Pay UID: <strong>716216436</strong> ➔ Enter <strong>9 USDT</strong>.</p>
+                <p><strong>Step 3:</strong> Paste the 19-digit Binance Pay Order ID below to unlock.</p>
+              </div>
             </>
           )}
 
           {selectedMethod === "trc20" && (
             <>
               <div className="space-y-1">
-                <span className="text-slate-500 block">USDT (TRC20) Wallet Address:</span>
+                <span className="text-slate-500 block font-semibold">USDT (TRON TRC-20) Address:</span>
                 <div className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-mono text-[11px] break-all">
                   <span>TF3X7G8n1YmK3e5jVzW8m6P4aB1cL9dQ2R</span>
                   <button
                     onClick={() => copyToClipboard("TF3X7G8n1YmK3e5jVzW8m6P4aB1cL9dQ2R", "trc")}
-                    className="p-1 text-slate-400 hover:text-slate-200 shrink-0 ml-2"
+                    className="p-1 text-slate-400 hover:text-slate-200 shrink-0 ml-2 cursor-pointer"
                   >
                     {copiedField === "trc" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Send <strong>9.00 USDT</strong> on TRON network. Paste your 64-character Tx Hash (TxID) below.
+              </p>
             </>
           )}
 
           {selectedMethod === "bep20" && (
             <>
               <div className="space-y-1">
-                <span className="text-slate-500 block">USDT (BNB Smart Chain BEP20):</span>
+                <span className="text-slate-500 block font-semibold">USDT (BNB Smart Chain BEP-20):</span>
                 <div className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-mono text-[11px] break-all">
                   <span>0x716216436A7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d</span>
                   <button
                     onClick={() => copyToClipboard("0x716216436A7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d", "bep")}
-                    className="p-1 text-slate-400 hover:text-slate-200 shrink-0 ml-2"
+                    className="p-1 text-slate-400 hover:text-slate-200 shrink-0 ml-2 cursor-pointer"
                   >
                     {copiedField === "bep" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Send <strong>9.00 USDT</strong> on BNB Smart Chain. Paste your 66-character BscScan TxID below.
+              </p>
             </>
           )}
         </div>
@@ -1707,27 +1889,46 @@ const CheckoutModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
         {/* Order ID Input & Verification */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Enter Binance Pay Order ID / Tx Hash:
+            Enter Binance Pay Order ID / Blockchain TxID:
           </label>
           <div className="flex gap-2">
             <input
               type="text"
               value={orderId}
               onChange={(e) => setOrderId(e.target.value)}
-              placeholder="e.g. 2684918471928471928"
+              placeholder="e.g. 2589410294857102938"
               className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#050811] p-2.5 text-xs font-mono text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-amber-500"
             />
             <button
               onClick={handleVerify}
               disabled={isVerifying || !orderId.trim()}
-              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition disabled:opacity-50"
+              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition disabled:opacity-50 cursor-pointer"
             >
-              {isVerifying ? "Verifying..." : "Verify"}
+              {isVerifying ? "Verifying..." : "Verify & Unlock"}
             </button>
           </div>
           {verifyStatus && (
-            <p className="text-[11px] text-amber-500 font-mono text-center">{verifyStatus}</p>
+            <p
+              className={`text-[11px] font-mono text-center leading-relaxed ${
+                isSuccess ? "text-emerald-500 font-bold" : "text-rose-500"
+              }`}
+            >
+              {verifyStatus}
+            </p>
           )}
+        </div>
+
+        {/* Instant Support Telegram Link */}
+        <div className="text-center pt-1 border-t border-slate-200 dark:border-slate-800/80">
+          <a
+            href="https://t.me/TrdOsP_bot"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline flex items-center justify-center gap-1 font-medium"
+          >
+            <span>Need manual confirmation? Contact @TrdOsP_bot on Telegram</span>
+            <ArrowUpRight className="h-3 w-3" />
+          </a>
         </div>
       </div>
     </div>

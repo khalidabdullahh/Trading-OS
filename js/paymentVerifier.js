@@ -26,7 +26,7 @@ const PaymentVerifier = {
     /**
      * Primary Strict Verification Controller
      */
-    async verifyPayment({ method, txId, expectedRecipient, expectedAmount = 9.0, strategyName, symbol, timeframe }) {
+    async verifyPayment({ method, txId, expectedRecipient, expectedAmount = 9.0, strategyName = 'Quantitative Strategy', symbol = 'BTCUSDT', timeframe = '15m' }) {
         const cleanTxId = (txId || '').trim();
 
         if (!cleanTxId) {
@@ -284,3 +284,4 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = PaymentVerifier;
 }
+export default PaymentVerifier;
