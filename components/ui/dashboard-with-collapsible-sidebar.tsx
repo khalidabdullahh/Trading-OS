@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   Maximize2,
   Minimize2,
+  Menu,
 } from "lucide-react";
 import {
   createChart,
@@ -57,6 +58,7 @@ import PaymentVerifier from "@/js/paymentVerifier.js";
 export const Example = () => {
   const [isDark, setIsDark] = useState(false);
   const [selectedNav, setSelectedNav] = useState("Dashboard");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // License state (Unlocked vs Locked)
   const [isLicenseUnlocked, setIsLicenseUnlocked] = useState<boolean>(() => {
@@ -90,12 +92,14 @@ export const Example = () => {
 
   return (
     <div className={`flex min-h-screen w-full ${isDark ? "dark" : ""}`}>
-      <div className="flex w-full bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      <div className="flex w-full bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-x-hidden">
         <Sidebar
           selected={selectedNav}
           setSelected={setSelectedNav}
           openSettings={() => setIsSettingsOpen(true)}
           openHelp={() => setIsHelpOpen(true)}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
         <TradingDashboardContent
           isDark={isDark}
@@ -104,6 +108,7 @@ export const Example = () => {
           setSelectedNav={setSelectedNav}
           openCheckout={() => setIsCheckoutOpen(true)}
           isLicenseUnlocked={isLicenseUnlocked}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
 
         {/* Global Modals */}
@@ -133,99 +138,214 @@ const Sidebar = ({
   setSelected,
   openSettings,
   openHelp,
+  isMobileMenuOpen,
+  setIsMobileMenuOpen,
 }: {
   selected: string;
   setSelected: (title: string) => void;
   openSettings: () => void;
   openHelp: () => void;
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (open: boolean) => void;
 }) => {
   const [open, setOpen] = useState(true);
 
   return (
-    <nav
-      className={`sticky top-0 h-screen shrink-0 border-r transition-all duration-300 ease-in-out ${
-        open ? "w-64" : "w-16"
-      } border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-2 shadow-sm flex flex-col justify-between z-30`}
-    >
-      <div>
-        <TitleSection open={open} />
+    <>
+      {/* 1. Desktop Collapsible Sidebar (Hidden on Mobile < md) */}
+      <nav
+        className={`hidden md:flex sticky top-0 h-screen shrink-0 border-r transition-all duration-300 ease-in-out ${
+          open ? "w-64" : "w-16"
+        } border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-2 shadow-sm flex-col justify-between z-30`}
+      >
+        <div>
+          <TitleSection open={open} />
 
-        <div className="space-y-1 mb-6">
-          <Option
-            Icon={Home}
-            title="Dashboard"
-            selected={selected}
-            setSelected={setSelected}
-            open={open}
-          />
-          <Option
-            Icon={BarChart3}
-            title="Charts & Backtest"
-            selected={selected}
-            setSelected={setSelected}
-            open={open}
-          />
-          <Option
-            Icon={Zap}
-            title="Strategy Builder"
-            selected={selected}
-            setSelected={setSelected}
-            open={open}
-          />
-          <Option
-            Icon={Activity}
-            title="Quant Analytics"
-            selected={selected}
-            setSelected={setSelected}
-            open={open}
-          />
-          <Option
-            Icon={Package}
-            title="Pine Script Vault"
-            selected={selected}
-            setSelected={setSelected}
-            open={open}
-            badge="$9"
-          />
-          <Option
-            Icon={Globe}
-            title="Economic News"
-            selected={selected}
-            setSelected={setSelected}
-            open={open}
-          />
+          <div className="space-y-1 mb-6">
+            <Option
+              Icon={Home}
+              title="Dashboard"
+              selected={selected}
+              setSelected={setSelected}
+              open={open}
+            />
+            <Option
+              Icon={BarChart3}
+              title="Charts & Backtest"
+              selected={selected}
+              setSelected={setSelected}
+              open={open}
+            />
+            <Option
+              Icon={Zap}
+              title="Strategy Builder"
+              selected={selected}
+              setSelected={setSelected}
+              open={open}
+            />
+            <Option
+              Icon={Activity}
+              title="Quant Analytics"
+              selected={selected}
+              setSelected={setSelected}
+              open={open}
+            />
+            <Option
+              Icon={Package}
+              title="Pine Script Vault"
+              selected={selected}
+              setSelected={setSelected}
+              open={open}
+              badge="$9"
+            />
+            <Option
+              Icon={Globe}
+              title="Economic News"
+              selected={selected}
+              setSelected={setSelected}
+              open={open}
+            />
+          </div>
+
+          {open && (
+            <div className="border-t border-slate-200 dark:border-slate-800/80 pt-4 space-y-1">
+              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Terminal Controls
+              </div>
+              <button
+                onClick={openSettings}
+                className="flex h-10 w-full items-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <div className="grid h-full w-12 place-content-center">
+                  <Settings className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium">Settings</span>
+              </button>
+
+              <button
+                onClick={openHelp}
+                className="flex h-10 w-full items-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer"
+              >
+                <div className="grid h-full w-12 place-content-center">
+                  <HelpCircle className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium">Help & Support</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {open && (
-          <div className="border-t border-slate-200 dark:border-slate-800/80 pt-4 space-y-1">
-            <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Terminal Controls
+        <ToggleClose open={open} setOpen={setOpen} />
+      </nav>
+
+      {/* 2. Mobile Responsive Slide-Over Drawer & Backdrop (< md) */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="md:hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+        />
+      )}
+
+      <div
+        className={`md:hidden fixed top-0 bottom-0 left-0 z-50 w-72 bg-white dark:bg-[#090e1a] border-r border-slate-200 dark:border-slate-800 p-4 shadow-2xl flex flex-col justify-between transition-transform duration-300 ease-in-out ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div>
+          {/* Drawer Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500 text-slate-950 flex items-center justify-center font-black">
+                ⚡
+              </div>
+              <div>
+                <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                  TRADING-OS
+                </span>
+                <span className="text-[10px] font-mono text-cyan-500 font-bold block">
+                  Quant Engine v1.02
+                </span>
+              </div>
             </div>
             <button
-              onClick={openSettings}
-              className="flex h-10 w-full items-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer"
             >
-              <div className="grid h-full w-12 place-content-center">
-                <Settings className="h-4 w-4" />
-              </div>
-              <span className="text-xs font-medium">Settings</span>
-            </button>
-
-            <button
-              onClick={openHelp}
-              className="flex h-10 w-full items-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-            >
-              <div className="grid h-full w-12 place-content-center">
-                <HelpCircle className="h-4 w-4" />
-              </div>
-              <span className="text-xs font-medium">Help & Support</span>
+              <X className="h-5 w-5" />
             </button>
           </div>
-        )}
-      </div>
 
-      <ToggleClose open={open} setOpen={setOpen} />
-    </nav>
+          {/* Navigation Links */}
+          <div className="space-y-1">
+            {[
+              { title: "Dashboard", icon: Home },
+              { title: "Charts & Backtest", icon: BarChart3 },
+              { title: "Strategy Builder", icon: Zap },
+              { title: "Quant Analytics", icon: Activity },
+              { title: "Pine Script Vault", icon: Package, badge: "$9" },
+              { title: "Economic News", icon: Globe },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isSelected = selected === item.title;
+              return (
+                <button
+                  key={item.title}
+                  onClick={() => {
+                    setSelected(item.title);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                    isSelected
+                      ? "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Drawer Settings & Help */}
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-3 mt-4 space-y-1">
+            <button
+              onClick={() => {
+                openSettings();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium cursor-pointer"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </button>
+            <button
+              onClick={() => {
+                openHelp();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium cursor-pointer"
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span>Help & Support</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Version info */}
+        <div className="pt-3 text-[10px] text-slate-400 font-mono border-t border-slate-200 dark:border-slate-800 flex justify-between">
+          <span>Trading-OS Mobile</span>
+          <span className="text-emerald-500 font-bold">Online</span>
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -362,6 +482,7 @@ const TradingDashboardContent = ({
   setSelectedNav,
   openCheckout,
   isLicenseUnlocked,
+  setIsMobileMenuOpen,
 }: {
   isDark: boolean;
   setIsDark: (val: boolean) => void;
@@ -369,6 +490,7 @@ const TradingDashboardContent = ({
   setSelectedNav: (val: string) => void;
   openCheckout: () => void;
   isLicenseUnlocked: boolean;
+  setIsMobileMenuOpen: (val: boolean) => void;
 }) => {
   // Market state
   const [symbol, setSymbol] = useState("BTCUSDT");
@@ -414,9 +536,11 @@ const TradingDashboardContent = ({
     }
 
     const container = chartContainerRef.current;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+    const defaultHeight = selectedNav === "Charts & Backtest" ? (isMobile ? 420 : 580) : (isMobile ? 320 : 420);
     const initialHeight = isChartFullscreen
-      ? Math.max(window.innerHeight - 130, 450)
-      : (selectedNav === "Charts & Backtest" ? 580 : 420);
+      ? Math.max(window.innerHeight - 130, 340)
+      : defaultHeight;
 
     const chart = createChart(container, {
       width: container.clientWidth,
@@ -438,11 +562,10 @@ const TradingDashboardContent = ({
     if (activeChartTab === "candles") {
       const candlestickSeries = chart.addSeries(CandlestickSeries, {
         upColor: "#10b981",
-        downColor: "#ef4444",
-        borderUpColor: "#10b981",
-        borderDownColor: "#ef4444",
+        downColor: "#f43f5e",
+        borderVisible: false,
         wickUpColor: "#10b981",
-        wickDownColor: "#ef4444",
+        wickDownColor: "#f43f5e",
       });
 
       candlestickSeries.setData(
@@ -505,9 +628,11 @@ const TradingDashboardContent = ({
 
     const handleResize = () => {
       if (chartContainerRef.current && chartInstanceRef.current) {
+        const isMob = window.innerWidth < 640;
+        const defH = selectedNav === "Charts & Backtest" ? (isMob ? 420 : 580) : (isMob ? 320 : 420);
         const h = isChartFullscreen
-          ? Math.max(window.innerHeight - 130, 450)
-          : (selectedNav === "Charts & Backtest" ? 580 : 420);
+          ? Math.max(window.innerHeight - 130, 340)
+          : defH;
         chartInstanceRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
           height: h,
@@ -529,9 +654,11 @@ const TradingDashboardContent = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (chartContainerRef.current && chartInstanceRef.current) {
+        const isMob = window.innerWidth < 640;
+        const defH = selectedNav === "Charts & Backtest" ? (isMob ? 420 : 580) : (isMob ? 320 : 420);
         const h = isChartFullscreen
-          ? Math.max(window.innerHeight - 130, 450)
-          : (selectedNav === "Charts & Backtest" ? 580 : 420);
+          ? Math.max(window.innerHeight - 130, 340)
+          : defH;
         chartInstanceRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
           height: h,
@@ -625,208 +752,252 @@ const TradingDashboardContent = ({
   };
 
   return (
-    <div className="flex-1 bg-slate-50 dark:bg-[#050811] p-6 overflow-auto">
-      {/* Top Header Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-              {currentStrategy ? currentStrategy.name : "⚡ Quantitative Strategy Terminal"}
-            </h1>
-            <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 text-[11px] font-bold">
-              {currentStrategy?.badge || "Live Quant Engine"}
+    <div className="flex-1 bg-slate-50 dark:bg-[#050811] overflow-x-hidden overflow-y-auto flex flex-col min-w-0">
+      {/* Mobile Top Header (Visible only on screens < md) */}
+      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-[#090e1a]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-cyan-500 transition cursor-pointer"
+            aria-label="Open Navigation Menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-md bg-cyan-500 text-slate-950 flex items-center justify-center font-black text-xs">
+              ⚡
+            </div>
+            <span className="font-extrabold text-xs tracking-tight text-slate-900 dark:text-slate-100">
+              TRADING-OS
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Institutional Algorithmic Research, Bar-by-bar Backtester & Pine Script Engine
-          </p>
         </div>
 
-        {/* Header Controls: Symbol, Timeframe, Theme, Run */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <select
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-sm cursor-pointer"
-          >
-            <optgroup label="🪙 Crypto (Binance Public API)">
-              <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
-              <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
-              <option value="SOLUSDT">SOL / USDT (Solana)</option>
-              <option value="BNBUSDT">BNB / USDT (BNB)</option>
-              <option value="XRPUSDT">XRP / USDT (Ripple)</option>
-              <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
-              <option value="ADAUSDT">ADA / USDT (Cardano)</option>
-              <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
-              <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
-              <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
-            </optgroup>
-
-            <optgroup label="💱 Forex Majors & Crosses">
-              <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
-              <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
-              <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
-              <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
-              <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
-              <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
-              <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
-              <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
-            </optgroup>
-
-            <optgroup label="📈 Global Stock Indices">
-              <option value="SPX500">S&P 500 Index (SPX500)</option>
-              <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
-              <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
-              <option value="GER40">Germany DAX 40 (GER40)</option>
-              <option value="UK100">UK FTSE 100 (UK100)</option>
-            </optgroup>
-
-            <optgroup label="🏢 Blue-Chip US Stocks">
-              <option value="NVDA">NVDA (NVIDIA Corp)</option>
-              <option value="AAPL">AAPL (Apple Inc)</option>
-              <option value="TSLA">TSLA (Tesla Inc)</option>
-              <option value="MSFT">MSFT (Microsoft Corp)</option>
-              <option value="AMZN">AMZN (Amazon.com Inc)</option>
-              <option value="GOOGL">GOOGL (Alphabet Inc)</option>
-              <option value="META">META (Meta Platforms Inc)</option>
-            </optgroup>
-
-            <optgroup label="🏆 Commodities & Precious Metals">
-              <option value="XAUUSD">XAU / USD (Gold Spot)</option>
-              <option value="XAGUSD">XAG / USD (Silver Spot)</option>
-              <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
-            </optgroup>
-          </select>
-
-          <select
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value)}
-            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-sm cursor-pointer"
-          >
-            <option value="1m">1m</option>
-            <option value="5m">5m</option>
-            <option value="15m">15m</option>
-            <option value="1h">1h</option>
-            <option value="4h">4h</option>
-            <option value="1d">1D</option>
-          </select>
-
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setIsDark(!isDark)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-sm cursor-pointer"
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 cursor-pointer"
           >
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
           </button>
-
-          <button
-            onClick={handleCompileAndRun}
-            disabled={isSimulating}
-            className="px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
-          >
-            <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
-            <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
-          </button>
+          {!isLicenseUnlocked && (
+            <button
+              onClick={openCheckout}
+              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg shadow transition flex items-center gap-1 cursor-pointer"
+            >
+              <Lock className="h-3 w-3" />
+              <span>Unlock ($9)</span>
+            </button>
+          )}
         </div>
-      </div>
+      </header>
 
-      {/* Top 4 Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
-              <TrendingUp className="h-4 w-4" />
+      <div className="p-3 sm:p-6 flex-1 flex flex-col justify-between">
+        {/* Top Header Bar */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+                {currentStrategy ? currentStrategy.name : "⚡ Quantitative Strategy Terminal"}
+              </h1>
+              <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 text-[10px] sm:text-[11px] font-bold">
+                {currentStrategy?.badge || "Live Quant Engine"}
+              </span>
             </div>
-            <span
-              className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
-                hasRunBacktest && summary.totalNetProfit >= 0
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : hasRunBacktest
-                  ? "bg-rose-500/10 text-rose-500"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Institutional Algorithmic Research, Bar-by-bar Backtester & Pine Script Engine
+            </p>
+          </div>
+
+          {/* Header Controls: Symbol, Timeframe, Theme, Run */}
+          <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+            <div className="flex items-center gap-2 flex-1 sm:flex-none">
+              <select
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value)}
+                className="flex-1 sm:flex-none min-w-[140px] px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-sm cursor-pointer"
+              >
+                <optgroup label="🪙 Crypto (Binance Public API)">
+                  <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
+                  <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
+                  <option value="SOLUSDT">SOL / USDT (Solana)</option>
+                  <option value="BNBUSDT">BNB / USDT (BNB)</option>
+                  <option value="XRPUSDT">XRP / USDT (Ripple)</option>
+                  <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
+                  <option value="ADAUSDT">ADA / USDT (Cardano)</option>
+                  <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
+                  <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
+                  <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
+                </optgroup>
+
+                <optgroup label="💱 Forex Majors & Crosses">
+                  <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
+                  <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
+                  <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
+                  <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
+                  <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
+                  <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
+                  <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
+                  <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
+                </optgroup>
+
+                <optgroup label="📈 Global Stock Indices">
+                  <option value="SPX500">S&P 500 Index (SPX500)</option>
+                  <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
+                  <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
+                  <option value="GER40">Germany DAX 40 (GER40)</option>
+                  <option value="UK100">UK FTSE 100 (UK100)</option>
+                </optgroup>
+
+                <optgroup label="🏢 Blue-Chip US Stocks">
+                  <option value="NVDA">NVDA (NVIDIA Corp)</option>
+                  <option value="AAPL">AAPL (Apple Inc)</option>
+                  <option value="TSLA">TSLA (Tesla Inc)</option>
+                  <option value="MSFT">MSFT (Microsoft Corp)</option>
+                  <option value="AMZN">AMZN (Amazon.com Inc)</option>
+                  <option value="GOOGL">GOOGL (Alphabet Inc)</option>
+                  <option value="META">META (Meta Platforms Inc)</option>
+                </optgroup>
+
+                <optgroup label="🏆 Commodities & Precious Metals">
+                  <option value="XAUUSD">XAU / USD (Gold Spot)</option>
+                  <option value="XAGUSD">XAG / USD (Silver Spot)</option>
+                  <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
+                </optgroup>
+              </select>
+
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="w-16 sm:w-auto px-2 sm:px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-sm cursor-pointer"
+              >
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h">1h</option>
+                <option value="4h">4h</option>
+                <option value="1d">1D</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => setIsDark(!isDark)}
+                className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-sm cursor-pointer"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+
+              <button
+                onClick={handleCompileAndRun}
+                disabled={isSimulating}
+                className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
+                <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Top 4 Stats Cards (2x2 Grid on Mobile, 4-Cols on Large Screens) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
+          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </div>
+              <span
+                className={`text-[10px] sm:text-xs font-bold font-mono px-1.5 sm:px-2 py-0.5 rounded ${
+                  hasRunBacktest && summary.totalNetProfit >= 0
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : hasRunBacktest
+                    ? "bg-rose-500/10 text-rose-500"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                }`}
+              >
+                {hasRunBacktest ? `${summary.totalNetProfitPct >= 0 ? "+" : ""}${summary.totalNetProfitPct}%` : "0.00%"}
+              </span>
+            </div>
+            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+              Total Net Profit
+            </h3>
+            <p
+              className={`text-lg sm:text-2xl font-black font-mono ${
+                hasRunBacktest
+                  ? summary.totalNetProfit >= 0
+                    ? "text-emerald-500"
+                    : "text-rose-500"
+                  : "text-slate-900 dark:text-slate-100"
               }`}
             >
-              {hasRunBacktest ? `${summary.totalNetProfitPct >= 0 ? "+" : ""}${summary.totalNetProfitPct}%` : "0.00%"}
-            </span>
+              {hasRunBacktest ? `${summary.totalNetProfit >= 0 ? "+" : ""}$${summary.totalNetProfit?.toLocaleString()}` : "$0.00"}
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
+              {hasRunBacktest ? `Historical on ${symbol}` : "Awaiting custom rules"}
+            </p>
           </div>
-          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Total Net Profit
-          </h3>
-          <p
-            className={`text-2xl font-black font-mono ${
-              hasRunBacktest
-                ? summary.totalNetProfit >= 0
-                  ? "text-emerald-500"
-                  : "text-rose-500"
-                : "text-slate-900 dark:text-slate-100"
-            }`}
-          >
-            {hasRunBacktest ? `${summary.totalNetProfit >= 0 ? "+" : ""}$${summary.totalNetProfit?.toLocaleString()}` : "$0.00"}
-          </p>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-            {hasRunBacktest ? `Historical Simulation on ${symbol}` : "Awaiting custom strategy backtest"}
-          </p>
-        </div>
 
-        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-lg">
-              <Activity className="h-4 w-4" />
+          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-lg">
+                <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 font-mono">
+                {hasRunBacktest ? `${summary.totalTrades} Trades` : "0 Trades"}
+              </span>
             </div>
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 font-mono">
-              {hasRunBacktest ? `${summary.totalTrades} Trades` : "0 Trades"}
-            </span>
+            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+              Strategy Win Rate
+            </h3>
+            <p className="text-lg sm:text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
+              {hasRunBacktest ? `${summary.winRate}%` : "--"}
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
+              {hasRunBacktest ? `${summary.winCount}W / ${summary.lossCount}L` : "Ready for rules"}
+            </p>
           </div>
-          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Strategy Win Rate
-          </h3>
-          <p className="text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
-            {hasRunBacktest ? `${summary.winRate}%` : "--"}
-          </p>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-            {hasRunBacktest ? `${summary.winCount} Wins / ${summary.lossCount} Losses` : "Ready for custom rules"}
-          </p>
-        </div>
 
-        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg">
-              <Sliders className="h-4 w-4" />
+          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg">
+                <Sliders className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-bold text-cyan-500 font-mono">
+                Payoff: {hasRunBacktest ? summary.payoffRatio : "--"}
+              </span>
             </div>
-            <span className="text-xs font-bold text-cyan-500 font-mono">
-              Payoff: {hasRunBacktest ? summary.payoffRatio : "--"}
-            </span>
+            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+              Profit Factor
+            </h3>
+            <p className="text-lg sm:text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
+              {hasRunBacktest ? summary.profitFactor : "--"}
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
+              {hasRunBacktest ? "Expectancy: +0.48R" : "Awaiting parameters"}
+            </p>
           </div>
-          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Profit Factor
-          </h3>
-          <p className="text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
-            {hasRunBacktest ? summary.profitFactor : "--"}
-          </p>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-            {hasRunBacktest ? "Expectancy: +0.48R per trade" : "Awaiting strategy parameters"}
-          </p>
-        </div>
 
-        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg">
-              <ShieldCheck className="h-4 w-4" />
+          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg">
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-bold text-rose-500 font-mono">
+                {hasRunBacktest ? `-$${summary.maxDrawdownAmt}` : "$0.00"}
+              </span>
             </div>
-            <span className="text-xs font-bold text-rose-500 font-mono">
-              {hasRunBacktest ? `-$${summary.maxDrawdownAmt}` : "$0.00"}
-            </span>
+            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+              Max Drawdown
+            </h3>
+            <p className="text-lg sm:text-2xl font-black font-mono text-rose-500">
+              {hasRunBacktest ? `-${summary.maxDrawdownPct}%` : "0.00%"}
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
+              Audited (Lookahead Protected)
+            </p>
           </div>
-          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Max Drawdown
-          </h3>
-          <p className="text-2xl font-black font-mono text-rose-500">
-            {hasRunBacktest ? `-${summary.maxDrawdownPct}%` : "0.00%"}
-          </p>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-            Audited (Lookahead Bias Protected)
-          </p>
         </div>
-      </div>
 
       {/* ========================================================================= */}
       {/* 3. DYNAMIC CONTENT VIEWS BASED ON SELECTED SIDEBAR TAB */}
@@ -1293,6 +1464,7 @@ const TradingDashboardContent = ({
           </button>
         </div>
       </footer>
+      </div>
     </div>
   );
 };
@@ -1868,8 +2040,8 @@ const CheckoutModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-[95vw] sm:w-full p-4 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
@@ -2068,8 +2240,8 @@ const SettingsModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-[95vw] sm:w-full p-4 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
@@ -2140,8 +2312,8 @@ const SettingsModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => vo
 // =============================================================================
 const HelpModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => void }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-[95vw] sm:w-full p-4 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
