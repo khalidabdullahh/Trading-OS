@@ -30,6 +30,8 @@ import {
   Calendar,
   DollarSign,
   AlertTriangle,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import {
   createChart,
@@ -360,6 +362,7 @@ const TradingDashboardContent = ({
   const [isSimulating, setIsSimulating] = useState(false);
   const [copiedPine, setCopiedPine] = useState(false);
   const [activeChartTab, setActiveChartTab] = useState<"candles" | "equity">("candles");
+  const [isChartFullscreen, setIsChartFullscreen] = useState(false);
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<any>(null);
@@ -380,9 +383,13 @@ const TradingDashboardContent = ({
     }
 
     const container = chartContainerRef.current;
+    const initialHeight = isChartFullscreen
+      ? Math.max(window.innerHeight - 130, 450)
+      : (selectedNav === "Charts & Backtest" ? 580 : 420);
+
     const chart = createChart(container, {
       width: container.clientWidth,
-      height: 380,
+      height: initialHeight,
       layout: {
         background: { type: ColorType.Solid, color: isDark ? "#090e1a" : "#ffffff" },
         textColor: isDark ? "#94a3b8" : "#475569",
@@ -465,8 +472,12 @@ const TradingDashboardContent = ({
 
     const handleResize = () => {
       if (chartContainerRef.current && chartInstanceRef.current) {
+        const h = isChartFullscreen
+          ? Math.max(window.innerHeight - 130, 450)
+          : (selectedNav === "Charts & Backtest" ? 580 : 420);
         chartInstanceRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
+          height: h,
         });
       }
     };
@@ -479,7 +490,35 @@ const TradingDashboardContent = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [candles, backtestResult, activeChartTab, isDark]);
+  }, [candles, backtestResult, activeChartTab, isDark, isChartFullscreen, selectedNav]);
+
+  // Adjust chart size dynamically when fullscreen or nav tab changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (chartContainerRef.current && chartInstanceRef.current) {
+        const h = isChartFullscreen
+          ? Math.max(window.innerHeight - 130, 450)
+          : (selectedNav === "Charts & Backtest" ? 580 : 420);
+        chartInstanceRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: h,
+        });
+        chartInstanceRef.current.timeScale().fitContent();
+      }
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [isChartFullscreen, selectedNav]);
+
+  // ESC key listener to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isChartFullscreen) {
+        setIsChartFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isChartFullscreen]);
 
   // Compile Strategy and Run Backtest
   const handleCompileAndRun = async () => {
@@ -880,12 +919,23 @@ const TradingDashboardContent = ({
             )}
 
             {/* Right Column: Interactive Candlestick Chart & Tabs */}
-            {(selectedNav === "Dashboard" || selectedNav === "Charts & Backtest") && (
-              <div className={`${selectedNav === "Charts & Backtest" ? "lg:col-span-12" : "lg:col-span-7"} rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4`}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                      {symbol} ({timeframe}) Simulation Chart
+            {(selectedNav === "Dashboard" || selectedNav === "Charts & Backtest" || isChartFullscreen) && (
+              <div
+                className={`${
+                  isChartFullscreen
+                    ? "fixed inset-0 z-50 p-6 bg-white dark:bg-[#090e1a] flex flex-col justify-between shadow-2xl overflow-hidden"
+                    : `${selectedNav === "Charts & Backtest" ? "lg:col-span-12" : "lg:col-span-7"} rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4`
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <span>{symbol} ({timeframe}) Simulation Chart</span>
+                      {isChartFullscreen && (
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] font-mono font-bold">
+                          FULLSCREEN MODE
+                        </span>
+                      )}
                     </h2>
                     <div className="flex bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px]">
                       <button
@@ -909,18 +959,48 @@ const TradingDashboardContent = ({
                         Equity Curve
                       </button>
                     </div>
+
+                    <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
+                      <span className="text-cyan-500 font-bold">● Fast EMA (9)</span>
+                      <span className="text-amber-500 font-bold">● Slow EMA (21)</span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-[11px] font-mono text-emerald-500">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span>Live Market Feed</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-500 mr-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                      <span>Live Market Feed</span>
+                    </div>
+
+                    {/* Fullscreen Maximize / Minimize Button */}
+                    <button
+                      onClick={() => setIsChartFullscreen(!isChartFullscreen)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition shadow-sm flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                      title={isChartFullscreen ? "Exit Fullscreen (ESC)" : "Expand Chart Fullscreen"}
+                    >
+                      {isChartFullscreen ? (
+                        <>
+                          <Minimize2 className="h-3.5 w-3.5" />
+                          <span className="text-[11px] font-medium">Exit Fullscreen (ESC)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Maximize2 className="h-3.5 w-3.5" />
+                          <span className="text-[11px] font-medium">Fullscreen</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
                 {/* Lightweight Chart Mounting Container */}
                 <div
                   ref={chartContainerRef}
-                  className="w-full h-[380px] rounded-xl overflow-hidden bg-white dark:bg-[#090e1a] relative"
+                  className={`w-full rounded-xl overflow-hidden bg-white dark:bg-[#090e1a] relative ${
+                    isChartFullscreen
+                      ? "flex-1 h-[calc(100vh-140px)] min-h-[450px]"
+                      : (selectedNav === "Charts & Backtest" ? "h-[580px]" : "h-[420px]")
+                  }`}
                 >
                   {candles.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
