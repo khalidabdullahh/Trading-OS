@@ -10,7 +10,7 @@ const GeminiEngine = {
     // Runtime Config Token
     _getBuiltinKey() {
         try {
-            return atob('QVEuQWI4Uk42Sm1oLWNid3ZfT1ZBQjM2QTU4TTFhbElON29ZYXgwRWhyMU51am54dTJpd1E=');
+            return atob('QVEuQWI4Uk42SUFqZjQyS29GZG9oOEF5LXd3VGZNU045SGZ4Q3JnazFDUVFFV2FyUV9vNVE=');
         } catch (e) {
             return '';
         }
@@ -39,8 +39,8 @@ const GeminiEngine = {
     async generateStrategyFromPrompt(promptText, symbol = 'BTCUSDT', timeframe = '15m') {
         const apiKey = this.getApiKey();
 
-        // If a standard Google AI Studio key is present, call Gemini API with fast timeout
-        if (apiKey && apiKey.startsWith('AIzaSy')) {
+        // If an API key is present, call Gemini API with fast timeout
+        if (apiKey && apiKey.length > 15) {
             try {
                 return await this.callGeminiAPI(promptText, apiKey, symbol, timeframe);
             } catch (err) {
@@ -91,7 +91,7 @@ The JSON structure must be:
     "stopLossPct": 1.5
   },
   "strategyType": "rsi_ema" | "ema_cross" | "supertrend" | "bollinger" | "macd_momentum",
-  "pineScriptV5": "Exact ready-to-run Pine Script v5 code for TradingView matching the strategy with strategy.entry, strategy.exit, sl/tp brackets, and alerts."
+  "pineScriptV5": "Exact ready-to-run Pine Script v5 code matching the strategy with strategy.entry, strategy.exit, sl/tp brackets, and alerts."
 }`;
 
         const requestBody = {
