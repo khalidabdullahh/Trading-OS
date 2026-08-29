@@ -92,10 +92,10 @@ const PineVault = {
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
-                                    TradingView Pine Script v5 Code
+                                    Pine Script v5 Source Code
                                     <span class="px-2 py-0.5 text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">UNLOCKED</span>
                                 </h3>
-                                <p class="text-xs text-slate-400">Ready for TradingView Pine Editor, Webhook Bots (3Commas/Cornix) & Alerts</p>
+                                <p class="text-xs text-slate-400">Ready for Pine Editor, Webhook Bots (3Commas/Cornix) & Alerts</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -165,12 +165,12 @@ const PineVault = {
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
-                                    TradingView Pine Script v5 Code
+                                    Pine Script v5 Source Code
                                     <span class="px-2 py-0.5 text-xs font-semibold bg-[#F0B90B]/10 text-[#F0B90B] border border-[#F0B90B]/30 rounded-full flex items-center gap-1">
                                         <span class="w-1.5 h-1.5 rounded-full bg-[#F0B90B]"></span> Binance Pay
                                     </span>
                                 </h3>
-                                <p class="text-xs text-slate-400">Export verified strategy rules directly into TradingView Pine Editor</p>
+                                <p class="text-xs text-slate-400">Export verified strategy rules directly into Pine Editor</p>
                             </div>
                         </div>
                         <div class="text-right">
@@ -191,7 +191,7 @@ const PineVault = {
                             <div class="w-12 h-12 rounded-full bg-[#F0B90B]/10 border border-[#F0B90B]/30 text-[#F0B90B] flex items-center justify-center text-xl mb-2 shadow-lg shadow-amber-950/50">
                                 ⚡
                             </div>
-                            <h4 class="font-bold text-slate-100 text-sm mb-1">Unlock TradingView Pine Script v5 Code</h4>
+                            <h4 class="font-bold text-slate-100 text-sm mb-1">Unlock Pine Script v5 Code</h4>
                             <p class="text-xs text-slate-300 max-w-md mb-3">
                                 Instant lifetime license. Pay with <strong>Binance Pay (UID: 716216436)</strong> for zero fees and instant verification.
                             </p>

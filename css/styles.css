@@ -21,7 +21,7 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     overflow-x: hidden;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 code, pre, .font-mono {
@@ -114,8 +114,8 @@ code, pre, .font-mono {
 }
 
 /* ==========================================================================
-   LIGHT THEME OVERRIDES ([data-theme="light"])
-   TradingView Day Mode / Clean White Institutional Palette
+   PRISTINE WHITE / LIGHT THEME OVERRIDES ([data-theme="light"])
+   High-Contrast, Clean Day Palette with Zero Dark Artifacts
    ========================================================================== */
 [data-theme="light"] {
     --bg-main: #f8fafc;
@@ -124,7 +124,7 @@ code, pre, .font-mono {
     --border-card: #e2e8f0;
     --border-focus: #0284c7;
     --text-primary: #0f172a;
-    --text-secondary: #475569;
+    --text-secondary: #334155;
     --accent-cyan: #0284c7;
 }
 
@@ -133,39 +133,82 @@ code, pre, .font-mono {
     color: #0f172a !important;
 }
 
-[data-theme="light"] header {
-    background-color: rgba(255, 255, 255, 0.95) !important;
+/* 1. Reset ALL dark gradients to pristine light backgrounds */
+[data-theme="light"] [class*="bg-gradient-to-r from-slate-"],
+[data-theme="light"] [class*="from-slate-900"],
+[data-theme="light"] [class*="to-cyan-950"],
+[data-theme="light"] [class*="to-amber-950"] {
+    background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+    background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
-    color: #0f172a !important;
 }
 
-[data-theme="light"] nav {
-    background-color: rgba(248, 250, 252, 0.95) !important;
+/* 2. Reset ALL dark slate backgrounds (including Tailwind opacity modifiers e.g. /80, /90) */
+[data-theme="light"] [class*="bg-slate-950"],
+[data-theme="light"] [class*="bg-slate-900"],
+[data-theme="light"] [class*="bg-slate-800"],
+[data-theme="light"] [class*="bg-[#080d18]"],
+[data-theme="light"] [class*="bg-[#050811]"],
+[data-theme="light"] [class*="bg-[#090D16]"],
+[data-theme="light"] .bg-slate-950,
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-800 {
+    background-color: #f8fafc !important;
+    background-image: none !important;
     border-color: #e2e8f0 !important;
 }
 
+/* 3. Cards & Glass Panels */
 [data-theme="light"] .glass-panel {
     background: #ffffff !important;
     border-color: #e2e8f0 !important;
-    box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
 }
 
 [data-theme="light"] .glass-panel:hover {
     border-color: #0284c7 !important;
 }
 
-[data-theme="light"] .bg-slate-900,
-[data-theme="light"] .bg-slate-950,
-[data-theme="light"] .bg-\[\#080d18\]\/90,
-[data-theme="light"] .bg-\[\#050811\] {
-    background-color: #f8fafc !important;
+/* 4. Top Strategy Lab Header Card */
+[data-theme="light"] #activeStrategyTitle {
+    color: #0f172a !important;
 }
 
-[data-theme="light"] .border-slate-800,
-[data-theme="light"] .border-slate-700 {
+[data-theme="light"] #strategyDesc {
+    color: #334155 !important;
+}
+
+[data-theme="light"] #strategyBadge {
+    background-color: #f1f5f9 !important;
+    color: #0369a1 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* 5. Rule Inspector Boxes (Inner Panels) */
+[data-theme="light"] #ruleInspectorContent [class*="bg-slate-"],
+[data-theme="light"] #ruleInspectorContent div.rounded-xl {
+    background-color: #f8fafc !important;
     border-color: #e2e8f0 !important;
 }
 
+[data-theme="light"] #ruleDirection {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] #ruleEntryDesc,
+[data-theme="light"] #ruleExitDesc {
+    color: #1e293b !important;
+    font-weight: 500 !important;
+}
+
+[data-theme="light"] #ruleAssumptionsList,
+[data-theme="light"] #ruleWeaknessesList,
+[data-theme="light"] #ruleAssumptionsList li,
+[data-theme="light"] #ruleWeaknessesList li {
+    color: #334155 !important;
+}
+
+/* 6. Text Color Hierarchy */
 [data-theme="light"] .text-white,
 [data-theme="light"] .text-slate-100,
 [data-theme="light"] .text-slate-200 {
@@ -181,30 +224,163 @@ code, pre, .font-mono {
     color: #64748b !important;
 }
 
-[data-theme="light"] input,
-[data-theme="light"] select,
-[data-theme="light"] textarea {
+[data-theme="light"] .text-cyan-400,
+[data-theme="light"] .text-cyan-300 {
+    color: #0284c7 !important;
+}
+
+[data-theme="light"] .text-emerald-400 {
+    color: #16a34a !important;
+}
+
+[data-theme="light"] .text-rose-400 {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] .text-amber-400 {
+    color: #d97706 !important;
+}
+
+/* 7. Header Navigation & Controls */
+[data-theme="light"] header {
     background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] header [class*="bg-slate-"] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
     color: #0f172a !important;
+}
+
+[data-theme="light"] header select {
+    color: #0f172a !important;
+    background-color: transparent !important;
+}
+
+[data-theme="light"] #openNewsModalBtn {
+    background-color: #fef2f2 !important;
+    border-color: #fecaca !important;
+    color: #991b1b !important;
+}
+
+[data-theme="light"] #openThemeModalBtn {
+    background-color: #f8fafc !important;
     border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] #openThemeModalBtn:hover {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+}
+
+[data-theme="light"] #apiStatusPill {
+    color: #166534 !important;
+}
+
+[data-theme="light"] header div:has(#apiStatusPill) {
+    background-color: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+}
+
+[data-theme="light"] header a[href*="github"] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* 8. Tabs */
+[data-theme="light"] .nav-tab-btn {
+    color: #475569 !important;
+}
+
+[data-theme="light"] .nav-tab-btn:hover {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .nav-tab-btn.active {
+    background-color: #e0f2fe !important;
+    color: #0284c7 !important;
+    border-color: #38bdf8 !important;
+    font-weight: 700 !important;
+}
+
+/* 9. Forms, Textareas & Inputs */
+[data-theme="light"] textarea,
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] select {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] textarea::placeholder,
+[data-theme="light"] input::placeholder {
+    color: #94a3b8 !important;
+}
+
+[data-theme="light"] .quick-prompt-btn {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #0284c7 !important;
+}
+
+[data-theme="light"] .quick-prompt-btn:hover {
+    background-color: #e0f2fe !important;
+    border-color: #7dd3fc !important;
+}
+
+/* 10. Tables & Trade Rows */
+[data-theme="light"] table thead tr {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+}
+
+[data-theme="light"] table tbody tr {
+    border-color: #f1f5f9 !important;
 }
 
 [data-theme="light"] .trade-row:hover {
-    background-color: rgba(226, 232, 240, 0.6) !important;
-}
-
-[data-theme="light"] table thead {
     background-color: #f1f5f9 !important;
-    color: #475569 !important;
-    border-color: #e2e8f0 !important;
 }
 
-[data-theme="light"] .disclaimer-banner {
-    background-color: #f1f5f9 !important;
+/* 11. Modals */
+[data-theme="light"] #themeModal > div,
+[data-theme="light"] #newsModal > div,
+[data-theme="light"] #explainerModal > div,
+[data-theme="light"] #checkoutModal > div {
+    background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
 }
 
+[data-theme="light"] #themeModal [class*="bg-slate-"],
+[data-theme="light"] #newsModal [class*="bg-slate-"],
+[data-theme="light"] #explainerModal [class*="bg-slate-"],
+[data-theme="light"] #checkoutModal [class*="bg-slate-"] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* 12. Chart containers & Metrics */
 [data-theme="light"] #candlestickChartContainer,
 [data-theme="light"] #equityChartContainer {
     background-color: #ffffff !important;
+}
+
+[data-theme="light"] #metricProfitFactor,
+[data-theme="light"] #metricSharpe,
+[data-theme="light"] #metricExpectancy {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .disclaimer-banner {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #64748b !important;
 }

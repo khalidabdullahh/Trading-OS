@@ -29,7 +29,7 @@ const ThemeManager = {
         },
         light: {
             id: 'light',
-            name: 'TradingView White',
+            name: 'Light Mode',
             mode: 'light',
             icon: '☀️',
             bgMain: '#f8fafc',
