@@ -91,8 +91,8 @@ export const Example = () => {
   }, [isDark]);
 
   return (
-    <div className={`flex h-screen w-screen overflow-hidden ${isDark ? "dark" : ""}`}>
-      <div className="flex h-full w-full bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
+    <div className={`flex h-[100dvh] w-full min-w-0 max-w-[100vw] overflow-hidden ${isDark ? "dark" : ""}`}>
+      <div className="flex h-full w-full min-w-0 bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
         <Sidebar
           selected={selectedNav}
           setSelected={setSelectedNav}
@@ -680,9 +680,11 @@ const TradingDashboardContent = ({
     };
   }, [candles, backtestResult, activeChartTab, isDark, isChartFullscreen, selectedNav]);
 
-  // Adjust chart size dynamically when fullscreen or nav tab changes
+  // Adjust chart size dynamically when fullscreen, nav tab, or window/container dimensions change
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (!chartContainerRef.current) return;
+
+    const resizeHandler = () => {
       if (chartContainerRef.current && chartInstanceRef.current) {
         const isMob = window.innerWidth < 640;
         const defH = selectedNav === "Charts & Backtest" ? (isMob ? 420 : 580) : (isMob ? 320 : 420);
@@ -695,8 +697,20 @@ const TradingDashboardContent = ({
         });
         chartInstanceRef.current.timeScale().fitContent();
       }
-    }, 60);
-    return () => clearTimeout(timer);
+    };
+
+    resizeHandler();
+
+    const observer = new ResizeObserver(() => {
+      resizeHandler();
+    });
+    observer.observe(chartContainerRef.current);
+    window.addEventListener("resize", resizeHandler);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", resizeHandler);
+    };
   }, [isChartFullscreen, selectedNav]);
 
   // ESC key listener to exit fullscreen
@@ -901,91 +915,95 @@ const TradingDashboardContent = ({
             </div>
           </div>
 
-          {/* Unified Controls Toolbar - Flat, Clean, Non-collapsing single row */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto shrink-0">
-            <select
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
-              className="h-9 px-2.5 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer max-w-[200px] sm:max-w-[230px]"
-            >
-              <optgroup label="🪙 Crypto (Binance Public API)">
-                <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
-                <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
-                <option value="SOLUSDT">SOL / USDT (Solana)</option>
-                <option value="BNBUSDT">BNB / USDT (BNB)</option>
-                <option value="XRPUSDT">XRP / USDT (Ripple)</option>
-                <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
-                <option value="ADAUSDT">ADA / USDT (Cardano)</option>
-                <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
-                <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
-                <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
-              </optgroup>
+          {/* Unified Controls Toolbar - Clean on mobile and desktop */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value)}
+                className="h-9 flex-1 sm:flex-none sm:w-auto sm:max-w-[230px] px-2.5 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer min-w-0 truncate"
+              >
+                <optgroup label="🪙 Crypto (Binance Public API)">
+                  <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
+                  <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
+                  <option value="SOLUSDT">SOL / USDT (Solana)</option>
+                  <option value="BNBUSDT">BNB / USDT (BNB)</option>
+                  <option value="XRPUSDT">XRP / USDT (Ripple)</option>
+                  <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
+                  <option value="ADAUSDT">ADA / USDT (Cardano)</option>
+                  <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
+                  <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
+                  <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
+                </optgroup>
 
-              <optgroup label="💱 Forex Majors & Crosses">
-                <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
-                <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
-                <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
-                <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
-                <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
-                <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
-                <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
-                <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
-              </optgroup>
+                <optgroup label="💱 Forex Majors & Crosses">
+                  <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
+                  <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
+                  <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
+                  <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
+                  <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
+                  <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
+                  <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
+                  <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
+                </optgroup>
 
-              <optgroup label="📈 Global Stock Indices">
-                <option value="SPX500">S&P 500 Index (SPX500)</option>
-                <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
-                <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
-                <option value="GER40">Germany DAX 40 (GER40)</option>
-                <option value="UK100">UK FTSE 100 (UK100)</option>
-              </optgroup>
+                <optgroup label="📈 Global Stock Indices">
+                  <option value="SPX500">S&P 500 Index (SPX500)</option>
+                  <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
+                  <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
+                  <option value="GER40">Germany DAX 40 (GER40)</option>
+                  <option value="UK100">UK FTSE 100 (UK100)</option>
+                </optgroup>
 
-              <optgroup label="🏢 Blue-Chip US Stocks">
-                <option value="NVDA">NVDA (NVIDIA Corp)</option>
-                <option value="AAPL">AAPL (Apple Inc)</option>
-                <option value="TSLA">TSLA (Tesla Inc)</option>
-                <option value="MSFT">MSFT (Microsoft Corp)</option>
-                <option value="AMZN">AMZN (Amazon.com Inc)</option>
-                <option value="GOOGL">GOOGL (Alphabet Inc)</option>
-                <option value="META">META (Meta Platforms Inc)</option>
-              </optgroup>
+                <optgroup label="🏢 Blue-Chip US Stocks">
+                  <option value="NVDA">NVDA (NVIDIA Corp)</option>
+                  <option value="AAPL">AAPL (Apple Inc)</option>
+                  <option value="TSLA">TSLA (Tesla Inc)</option>
+                  <option value="MSFT">MSFT (Microsoft Corp)</option>
+                  <option value="AMZN">AMZN (Amazon.com Inc)</option>
+                  <option value="GOOGL">GOOGL (Alphabet Inc)</option>
+                  <option value="META">META (Meta Platforms Inc)</option>
+                </optgroup>
 
-              <optgroup label="🏆 Commodities & Precious Metals">
-                <option value="XAUUSD">XAU / USD (Gold Spot)</option>
-                <option value="XAGUSD">XAG / USD (Silver Spot)</option>
-                <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
-              </optgroup>
-            </select>
+                <optgroup label="🏆 Commodities & Precious Metals">
+                  <option value="XAUUSD">XAU / USD (Gold Spot)</option>
+                  <option value="XAGUSD">XAG / USD (Silver Spot)</option>
+                  <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
+                </optgroup>
+              </select>
 
-            <select
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
-              className="h-9 w-16 sm:w-20 px-2 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer shrink-0"
-            >
-              <option value="1m">1m</option>
-              <option value="5m">5m</option>
-              <option value="15m">15m</option>
-              <option value="1h">1h</option>
-              <option value="4h">4h</option>
-              <option value="1d">1D</option>
-            </select>
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="h-9 w-18 sm:w-20 px-2 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer shrink-0"
+              >
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h">1h</option>
+                <option value="4h">4h</option>
+                <option value="1d">1D</option>
+              </select>
+            </div>
 
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-xs cursor-pointer"
-              title="Toggle Theme"
-            >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => setIsDark(!isDark)}
+                className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-xs cursor-pointer"
+                title="Toggle Theme"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
 
-            <button
-              onClick={handleCompileAndRun}
-              disabled={isSimulating}
-              className="h-9 px-3.5 sm:px-4 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 whitespace-nowrap"
-            >
-              <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
-              <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
-            </button>
+              <button
+                onClick={handleCompileAndRun}
+                disabled={isSimulating}
+                className="h-9 w-full sm:w-auto px-4 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 whitespace-nowrap"
+              >
+                <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
+                <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1347,7 +1365,7 @@ const TradingDashboardContent = ({
               </div>
 
               <div className="overflow-x-auto max-h-72">
-                <table className="w-full text-left text-[11px]">
+                <table className="w-full min-w-[540px] text-left text-[11px]">
                   <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 uppercase font-semibold">
                     <tr>
                       <th className="p-2">#</th>
