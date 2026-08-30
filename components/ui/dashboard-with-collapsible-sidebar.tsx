@@ -878,109 +878,101 @@ const TradingDashboardContent = ({
 
       <div className="p-3 sm:p-6 flex-1 flex flex-col justify-between">
         {/* Top Header Bar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-                {currentStrategy ? currentStrategy.name : "⚡ Quantitative Strategy Terminal"}
-              </h1>
-              <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 text-[10px] sm:text-[11px] font-bold">
-                {currentStrategy?.badge || "Live Quant Engine"}
-              </span>
-            </div>
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+              {currentStrategy ? currentStrategy.name : "⚡ Quantitative Strategy Terminal"}
+            </h1>
             <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Institutional Algorithmic Research, Bar-by-bar Backtester & Pine Script Engine
             </p>
           </div>
 
-          {/* Header Controls: Symbol, Timeframe, Theme, Run */}
-          <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-            <div className="flex items-center gap-2 flex-1 sm:flex-none">
-              <select
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value)}
-                className="flex-1 sm:flex-none min-w-[140px] px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-sm cursor-pointer"
-              >
-                <optgroup label="🪙 Crypto (Binance Public API)">
-                  <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
-                  <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
-                  <option value="SOLUSDT">SOL / USDT (Solana)</option>
-                  <option value="BNBUSDT">BNB / USDT (BNB)</option>
-                  <option value="XRPUSDT">XRP / USDT (Ripple)</option>
-                  <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
-                  <option value="ADAUSDT">ADA / USDT (Cardano)</option>
-                  <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
-                  <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
-                  <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
-                </optgroup>
+          {/* Unified Controls Toolbar - Flat, Clean, Non-collapsing single row */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto shrink-0">
+            <select
+              value={symbol}
+              onChange={(e) => setSymbol(e.target.value)}
+              className="h-9 px-2.5 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer max-w-[200px] sm:max-w-[230px]"
+            >
+              <optgroup label="🪙 Crypto (Binance Public API)">
+                <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
+                <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
+                <option value="SOLUSDT">SOL / USDT (Solana)</option>
+                <option value="BNBUSDT">BNB / USDT (BNB)</option>
+                <option value="XRPUSDT">XRP / USDT (Ripple)</option>
+                <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
+                <option value="ADAUSDT">ADA / USDT (Cardano)</option>
+                <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
+                <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
+                <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
+              </optgroup>
 
-                <optgroup label="💱 Forex Majors & Crosses">
-                  <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
-                  <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
-                  <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
-                  <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
-                  <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
-                  <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
-                  <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
-                  <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
-                </optgroup>
+              <optgroup label="💱 Forex Majors & Crosses">
+                <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
+                <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
+                <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
+                <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
+                <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
+                <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
+                <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
+                <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
+              </optgroup>
 
-                <optgroup label="📈 Global Stock Indices">
-                  <option value="SPX500">S&P 500 Index (SPX500)</option>
-                  <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
-                  <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
-                  <option value="GER40">Germany DAX 40 (GER40)</option>
-                  <option value="UK100">UK FTSE 100 (UK100)</option>
-                </optgroup>
+              <optgroup label="📈 Global Stock Indices">
+                <option value="SPX500">S&P 500 Index (SPX500)</option>
+                <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
+                <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
+                <option value="GER40">Germany DAX 40 (GER40)</option>
+                <option value="UK100">UK FTSE 100 (UK100)</option>
+              </optgroup>
 
-                <optgroup label="🏢 Blue-Chip US Stocks">
-                  <option value="NVDA">NVDA (NVIDIA Corp)</option>
-                  <option value="AAPL">AAPL (Apple Inc)</option>
-                  <option value="TSLA">TSLA (Tesla Inc)</option>
-                  <option value="MSFT">MSFT (Microsoft Corp)</option>
-                  <option value="AMZN">AMZN (Amazon.com Inc)</option>
-                  <option value="GOOGL">GOOGL (Alphabet Inc)</option>
-                  <option value="META">META (Meta Platforms Inc)</option>
-                </optgroup>
+              <optgroup label="🏢 Blue-Chip US Stocks">
+                <option value="NVDA">NVDA (NVIDIA Corp)</option>
+                <option value="AAPL">AAPL (Apple Inc)</option>
+                <option value="TSLA">TSLA (Tesla Inc)</option>
+                <option value="MSFT">MSFT (Microsoft Corp)</option>
+                <option value="AMZN">AMZN (Amazon.com Inc)</option>
+                <option value="GOOGL">GOOGL (Alphabet Inc)</option>
+                <option value="META">META (Meta Platforms Inc)</option>
+              </optgroup>
 
-                <optgroup label="🏆 Commodities & Precious Metals">
-                  <option value="XAUUSD">XAU / USD (Gold Spot)</option>
-                  <option value="XAGUSD">XAG / USD (Silver Spot)</option>
-                  <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
-                </optgroup>
-              </select>
+              <optgroup label="🏆 Commodities & Precious Metals">
+                <option value="XAUUSD">XAU / USD (Gold Spot)</option>
+                <option value="XAGUSD">XAG / USD (Silver Spot)</option>
+                <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
+              </optgroup>
+            </select>
 
-              <select
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value)}
-                className="w-16 sm:w-auto px-2 sm:px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-sm cursor-pointer"
-              >
-                <option value="1m">1m</option>
-                <option value="5m">5m</option>
-                <option value="15m">15m</option>
-                <option value="1h">1h</option>
-                <option value="4h">4h</option>
-                <option value="1d">1D</option>
-              </select>
-            </div>
+            <select
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="h-9 w-16 sm:w-20 px-2 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer shrink-0"
+            >
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="1h">1h</option>
+              <option value="4h">4h</option>
+              <option value="1d">1D</option>
+            </select>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => setIsDark(!isDark)}
-                className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-sm cursor-pointer"
-              >
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-xs cursor-pointer"
+              title="Toggle Theme"
+            >
+              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
 
-              <button
-                onClick={handleCompileAndRun}
-                disabled={isSimulating}
-                className="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
-                <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
-                <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
-              </button>
-            </div>
+            <button
+              onClick={handleCompileAndRun}
+              disabled={isSimulating}
+              className="h-9 px-3.5 sm:px-4 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 whitespace-nowrap"
+            >
+              <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
+              <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
+            </button>
           </div>
         </div>
 
