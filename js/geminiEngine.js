@@ -161,17 +161,37 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
             direction = 'SHORT';
         }
 
-        // 2. Parse Risk Parameters (Take Profit and Stop Loss)
+        // 2. Parse Risk Parameters & Risk-to-Reward Ratio (e.g. 1:2, 1:3, 1:1.5)
         let tpPct = 3.0;
         let slPct = 1.5;
+        let rrRatio = null;
+
+        const rrMatch = text.match(/(?:rr|r:r|risk\s*(?:to|[\/:\-])?\s*reward)\s*(?:will\s*be|is|=|:)?\s*1\s*[:\-\/]\s*(\d+(?:\.\d+)?)/i) ||
+                        text.match(/1\s*[:\-\/]\s*(\d+(?:\.\d+)?)\s*(?:rr|r:r|risk\s*(?:to|[\/:\-])?\s*reward)/i);
+        if (rrMatch) {
+            rrRatio = parseFloat(rrMatch[1]);
+        }
+
         const tpMatch = text.match(/(?:tp|take profit|target|profit|tp:)\s*(?:of|is|:)?\s*(\d+(?:\.\d+)?)\s*%?/i);
         if (tpMatch) tpPct = parseFloat(tpMatch[1]);
 
         const slMatch = text.match(/(?:sl|stop loss|stop|loss|risk|sl:)\s*(?:of|is|:)?\s*(\d+(?:\.\d+)?)\s*%?/i);
         if (slMatch) slPct = parseFloat(slMatch[1]);
 
-        // 3. Detect Indicators and Extract Periods
-        let strategyType = 'ema_cross';
+        // Compute adaptive TP & SL if Risk-to-Reward ratio was provided
+        if (rrRatio && rrRatio > 0) {
+            if (slMatch && !tpMatch) {
+                tpPct = +(slPct * rrRatio).toFixed(2);
+            } else if (tpMatch && !slMatch) {
+                slPct = +(tpPct / rrRatio).toFixed(2);
+            } else if (!tpMatch && !slMatch) {
+                slPct = 1.2;
+                tpPct = +(slPct * rrRatio).toFixed(2);
+            }
+        }
+
+        // 3. Detect Indicators and Market Structure Patterns
+        let strategyType = 'custom_price_action';
         let fastEma = 9;
         let slowEma = 21;
         let rsiLength = 14;
@@ -179,7 +199,12 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
         let rsiOverbought = 70;
         let bbLength = 20;
         let bbMult = 2.0;
+        let swingLookback = 10;
 
+        const hasSwing = /\b(swing|swing\s*high|swing\s*low|swings|highs?\s*(?:and|&|\/)?\s*lows?|support|resistance|s\/r|liquidity|level|levels|touch|bounce|retest)\b/i.test(text);
+        const hasBreakout = /\b(breakout|break\s*out|breaks\s*above|breaks\s*below|pierce|penetrate)\b/i.test(text);
+        const hasCandlePattern = /\b(engulfing|pin\s*bar|hammer|doji|marubozu|morning\s*star|evening\s*star|candle|reversal)\b/i.test(text);
+        const hasMa = /\b(ema|sma|moving\s*average|wma|hma)\b/i.test(text);
         const hasRsi = text.includes('rsi') || text.includes('relative strength');
         const hasMacd = text.includes('macd') || text.includes('divergence');
         const hasBollinger = text.includes('bollinger') || text.includes('bb') || text.includes('band');
@@ -188,15 +213,16 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
         const hasStoch = text.includes('stoch') || text.includes('stochastic');
 
         // Extract numbers for Moving Averages if mentioned
-        const maNumbers = text.match(/(?:ema|sma|ma)?\s*(\d{1,3})\s*(?:ema|sma|ma|\/)?\s*(?:and|with|,)?\s*(\d{1,3})?\s*(?:ema|sma|ma)?/i);
-        if (maNumbers && maNumbers[1] && maNumbers[2]) {
-            fastEma = parseInt(maNumbers[1]);
-            slowEma = parseInt(maNumbers[2]);
-            if (fastEma > slowEma) {
-                // swap so fast is smaller
-                const temp = fastEma;
-                fastEma = slowEma;
-                slowEma = temp;
+        if (hasMa) {
+            const maNumbers = text.match(/(?:ema|sma|ma)?\s*(\d{1,3})\s*(?:ema|sma|ma|\/)?\s*(?:and|with|,)?\s*(\d{1,3})?\s*(?:ema|sma|ma)?/i);
+            if (maNumbers && maNumbers[1] && maNumbers[2]) {
+                fastEma = parseInt(maNumbers[1]);
+                slowEma = parseInt(maNumbers[2]);
+                if (fastEma > slowEma) {
+                    const temp = fastEma;
+                    fastEma = slowEma;
+                    slowEma = temp;
+                }
             }
         }
 
@@ -210,10 +236,20 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
             if (obMatch) rsiOverbought = parseInt(obMatch[1]);
         }
 
+        // Extract Swing Lookback if mentioned (e.g. "recent 10 bars", "lookback 15")
+        const lookbackMatch = text.match(/(?:lookback|recent|pivot|period)\s*(?:of|is|:)?\s*(\d{1,2})/i);
+        if (lookbackMatch) swingLookback = parseInt(lookbackMatch[1]);
+
         // Determine primary strategy architecture
-        if (hasMacd) {
+        if (hasSwing) {
+            strategyType = hasBreakout ? 'swing_breakout' : 'swing_level';
+        } else if (hasBreakout && !hasMa) {
+            strategyType = 'swing_breakout';
+        } else if (hasCandlePattern) {
+            strategyType = 'price_action_reversal';
+        } else if (hasMacd) {
             strategyType = 'macd_momentum';
-        } else if (hasRsi && (text.includes('ema') || text.includes('cross') || text.includes('sma'))) {
+        } else if (hasRsi && (hasMa || text.includes('cross'))) {
             strategyType = 'multi_confluence';
         } else if (hasRsi) {
             strategyType = 'rsi_pullback';
@@ -225,13 +261,15 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
             strategyType = 'vwap_cross';
         } else if (hasStoch) {
             strategyType = 'stochastic';
-        } else {
+        } else if (hasMa) {
             strategyType = 'ema_cross';
+        } else {
+            strategyType = 'custom_price_action';
         }
 
         // Generate tailored title & structured descriptions
         const strategyTitle = this.generateStrategyTitle(strategyType, text, fastEma, slowEma, direction);
-        const { entryDesc, exitDesc, assumptions, weaknesses } = this.generateRuleMetadata(strategyType, direction, tpPct, slPct, fastEma, slowEma, rsiLength, rsiOversold, rsiOverbought);
+        const { entryDesc, exitDesc, assumptions, weaknesses } = this.generateRuleMetadata(strategyType, direction, tpPct, slPct, fastEma, slowEma, rsiLength, rsiOversold, rsiOverbought, rrRatio, promptText);
 
         const strategyData = {
             id: `strat_${Date.now()}`,
@@ -258,11 +296,12 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
                 rsiOverbought,
                 bbLength,
                 bbMult,
+                swingLookback,
                 takeProfitPct: tpPct,
                 stopLossPct: slPct
             },
             pineScriptV5: this.generateDynamicPineScript(strategyType, {
-                fastEma, slowEma, rsiLength, rsiOversold, rsiOverbought, bbLength, bbMult, takeProfitPct: tpPct, stopLossPct: slPct
+                fastEma, slowEma, rsiLength, rsiOversold, rsiOverbought, bbLength, bbMult, swingLookback, takeProfitPct: tpPct, stopLossPct: slPct
             }, symbol, timeframe, promptText, direction)
         };
 
@@ -271,6 +310,10 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
 
     generateStrategyTitle(strategyType, text, fast, slow, direction) {
         const dirPrefix = direction === 'SHORT' ? '[SHORT] ' : (direction === 'BOTH' ? '[LONG/SHORT] ' : '');
+        if (strategyType === 'swing_level') return `${dirPrefix}Swing High & Low Liquidity S/R Model`;
+        if (strategyType === 'swing_breakout') return `${dirPrefix}Market Structure Swing Breakout Model`;
+        if (strategyType === 'price_action_reversal') return `${dirPrefix}Price Action Candlestick Reversal Model`;
+        if (strategyType === 'custom_price_action') return `${dirPrefix}Custom Algorithmic Execution Model`;
         if (strategyType === 'multi_confluence') return `${dirPrefix}EMA ${fast}/${slow} + RSI Filter Scalper`;
         if (strategyType === 'macd_momentum') return `${dirPrefix}MACD Momentum + Divergence Engine`;
         if (strategyType === 'rsi_pullback') return `${dirPrefix}RSI Mean Reversion & Liquidity Sweep`;
@@ -281,13 +324,35 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
         return `${dirPrefix}EMA ${fast} / EMA ${slow} Trend Crossover`;
     },
 
-    generateRuleMetadata(strategyType, direction, tpPct, slPct, fast, slow, rsiLen, rsiOs, rsiOb) {
+    generateRuleMetadata(strategyType, direction, tpPct, slPct, fast, slow, rsiLen, rsiOs, rsiOb, rrRatio, promptText = '') {
         let entryDesc = '';
-        let exitDesc = `Take Profit ${tpPct}%, Stop Loss ${slPct}% (Fixed Risk Bracket)`;
+        const rrNote = rrRatio ? ` (1:${rrRatio} Risk-to-Reward Ratio)` : ' (Fixed Risk Bracket)';
+        let exitDesc = `Take Profit ${tpPct}%, Stop Loss ${slPct}%${rrNote}`;
         const assumptions = ['Continuous market liquidity and executable order books', 'Sufficient directional volatility during active market sessions'];
         const weaknesses = ['Susceptible to whipsaws during low-volume ranging periods', 'Potential slippage during high-impact news releases'];
 
-        if (strategyType === 'multi_confluence') {
+        if (strategyType === 'swing_level') {
+            entryDesc = direction === 'BOTH' ?
+                'LONG: Market touches recent Swing Low support level and prints bullish rebound. SHORT: Market touches recent Swing High resistance level and prints bearish rejection.' :
+                (direction === 'SHORT' ? 'SHORT: Market touches recent Swing High resistance level and prints bearish rejection.' : 'LONG: Market touches recent Swing Low support level and prints bullish rebound.');
+            assumptions.push('Local swing highs and lows act as institutional liquidity and support/resistance zones.');
+            weaknesses.push('Vulnerable to deep liquidity sweeps and strong runaway breakout trends.');
+        } else if (strategyType === 'swing_breakout') {
+            entryDesc = direction === 'BOTH' ?
+                'LONG: Candle breaks and closes above recent Swing High resistance. SHORT: Candle breaks and closes below recent Swing Low support.' :
+                (direction === 'SHORT' ? 'SHORT: Candle breaks and closes below recent Swing Low support.' : 'LONG: Candle breaks and closes above recent Swing High resistance.');
+            assumptions.push('Breakouts above key structural swing levels initiate sustained momentum expansion.');
+        } else if (strategyType === 'price_action_reversal') {
+            entryDesc = direction === 'BOTH' ?
+                'LONG: Bullish rejection candlestick pattern confirmed at support. SHORT: Bearish rejection candlestick pattern confirmed at resistance.' :
+                (direction === 'SHORT' ? 'SHORT: Bearish rejection candlestick pattern confirmed at resistance.' : 'LONG: Bullish rejection candlestick pattern confirmed at support.');
+            assumptions.push('Candle wick rejections indicate smart money absorption.');
+        } else if (strategyType === 'custom_price_action') {
+            entryDesc = direction === 'BOTH' ?
+                `LONG/SHORT: Custom logic strictly parsed from user prompt: "${promptText.trim()}".` :
+                (direction === 'SHORT' ? `SHORT: Custom logic strictly parsed from user prompt: "${promptText.trim()}".` : `LONG: Custom logic strictly parsed from user prompt: "${promptText.trim()}".`);
+            assumptions.push('Deterministic rules are executed bar-by-bar upon candle close.');
+        } else if (strategyType === 'multi_confluence') {
             entryDesc = direction === 'BOTH' ? 
                 `LONG: Fast EMA(${fast}) crosses above Slow EMA(${slow}) with RSI(${rsiLen}) > 50. SHORT: Fast EMA crosses below Slow EMA with RSI < 50.` :
                 (direction === 'SHORT' ? `SHORT: Fast EMA(${fast}) crosses below Slow EMA(${slow}) with RSI(${rsiLen}) < 50.` : `LONG: Fast EMA(${fast}) crosses above Slow EMA(${slow}) with RSI(${rsiLen}) > 50.`);
@@ -563,8 +628,74 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
                             });
                         }
                     }
+                } else if (type === 'swing_level' || type === 'custom_price_action') {
+                    // Swing High / Swing Low Structural Liquidity & S/R Touch Engine
+                    const lookback = params.swingLookback || 10;
+                    for (let i = lookback + 1; i < candles.length; i++) {
+                        let recentSwingLow = Infinity;
+                        let recentSwingHigh = -Infinity;
+                        for (let j = i - lookback; j < i; j++) {
+                            if (candles[j].low < recentSwingLow) recentSwingLow = candles[j].low;
+                            if (candles[j].high > recentSwingHigh) recentSwingHigh = candles[j].high;
+                        }
+
+                        const curr = candles[i];
+                        const prev = candles[i - 1];
+
+                        // Long: Market touches swing low level and closes above it (Bullish rejection bounce)
+                        if (isLongAllowed && (curr.low <= recentSwingLow * 1.0015 && curr.close >= recentSwingLow)) {
+                            signals.push({
+                                index: i,
+                                time: curr.time,
+                                type: 'BUY',
+                                price: curr.close,
+                                reason: `Touched Swing Low Support ($${recentSwingLow.toFixed(2)}) & Bounced Bullish`
+                            });
+                        }
+                        // Short: Market touches swing high level and closes below it (Bearish rejection)
+                        else if (isShortAllowed && (curr.high >= recentSwingHigh * 0.9985 && curr.close <= recentSwingHigh)) {
+                            signals.push({
+                                index: i,
+                                time: curr.time,
+                                type: 'SELL',
+                                price: curr.close,
+                                reason: `Touched Swing High Resistance ($${recentSwingHigh.toFixed(2)}) & Rejected Bearish`
+                            });
+                        }
+                    }
+                } else if (type === 'swing_breakout') {
+                    const lookback = params.swingLookback || 10;
+                    for (let i = lookback + 1; i < candles.length; i++) {
+                        let recentSwingLow = Infinity;
+                        let recentSwingHigh = -Infinity;
+                        for (let j = i - lookback; j < i; j++) {
+                            if (candles[j].low < recentSwingLow) recentSwingLow = candles[j].low;
+                            if (candles[j].high > recentSwingHigh) recentSwingHigh = candles[j].high;
+                        }
+
+                        const curr = candles[i];
+                        const prev = candles[i - 1];
+
+                        if (isLongAllowed && prev.close <= recentSwingHigh && curr.close > recentSwingHigh) {
+                            signals.push({
+                                index: i,
+                                time: curr.time,
+                                type: 'BUY',
+                                price: curr.close,
+                                reason: `Bullish Breakout above Swing High Resistance ($${recentSwingHigh.toFixed(2)})`
+                            });
+                        } else if (isShortAllowed && prev.close >= recentSwingLow && curr.close < recentSwingLow) {
+                            signals.push({
+                                index: i,
+                                time: curr.time,
+                                type: 'SELL',
+                                price: curr.close,
+                                reason: `Bearish Breakdown below Swing Low Support ($${recentSwingLow.toFixed(2)})`
+                            });
+                        }
+                    }
                 } else {
-                    // Default High-Precision Moving Average Engine (EMA / SMA)
+                    // Default Moving Average Engine (Used ONLY when EMA / SMA is explicitly requested)
                     const fast = Indicators.ema(closes, params.fastEma || 9);
                     const slow = Indicators.ema(closes, params.slowEma || 21);
 
@@ -611,7 +742,27 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
         let longConditionStr = 'false';
         let shortConditionStr = 'false';
 
-        if (strategyType === 'multi_confluence') {
+        if (strategyType === 'swing_level' || strategyType === 'custom_price_action') {
+            indicatorCalculations = `
+lookback = input.int(${params.swingLookback || 10}, "Swing Lookback Bars", group="Market Structure")
+swingHigh = ta.highest(high, lookback)[1]
+swingLow  = ta.lowest(low, lookback)[1]
+plot(swingHigh, "Swing High (Resistance)", color=color.red, linewidth=2, style=plot.style_linebr)
+plot(swingLow, "Swing Low (Support)", color=color.green, linewidth=2, style=plot.style_linebr)
+`;
+            longConditionStr = `(low <= swingLow and close >= swingLow)`;
+            shortConditionStr = `(high >= swingHigh and close <= swingHigh)`;
+        } else if (strategyType === 'swing_breakout') {
+            indicatorCalculations = `
+lookback = input.int(${params.swingLookback || 10}, "Swing Lookback Bars", group="Market Structure")
+swingHigh = ta.highest(high, lookback)[1]
+swingLow  = ta.lowest(low, lookback)[1]
+plot(swingHigh, "Swing High (Resistance)", color=color.red, linewidth=2)
+plot(swingLow, "Swing Low (Support)", color=color.green, linewidth=2)
+`;
+            longConditionStr = `ta.crossover(close, swingHigh)`;
+            shortConditionStr = `ta.crossunder(close, swingLow)`;
+        } else if (strategyType === 'multi_confluence') {
             indicatorCalculations = `
 fastEma = ta.ema(close, input.int(${params.fastEma || 9}, "Fast EMA Length", group="Moving Averages"))
 slowEma = ta.ema(close, input.int(${params.slowEma || 21}, "Slow EMA Length", group="Moving Averages"))

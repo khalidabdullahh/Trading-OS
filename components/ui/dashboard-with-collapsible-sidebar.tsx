@@ -578,8 +578,11 @@ const TradingDashboardContent = ({
         }))
       );
 
-      // Add Fast & Slow EMA overlays only if a strategy is active
-      if (currentStrategy) {
+      // Add indicator overlays matching the specific strategy type
+      if (
+        currentStrategy &&
+        (currentStrategy.strategyType === "ema_cross" || currentStrategy.strategyType === "multi_confluence")
+      ) {
         const closes = candles.map((c) => c.close);
         const fastEma = Indicators.ema(closes, currentStrategy?.defaultParams?.fastEma || 9);
         const slowEma = Indicators.ema(closes, currentStrategy?.defaultParams?.slowEma || 21);
@@ -597,6 +600,33 @@ const TradingDashboardContent = ({
             .map((c, i) => ({ time: c.time, value: slowEma[i] }))
             .filter((pt) => pt.value !== null)
         );
+      } else if (
+        currentStrategy &&
+        (currentStrategy.strategyType === "swing_level" ||
+          currentStrategy.strategyType === "swing_breakout" ||
+          currentStrategy.strategyType === "custom_price_action")
+      ) {
+        // Plot Dynamic Swing High (Resistance) and Swing Low (Support) levels
+        const lookback = currentStrategy?.defaultParams?.swingLookback || 10;
+        const swingHighPoints: any[] = [];
+        const swingLowPoints: any[] = [];
+
+        for (let i = lookback; i < candles.length; i++) {
+          let sHigh = -Infinity;
+          let sLow = Infinity;
+          for (let j = i - lookback; j < i; j++) {
+            if (candles[j].high > sHigh) sHigh = candles[j].high;
+            if (candles[j].low < sLow) sLow = candles[j].low;
+          }
+          swingHighPoints.push({ time: candles[i].time, value: sHigh });
+          swingLowPoints.push({ time: candles[i].time, value: sLow });
+        }
+
+        const highSeries = chart.addSeries(LineSeries, { color: "#f43f5e", lineWidth: 2, lineStyle: 2 });
+        const lowSeries = chart.addSeries(LineSeries, { color: "#10b981", lineWidth: 2, lineStyle: 2 });
+
+        highSeries.setData(swingHighPoints);
+        lowSeries.setData(swingLowPoints);
       }
 
       // Add Trade Markers if backtest completed
@@ -1089,56 +1119,14 @@ const TradingDashboardContent = ({
                     rows={3}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="e.g. Buy Gold (XAU/USD) when 9 EMA crosses 21 EMA with RSI > 45. TP 2.5%, SL 1%."
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700/80 bg-slate-50 dark:bg-[#050811] p-3 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Describe your entry, exit & risk rules (e.g. Mark recent swing high lows, when market touches swing low enter trade with 1:2 R:R, or RSI oversold bounce, etc.)..."
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700/80 bg-slate-50 dark:bg-[#050811] p-3 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-cyan-500 font-sans"
                   />
-
-                  {/* Quick Templates */}
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1.5">
-                      Quick Research Templates:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        {
-                          title: "🏆 Gold 9/21 Scalp",
-                          p: "Buy Gold (XAU/USD) when 9 EMA crosses above 21 EMA with RSI > 45. Take Profit 2.5%, Stop Loss 1.0%.",
-                          dir: "LONG" as const,
-                        },
-                        {
-                          title: "🔴 9/21 Bearish Short",
-                          p: "Short when 9 EMA crosses below 21 EMA with RSI < 50. Take Profit 2.5%, Stop Loss 1.2%.",
-                          dir: "SHORT" as const,
-                        },
-                        {
-                          title: "💎 RSI Mean Reversion",
-                          p: "Buy when RSI(14) is oversold below 28 and bounces up. Take Profit 3.5%, Stop Loss 1.5%.",
-                          dir: "LONG" as const,
-                        },
-                        {
-                          title: "🚀 SuperTrend Trend",
-                          p: "SuperTrend ATR trend breakout strategy. Buy on bullish flip with 4% Take Profit, 1.5% Stop Loss.",
-                          dir: "BOTH" as const,
-                        },
-                      ].map((t, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setPrompt(t.p);
-                            setDirectionMode(t.dir);
-                          }}
-                          className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 transition-colors"
-                        >
-                          {t.title}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
                   <button
                     onClick={handleCompileAndRun}
                     disabled={isSimulating}
-                    className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                    className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     <Zap className="h-4 w-4 fill-current" />
                     <span>{isSimulating ? "Compiling & Simulating..." : "⚡ Build & Run Strategy"}</span>
@@ -1162,7 +1150,7 @@ const TradingDashboardContent = ({
                       <span className="text-emerald-500 font-bold block mb-0.5">Entry Trigger:</span>
                       <p className="text-slate-700 dark:text-slate-300">
                         {currentStrategy?.structuredRules?.entryTrigger ||
-                          "Awaiting custom rules. Type in the prompt box above or select a template."}
+                          "Awaiting custom rules. Type your strategy rules in the prompt box above."}
                       </p>
                     </div>
                     <div className="text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
@@ -1219,12 +1207,27 @@ const TradingDashboardContent = ({
                       </button>
                     </div>
 
-                    {currentStrategy && (
-                      <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
-                        <span className="text-cyan-500 font-bold">● Fast EMA ({currentStrategy?.defaultParams?.fastEma || 9})</span>
-                        <span className="text-amber-500 font-bold">● Slow EMA ({currentStrategy?.defaultParams?.slowEma || 21})</span>
-                      </div>
-                    )}
+                    {currentStrategy &&
+                      (currentStrategy.strategyType === "ema_cross" ||
+                        currentStrategy.strategyType === "multi_confluence") && (
+                        <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
+                          <span className="text-cyan-500 font-bold">
+                            ● Fast EMA ({currentStrategy?.defaultParams?.fastEma || 9})
+                          </span>
+                          <span className="text-amber-500 font-bold">
+                            ● Slow EMA ({currentStrategy?.defaultParams?.slowEma || 21})
+                          </span>
+                        </div>
+                      )}
+                    {currentStrategy &&
+                      (currentStrategy.strategyType === "swing_level" ||
+                        currentStrategy.strategyType === "swing_breakout" ||
+                        currentStrategy.strategyType === "custom_price_action") && (
+                        <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
+                          <span className="text-rose-500 font-bold">● Swing High (Resistance)</span>
+                          <span className="text-emerald-500 font-bold">● Swing Low (Support)</span>
+                        </div>
+                      )}
                   </div>
 
                   <div className="flex items-center gap-2.5">
