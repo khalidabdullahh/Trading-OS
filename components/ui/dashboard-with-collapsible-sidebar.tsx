@@ -878,14 +878,19 @@ const TradingDashboardContent = ({
 
       <div className="p-3 sm:p-6 flex-1 flex flex-col justify-between">
         {/* Top Header Bar */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-              {currentStrategy ? currentStrategy.name : "⚡ Quantitative Strategy Terminal"}
-            </h1>
-            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Institutional Algorithmic Research, Bar-by-bar Backtester & Pine Script Engine
-            </p>
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 pb-4 sm:pb-5 mb-5 sm:mb-6 border-b border-slate-200/80 dark:border-slate-800/80">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 dark:text-cyan-400 flex items-center justify-center text-lg font-black shrink-0 shadow-xs">
+              ⚡
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 truncate">
+                {currentStrategy ? currentStrategy.name.replace(/^⚡\s*/, "") : "Quantitative Strategy Terminal"}
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
+                Institutional Algorithmic Research • Bar-by-Bar Backtester • Pine Script Engine
+              </p>
+            </div>
           </div>
 
           {/* Unified Controls Toolbar - Flat, Clean, Non-collapsing single row */}
