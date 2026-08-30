@@ -36,11 +36,12 @@ const BacktestEngine = {
         const trailingStopDistancePct = (config.trailingStopPct || 1.0) / 100;
         const useBreakEven = config.useBreakEven || false;
         const breakEvenTriggerPct = (config.breakEvenTriggerPct || 1.5) / 100;
-        // Generate raw strategy signals strictly on historical bars
-        const rawSignals = strategy.execute(candles, params);
-        const hasSellSignals = Array.isArray(rawSignals) && rawSignals.some(s => s.type === 'SELL');
-        const isShortStrategy = strategy.structuredRules?.direction === 'SHORT' || strategy.structuredRules?.direction === 'BOTH' || hasSellSignals;
-        const allowShorts = config.allowShorts !== undefined ? config.allowShorts : isShortStrategy;
+        const activeDir = config.direction || strategy.direction || strategy.structuredRules?.direction || 'BOTH';
+        const allowLongs = config.allowLongs !== undefined ? config.allowLongs : (activeDir === 'LONG' || activeDir === 'BOTH');
+        const allowShorts = config.allowShorts !== undefined ? config.allowShorts : (activeDir === 'SHORT' || activeDir === 'BOTH');
+
+        // Generate raw strategy signals strictly on historical bars with active direction
+        const rawSignals = strategy.execute(candles, params, activeDir);
         
         // Map signals by bar index for O(1) bar-by-bar execution simulation
         const signalMap = new Map();
@@ -194,7 +195,7 @@ const BacktestEngine = {
             // =========================================================================
             if (!currentPosition && signal) {
                 let entryDirection = null;
-                if (signal.type === 'BUY') {
+                if (signal.type === 'BUY' && allowLongs) {
                     entryDirection = 'LONG';
                 } else if (signal.type === 'SELL' && allowShorts) {
                     entryDirection = 'SHORT';

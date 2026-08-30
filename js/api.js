@@ -118,13 +118,33 @@ const MarketAPI = {
         };
     },
 
+    // Deterministic Mulberry32 PRNG for stable, reproducible market candles across refreshes
+    _createRng(seed) {
+        let s = seed >>> 0;
+        return function() {
+            s |= 0; s = s + 0x6D2B79F5 | 0;
+            let t = Math.imul(s ^ s >>> 15, 1 | s);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    },
+
+    _hashSeed(str) {
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < str.length; i++) {
+            hash ^= str.charCodeAt(i);
+            hash = Math.imul(hash, 0x01000193);
+        }
+        return hash >>> 0;
+    },
+
     /**
      * Quantitative Geometric Brownian Motion Market Generator with Microstructure Volatility
+     * 100% Deterministic & Stable across page reloads
      */
     generateMarketCandles(symbol, interval, limit = 500, pairInfo) {
         const pair = pairInfo || this.SUPPORTED_PAIRS.find(p => p.symbol === symbol) || { basePrice: 100, market: 'STOCKS' };
         let currentPrice = pair.basePrice;
-        const now = Math.floor(Date.now() / 1000);
         
         let secondsPerBar = 900; // default 15m
         if (interval === '1m') secondsPerBar = 60;
@@ -134,12 +154,20 @@ const MarketAPI = {
         else if (interval === '4h') secondsPerBar = 14400;
         else if (interval === '1d') secondsPerBar = 86400;
 
-        const startTime = now - (limit * secondsPerBar);
+        // Anchor time to aligned bar intervals so timestamps are stable
+        const now = Math.floor(Date.now() / 1000);
+        const alignedNow = now - (now % secondsPerBar);
+        const startTime = alignedNow - (limit * secondsPerBar);
         const candles = [];
+
+        // Stable daily seed: candles remain consistent throughout the day across any number of refreshes
+        const dateBucket = new Date().toISOString().slice(0, 10);
+        const seed = this._hashSeed(`${symbol}_${interval}_${dateBucket}`);
+        const rng = this._createRng(seed);
 
         // Market-specific volatility parameters
         let volatility = 0.005;
-        let trendBias = (Math.random() - 0.49) * 0.0004;
+        let trendBias = (rng() - 0.49) * 0.0004;
 
         if (pair.market === 'FOREX') {
             volatility = 0.0012; // Forex has tighter percentage ranges
@@ -154,14 +182,14 @@ const MarketAPI = {
         for (let i = 0; i < limit; i++) {
             const time = startTime + (i * secondsPerBar);
             
-            const shock = (Math.random() - 0.5) * 2;
+            const shock = (rng() - 0.5) * 2;
             const returnPct = trendBias + shock * volatility;
             
             const open = currentPrice;
             const close = open * (1 + returnPct);
-            const high = Math.max(open, close) * (1 + Math.random() * (volatility * 0.7));
-            const low = Math.min(open, close) * (1 - Math.random() * (volatility * 0.7));
-            const volume = Math.floor(Math.random() * 800 + 100) * (currentPrice > 1000 ? 1 : 50);
+            const high = Math.max(open, close) * (1 + rng() * (volatility * 0.7));
+            const low = Math.min(open, close) * (1 - rng() * (volatility * 0.7));
+            const volume = Math.floor(rng() * 800 + 100) * (currentPrice > 1000 ? 1 : 50);
 
             candles.push({
                 time,
@@ -175,7 +203,7 @@ const MarketAPI = {
             currentPrice = close;
 
             if (i % 75 === 0) {
-                trendBias = (Math.random() - 0.5) * 0.0006;
+                trendBias = (rng() - 0.5) * 0.0006;
             }
         }
 

@@ -734,12 +734,15 @@ const TradingDashboardContent = ({
       }
       setCurrentStrategy(compiled);
 
-      // 3. Run bar-by-bar backtest simulation with SHORT support
+      // 3. Run bar-by-bar backtest simulation with accurate direction guards
+      const allowLongs = directionMode === "LONG" || directionMode === "BOTH";
       const allowShorts = directionMode === "SHORT" || directionMode === "BOTH";
       const result = BacktestEngine.run(fetchedCandles, compiled, compiled.defaultParams, {
         initialCapital: 10000,
         feePct: 0.075,
         slippagePct: 0.02,
+        direction: directionMode,
+        allowLongs,
         allowShorts,
       });
 
@@ -748,6 +751,57 @@ const TradingDashboardContent = ({
       console.error("[Trading-OS] Simulation error:", e);
     } finally {
       setIsSimulating(false);
+    }
+  };
+
+  // Instant Reactive Direction Switcher: Updates strategy rules and immediately re-evaluates backtest
+  const handleDirectionChange = (newDir: "LONG" | "SHORT" | "BOTH") => {
+    setDirectionMode(newDir);
+
+    if (currentStrategy) {
+      // 1. Update strategy direction and rule inspector texts
+      const updatedStrategy = {
+        ...currentStrategy,
+        direction: newDir,
+      };
+
+      if (updatedStrategy.structuredRules) {
+        const metadata = GeminiEngine.generateRuleMetadata(
+          updatedStrategy.strategyType,
+          newDir,
+          updatedStrategy.defaultParams?.takeProfitPct || 3.0,
+          updatedStrategy.defaultParams?.stopLossPct || 1.5,
+          updatedStrategy.defaultParams?.fastEma || 9,
+          updatedStrategy.defaultParams?.slowEma || 21,
+          updatedStrategy.defaultParams?.rsiLength || 14,
+          updatedStrategy.defaultParams?.rsiOversold || 30,
+          updatedStrategy.defaultParams?.rsiOverbought || 70,
+          null,
+          prompt
+        );
+        updatedStrategy.structuredRules = {
+          ...updatedStrategy.structuredRules,
+          direction: newDir,
+          entryTrigger: metadata.entryDesc,
+          exitTrigger: metadata.exitDesc,
+        };
+      }
+      setCurrentStrategy(updatedStrategy);
+
+      // 2. If backtest was previously run and candles exist, immediately recalculate PnL & chart markers!
+      if (candles && candles.length > 0 && backtestResult) {
+        const allowLongs = newDir === "LONG" || newDir === "BOTH";
+        const allowShorts = newDir === "SHORT" || newDir === "BOTH";
+        const newResult = BacktestEngine.run(candles, updatedStrategy, updatedStrategy.defaultParams, {
+          initialCapital: 10000,
+          feePct: 0.075,
+          slippagePct: 0.02,
+          direction: newDir,
+          allowLongs,
+          allowShorts,
+        });
+        setBacktestResult(newResult);
+      }
     }
   };
 
@@ -1076,8 +1130,8 @@ const TradingDashboardContent = ({
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
-                      onClick={() => setDirectionMode("LONG")}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
+                      onClick={() => handleDirectionChange("LONG")}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
                         directionMode === "LONG"
                           ? "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-sm"
                           : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-200"
@@ -1087,8 +1141,8 @@ const TradingDashboardContent = ({
                       <span>LONG (Buy)</span>
                     </button>
                     <button
-                      onClick={() => setDirectionMode("SHORT")}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
+                      onClick={() => handleDirectionChange("SHORT")}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
                         directionMode === "SHORT"
                           ? "bg-rose-500/20 border-rose-500 text-rose-500 shadow-sm"
                           : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-200"
@@ -1098,8 +1152,8 @@ const TradingDashboardContent = ({
                       <span>SHORT (Sell)</span>
                     </button>
                     <button
-                      onClick={() => setDirectionMode("BOTH")}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
+                      onClick={() => handleDirectionChange("BOTH")}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
                         directionMode === "BOTH"
                           ? "bg-cyan-500/20 border-cyan-500 text-cyan-500 shadow-sm"
                           : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-200"

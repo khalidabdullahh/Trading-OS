@@ -446,8 +446,11 @@ Respond ONLY with a strictly valid JSON object without markdown fences or codebl
             /**
              * Universal Dynamic Signal Evaluation Engine
              */
-            execute: (candles, params) => {
+            execute: function(candles, params, executionDirection) {
                 if (!candles || candles.length < 10) return [];
+                const activeDir = executionDirection || this.direction || rawStrategy.direction || 'BOTH';
+                const isLongAllowed = activeDir === 'LONG' || activeDir === 'BOTH';
+                const isShortAllowed = activeDir === 'SHORT' || activeDir === 'BOTH';
                 const closes = candles.map(c => c.close);
                 const signals = [];
 
