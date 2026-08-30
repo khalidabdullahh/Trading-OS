@@ -91,8 +91,8 @@ export const Example = () => {
   }, [isDark]);
 
   return (
-    <div className={`flex min-h-screen w-full ${isDark ? "dark" : ""}`}>
-      <div className="flex w-full bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-x-hidden">
+    <div className={`flex h-screen w-screen overflow-hidden ${isDark ? "dark" : ""}`}>
+      <div className="flex h-full w-full bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
         <Sidebar
           selected={selectedNav}
           setSelected={setSelectedNav}
@@ -154,9 +154,9 @@ const Sidebar = ({
     <>
       {/* 1. Desktop Collapsible Sidebar (Hidden on Mobile < md) */}
       <nav
-        className={`hidden md:flex sticky top-0 h-screen shrink-0 border-r transition-all duration-300 ease-in-out ${
+        className={`hidden md:flex h-full shrink-0 border-r transition-all duration-300 ease-in-out ${
           open ? "w-64" : "w-16"
-        } border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-2 shadow-sm flex-col justify-between z-30`}
+        } border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-2 shadow-sm flex-col justify-between z-30 overflow-y-auto overflow-x-hidden`}
       >
         <div>
           <TitleSection open={open} />
@@ -831,12 +831,20 @@ const TradingDashboardContent = ({
     totalTrades: 0,
   };
 
+  const mainContainerRef = useRef<HTMLDivElement>(null);
+
   const scrollToTop = () => {
+    if (mainContainerRef.current) {
+      mainContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <div className="flex-1 bg-slate-50 dark:bg-[#050811] overflow-x-hidden overflow-y-auto flex flex-col min-w-0">
+    <div
+      ref={mainContainerRef}
+      className="flex-1 h-full bg-slate-50 dark:bg-[#050811] overflow-x-hidden overflow-y-auto flex flex-col min-w-0"
+    >
       {/* Mobile Top Header (Visible only on screens < md) */}
       <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-[#090e1a]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex items-center gap-2">
