@@ -35,7 +35,9 @@ import {
   Menu,
   BrainCircuit,
   Search,
-  LayoutGrid
+  LayoutGrid,
+  Sparkles,
+  User as UserIcon
 } from "lucide-react";
 import {
   createChart,
@@ -71,6 +73,11 @@ import { AIAnalystView } from "@/src/components/intelligence/AIAnalystView";
 import { SettingsView } from "@/src/components/system/SettingsView";
 import { LandingPage } from "@/src/components/landing/LandingPage";
 import { CommandPalette } from "@/src/components/command/CommandPalette";
+import { AuthModal } from "@/src/components/auth/AuthModal";
+import { PricingModal } from "@/src/components/pricing/PricingModal";
+import { MarketPairSelector } from "@/src/components/markets/MarketPairSelector";
+import { AuthService } from "@/src/services/auth/authService";
+import { StorageAdapter } from "@/src/services/storage/storageAdapter";
 
 export const Example = () => {
   const [isDark, setIsDark] = useState(true);
@@ -81,6 +88,15 @@ export const Example = () => {
 
   // Selected symbol for global sync
   const [activeSymbol, setActiveSymbol] = useState("BTCUSDT");
+
+  // User auth state
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    try {
+      return AuthService.getCurrentUser();
+    } catch (e) {
+      return { id: "usr_demo_trader", email: "trader@tradingos.io" };
+    }
+  });
 
   // License state (Unlocked vs Locked)
   const [isLicenseUnlocked, setIsLicenseUnlocked] = useState<boolean>(() => {
@@ -98,8 +114,14 @@ export const Example = () => {
     } catch (e) {}
   };
 
+  const handleLogout = () => {
+    AuthService.logout();
+    setCurrentUser(AuthService.getCurrentUser());
+  };
+
   // Modals state
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Sync dark class to html
@@ -122,8 +144,11 @@ export const Example = () => {
           selected={selectedNav}
           setSelected={setSelectedNav}
           openSettings={() => setSelectedNav("Settings")}
+          openPricing={() => setIsPricingOpen(true)}
+          openAuth={() => setIsAuthOpen(true)}
           openHelp={() => setIsHelpOpen(true)}
           openLanding={() => setIsLandingPageOpen(true)}
+          currentUser={currentUser}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
@@ -132,7 +157,11 @@ export const Example = () => {
           setIsDark={setIsDark}
           selectedNav={selectedNav}
           setSelectedNav={setSelectedNav}
-          openCheckout={() => setIsCheckoutOpen(true)}
+          openCheckout={() => setIsPricingOpen(true)}
+          openAuth={() => setIsAuthOpen(true)}
+          openPricing={() => setIsPricingOpen(true)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
           isLicenseUnlocked={isLicenseUnlocked}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
@@ -152,14 +181,21 @@ export const Example = () => {
           }}
         />
 
-        {/* Global Modals */}
-        {isCheckoutOpen && (
-          <CheckoutModal
-            isDark={isDark}
-            onClose={() => setIsCheckoutOpen(false)}
-            onUnlock={handleUnlockLicense}
-          />
-        )}
+        {/* Authentication Modal (Google OAuth & Email) */}
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          onAuthSuccess={(user) => setCurrentUser(user)}
+        />
+
+        {/* Pricing & Paid Subscription Modal (Binance Pay & Crypto Checkout) */}
+        <PricingModal
+          isOpen={isPricingOpen}
+          onClose={() => setIsPricingOpen(false)}
+          onSuccessUpgrade={(tier) => handleUnlockLicense()}
+        />
+
+        {/* Help & Documentation Modal */}
         {isHelpOpen && (
           <HelpModal isDark={isDark} onClose={() => setIsHelpOpen(false)} />
         )}
@@ -175,16 +211,22 @@ const Sidebar = ({
   selected,
   setSelected,
   openSettings,
+  openPricing,
+  openAuth,
   openHelp,
   openLanding,
+  currentUser,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
 }: {
   selected: string;
   setSelected: (val: string) => void;
   openSettings: () => void;
+  openPricing: () => void;
+  openAuth: () => void;
   openHelp: () => void;
   openLanding: () => void;
+  currentUser: any;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (val: boolean) => void;
 }) => {
@@ -195,6 +237,7 @@ const Sidebar = ({
       group: "OVERVIEW",
       items: [
         { title: "Dashboard", icon: Home },
+        { title: "Pricing & Plans ($9)", icon: Sparkles },
       ]
     },
     {
@@ -295,6 +338,11 @@ const Sidebar = ({
                   <button
                     key={item.title}
                     onClick={() => {
+                      if (item.title === "Pricing & Plans ($9)") {
+                        openPricing();
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
                       setSelected(item.title);
                       setIsMobileMenuOpen(false);
                     }}
@@ -315,6 +363,32 @@ const Sidebar = ({
 
         {/* Sidebar Footer */}
         <div className="p-2.5 border-t border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+          {currentUser && currentUser.email && currentUser.id !== "usr_demo_trader" ? (
+            <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 mb-1 flex items-center justify-between">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center shrink-0">
+                  {currentUser.email.charAt(0).toUpperCase()}
+                </div>
+                {open && (
+                  <div className="flex flex-col truncate">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] truncate">
+                      {currentUser.fullName || currentUser.email.split("@")[0]}
+                    </span>
+                    <span className="text-[9px] font-mono text-cyan-400 font-bold">PRO SUBSCRIBER</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={openAuth}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold transition cursor-pointer mb-1 shadow-xs"
+            >
+              <UserIcon className="h-4 w-4 shrink-0" />
+              {open && <span>Sign In / Register</span>}
+            </button>
+          )}
+
           <button
             onClick={openLanding}
             className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
@@ -344,6 +418,10 @@ const TradingDashboardContent = ({
   selectedNav,
   setSelectedNav,
   openCheckout,
+  openAuth,
+  openPricing,
+  currentUser,
+  onLogout,
   isLicenseUnlocked,
   setIsMobileMenuOpen,
   onOpenCommandPalette,
@@ -356,6 +434,10 @@ const TradingDashboardContent = ({
   selectedNav: string;
   setSelectedNav: (val: string) => void;
   openCheckout: () => void;
+  openAuth: () => void;
+  openPricing: () => void;
+  currentUser: any;
+  onLogout: () => void;
   isLicenseUnlocked: boolean;
   setIsMobileMenuOpen: (val: boolean) => void;
   onOpenCommandPalette: () => void;
@@ -545,8 +627,8 @@ const TradingDashboardContent = ({
   return (
     <main className="flex-1 flex flex-col h-full min-w-0 bg-slate-50 dark:bg-[#050811] overflow-hidden">
       {/* Top Application Bar */}
-      <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] px-4 flex items-center justify-between shrink-0 gap-3">
-        <div className="flex items-center gap-3">
+      <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
@@ -554,26 +636,39 @@ const TradingDashboardContent = ({
             <Menu className="h-5 w-5" />
           </button>
 
+          {/* Interactive Multi-Asset Market Pair Selector */}
+          <MarketPairSelector
+            activeSymbol={activeSymbol}
+            onSelectSymbol={(sym) => {
+              setActiveSymbol(sym);
+              setSelectedNav("Charts & Backtest");
+            }}
+          />
+
           {/* Quick Search Button / Command Palette Trigger */}
           <button
             onClick={onOpenCommandPalette}
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:border-cyan-500/40 transition cursor-pointer w-64 justify-between"
+            className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:border-cyan-500/40 transition cursor-pointer w-56 justify-between"
           >
             <div className="flex items-center gap-1.5">
               <Search className="h-3.5 w-3.5 text-cyan-500" />
-              <span>Search symbols, tools, pages...</span>
+              <span>Search tools, assets...</span>
             </div>
             <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono text-slate-500">⌘K</kbd>
           </button>
         </div>
 
         {/* Right Header Status */}
-        <div className="flex items-center gap-3">
-          {/* Active Symbol Pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>{activeSymbol}</span>
-          </div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Upgrade to Pro ($9) Button */}
+          <button
+            onClick={openPricing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 hover:border-amber-500/60 font-bold text-xs transition cursor-pointer shadow-xs"
+          >
+            <Zap className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            <span className="hidden sm:inline">Upgrade Pro ($9)</span>
+            <span className="sm:hidden">Pro $9</span>
+          </button>
 
           {/* Theme Toggle */}
           <button
@@ -584,11 +679,36 @@ const TradingDashboardContent = ({
             {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
           </button>
 
-          {/* License Badge */}
-          <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-mono font-bold">
-            <Check className="h-3.5 w-3.5" />
-            <span>PRO LICENSE</span>
-          </span>
+          {/* User Auth / Account Dropdown */}
+          {currentUser && currentUser.email && currentUser.id !== "usr_demo_trader" ? (
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-[10px] flex items-center justify-center">
+                  {currentUser.email.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate hidden md:inline">
+                  {currentUser.email.split("@")[0]}
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                  PRO
+                </span>
+              </div>
+              <button
+                onClick={onLogout}
+                className="text-[11px] text-slate-400 hover:text-rose-400 transition cursor-pointer hidden sm:inline"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={openAuth}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer"
+            >
+              <UserIcon className="h-3.5 w-3.5" />
+              <span>Sign In / Create Account</span>
+            </button>
+          )}
         </div>
       </header>
 
