@@ -43,7 +43,6 @@ import {
   CandlestickSeries,
   LineSeries,
   AreaSeries,
-  createSeriesMarkers,
 } from "lightweight-charts";
 
 // Import core Trading-OS engines
@@ -448,7 +447,9 @@ const TradingDashboardContent = ({
       // Add Trade Markers if backtest completed
       if (backtestResult?.chartMarkers && backtestResult.chartMarkers.length > 0) {
         try {
-          createSeriesMarkers(candlestickSeries, backtestResult.chartMarkers);
+          if (typeof (candlestickSeries as any).setMarkers === "function") {
+            (candlestickSeries as any).setMarkers(backtestResult.chartMarkers);
+          }
         } catch (e) {}
       }
     } else {
