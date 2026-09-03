@@ -169,14 +169,23 @@ export class StorageAdapter {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    this.saveTradingAccount(defaultAccount);
+    try {
+      localStorage.setItem(this.getKey(userId, "accounts"), JSON.stringify([defaultAccount]));
+    } catch {}
     return [defaultAccount];
   }
 
   static saveTradingAccount(account: TradingAccount): void {
-    const list = this.getTradingAccounts(account.userId).filter(a => a.id !== account.id);
+    let list: TradingAccount[] = [];
+    try {
+      const data = localStorage.getItem(this.getKey(account.userId, "accounts"));
+      if (data) list = JSON.parse(data);
+    } catch {}
+    list = list.filter(a => a.id !== account.id);
     list.push(account);
-    localStorage.setItem(this.getKey(account.userId, "accounts"), JSON.stringify(list));
+    try {
+      localStorage.setItem(this.getKey(account.userId, "accounts"), JSON.stringify(list));
+    } catch {}
   }
 
   // =========================================================================
