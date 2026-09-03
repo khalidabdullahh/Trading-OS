@@ -1,6 +1,57 @@
-# ⚡ Trading-OS v1.02 — AI-Assisted Quantitative Trading Research & Strategy Validation Platform
+# ⚡ Trading-OS v1.02 — Institutional Quantitative Trading Research & Strategy Validation Platform
 
-A professional, production-grade quantitative trading research platform featuring Google Gemini AI natural language strategy conversion, multi-asset backtesting (Crypto, Forex, Gold, US Stocks), Walk-Forward Testing, Monte Carlo Robustness Lab, Parameter Sensitivity Heatmaps, Market Regime Analysis, Strategy Health Scoring (0–100), AI Trade Explainer, and $9 USDT Binance Pay (UID: 716216436) monetization.
+A professional, production-grade quantitative trading research platform featuring Google Gemini AI natural language strategy compilation, multi-asset backtesting (Crypto, Forex, Gold, US Stocks), Walk-Forward Testing, Monte Carlo Robustness Lab, Parameter Sensitivity Heatmaps, Market Regime Analysis, Strategy Health Scoring (0–100), AI Trade Explainer, and $9 USDT Binance Pay (UID: 716216436) monetization.
+
+---
+
+## 🏛️ System Architecture Overview
+
+Trading-OS is built on a resilient, multi-layer reactive pipeline designed to bridge intuitive qualitative trading logic with institutional mathematical validation:
+
+<p align="center">
+  <img src="docs/assets/system_architecture.png" alt="Trading-OS System Architecture" width="100%">
+</p>
+
+### Key Architectural Pillars:
+1. **Interactive Frontend & Quant Terminal:** React 18, Vite, TailwindCSS, and TradingView Lightweight Charts with reactive state management and instant multi-timeframe switching.
+2. **Multi-Asset Market Data Layer (`js/api.js`):** Ingests live Binance Kline streams (500 historical candles) across Crypto, Forex pairs, Gold (XAUUSD), and US Indices.
+3. **Dual-Engine Strategy Compiler (`js/geminiEngine.js`):** Blends deep Google Gemini 1.5 Flash AI reasoning with a zero-latency deterministic offline regex heuristic engine and fail-safe price action fallback.
+4. **Zero-Lookahead Execution Engine (`js/backtestEngine.js`):** Bar-by-bar chronological execution simulating realistic broker conditions (0.075% commission + 0.02% slippage).
+5. **Multi-Regime Quant Verification Lab:** Walk-Forward Out-of-Sample testing, 1,000-run Monte Carlo stress simulation, parameter sensitivity heatmaps, and a 0–100 composite health score.
+
+---
+
+## ⚡ Natural Language Strategy Compilation Pipeline
+
+How Trading-OS converts user thoughts (in English, Bengali, or Banglish) into fully verified mathematical models:
+
+<p align="center">
+  <img src="docs/assets/strategy_generation_pipeline.png" alt="Trading-OS Strategy Compilation Pipeline" width="100%">
+</p>
+
+### Why Even Minimal Prompts (e.g., typing 'H') Work Without Crashing:
+- **Resilient Fallback Design:** Trading-OS operates on a zero-crash policy. When an input doesn't contain explicit indicator keywords (like *RSI*, *EMA*, or *MACD*), the engine doesn't throw a runtime error.
+- **Institutional Liquidity Rebound Model:** It defaults to a structural **Swing High / Swing Low Support-Resistance Rejection Model** with an adaptive **1:2 Risk-to-Reward ratio (3.0% TP / 1.5% SL)**.
+- **Immediate Executability:** The model instantly generates bar-by-bar buy/sell signals on historical candles and exports native **TradingView Pine Script v5** code ready for production deployment.
+
+---
+
+## 🔬 Institutional 6-Pillar Strategy Verification Flow
+
+Trading-OS helps quantitative traders and retail investors overcome the #1 trap in algorithmic trading: **Curve-Fitting & False Optimism**. Every strategy undergoes an automated 6-pillar validation process:
+
+<p align="center">
+  <img src="docs/assets/quant_validation_workflow.png" alt="Institutional 6-Pillar Strategy Verification Flow" width="100%">
+</p>
+
+| Pillar | Quantitative Purpose | Target Benchmark |
+| :--- | :--- | :--- |
+| **1. In-Sample Backtest** | Baseline bar-by-bar historical simulation with realistic fee (0.075%) and slippage (0.02%). | Profit Factor > 1.30, Win Rate > 45% |
+| **2. Walk-Forward & OOS** | 60% Train / 40% Test split to verify that alpha persists on unseen future market regimes. | Walk-Forward Efficiency (WFE) > 60% |
+| **3. Monte Carlo Stress** | 1,000 randomized bootstrap iterations with trade sequence shuffling and ±15% noise. | Probability of Ruin < 5%, VaR 95% Drawdown |
+| **4. Sensitivity Plateau** | 2D parameter surface test to separate robust profit plateaus from fragile cliff-edge spikes. | Plateau Stability > 70% |
+| **5. Regime Classifier** | Segregates performance across 5 market conditions (Bull, Bear, Ranging, High/Low Volatility). | Positive Expectancy in primary target regime |
+| **6. Composite Health Score** | Transparent 0–100 multi-factor quantitative audit score. | Score ≥ 70/100 (Deployable Grade) |
 
 ---
 

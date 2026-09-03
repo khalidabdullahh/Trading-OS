@@ -46,32 +46,6 @@ export default async function handler(req, res) {
             verifiedAt: new Date().toISOString()
         });
 
-        // Send Telegram notification to admin
-        try {
-            const botToken = atob('ODg3MDgwNjI5MTpBQUd5amdxLWlPUnRBbzBxRXE1OUkxamI2aW5UU3FqWGd0SQ==');
-            const chatId = '5334373578';
-            const tgMsg = `✅ <b>REAL BINANCE PAY RECEIVED (GMAIL VERIFIED)!</b>\n` +
-                          `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                          `💰 <b>Amount:</b> $${parsedAmount.toFixed(2)} USDT\n` +
-                          `🔢 <b>Order ID:</b> <code>${cleanOrderId}</code>\n` +
-                          `🆔 <b>Merchant UID:</b> 716216436\n` +
-                          `📧 <b>Source:</b> Gmail Auto-Confirmation Engine\n` +
-                          `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                          `<i>Customer is now authorized to unlock Pine Script!</i>`;
-
-            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: tgMsg,
-                    parse_mode: 'HTML'
-                })
-            });
-        } catch (e) {
-            console.error('Telegram notification error:', e);
-        }
-
         return res.status(200).json({
             success: true,
             message: 'Binance Pay Order ID verified and registered successfully',

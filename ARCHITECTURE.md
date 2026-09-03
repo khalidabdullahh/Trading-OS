@@ -60,6 +60,18 @@ Trading-OS is a production-grade, AI-assisted quantitative trading research, str
 +---------------------------------+                             +------------------------------------+
 ```
 
+<p align="center">
+  <img src="docs/assets/system_architecture.png" alt="Trading-OS System Architecture" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/strategy_generation_pipeline.png" alt="Trading-OS Strategy Compilation Pipeline" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/quant_validation_workflow.png" alt="Trading-OS Quantitative Validation Workflow" width="100%">
+</p>
+
 ---
 
 ## 2. Core Quantitative Modules

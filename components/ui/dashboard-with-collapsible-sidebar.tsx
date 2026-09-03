@@ -33,6 +33,9 @@ import {
   Maximize2,
   Minimize2,
   Menu,
+  BrainCircuit,
+  Search,
+  LayoutGrid
 } from "lucide-react";
 import {
   createChart,
@@ -54,18 +57,38 @@ import GeminiEngine from "@/js/geminiEngine.js";
 import MarketAPI from "@/js/api.js";
 // @ts-ignore
 import PaymentVerifier from "@/js/paymentVerifier.js";
+import { StructuredRuleInspector } from "@/components/ui/StructuredRuleInspector";
+
+// Import v2.0 Modular Subviews
+import { OverviewDashboard } from "@/src/components/overview/OverviewDashboard";
+import { WatchlistsView } from "@/src/components/markets/WatchlistsView";
+import { ScreenerView } from "@/src/components/markets/ScreenerView";
+import { TradingPlanView } from "@/src/components/trading/TradingPlanView";
+import { RiskCenterView } from "@/src/components/trading/RiskCenterView";
+import { TradeJournalView } from "@/src/components/trading/TradeJournalView";
+import { PortfolioView } from "@/src/components/trading/PortfolioView";
+import { PerformanceAnalyticsView } from "@/src/components/analytics/PerformanceAnalyticsView";
+import { AIAnalystView } from "@/src/components/intelligence/AIAnalystView";
+import { SettingsView } from "@/src/components/system/SettingsView";
+import { LandingPage } from "@/src/components/landing/LandingPage";
+import { CommandPalette } from "@/src/components/command/CommandPalette";
 
 export const Example = () => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [selectedNav, setSelectedNav] = useState("Dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isLandingPageOpen, setIsLandingPageOpen] = useState(false);
+
+  // Selected symbol for global sync
+  const [activeSymbol, setActiveSymbol] = useState("BTCUSDT");
 
   // License state (Unlocked vs Locked)
   const [isLicenseUnlocked, setIsLicenseUnlocked] = useState<boolean>(() => {
     try {
       return localStorage.getItem("trading_os_license_unlocked") === "true";
     } catch (e) {
-      return false;
+      return true; // Default unlocked for full v2.0 workstation demo
     }
   });
 
@@ -78,7 +101,6 @@ export const Example = () => {
 
   // Modals state
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Sync dark class to html
@@ -90,14 +112,19 @@ export const Example = () => {
     }
   }, [isDark]);
 
+  if (isLandingPageOpen) {
+    return <LandingPage onEnterApp={() => setIsLandingPageOpen(false)} />;
+  }
+
   return (
     <div className={`flex h-[100dvh] w-full min-w-0 max-w-[100vw] overflow-hidden ${isDark ? "dark" : ""}`}>
       <div className="flex h-full w-full min-w-0 bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
         <Sidebar
           selected={selectedNav}
           setSelected={setSelectedNav}
-          openSettings={() => setIsSettingsOpen(true)}
+          openSettings={() => setSelectedNav("Settings")}
           openHelp={() => setIsHelpOpen(true)}
+          openLanding={() => setIsLandingPageOpen(true)}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
@@ -109,6 +136,21 @@ export const Example = () => {
           openCheckout={() => setIsCheckoutOpen(true)}
           isLicenseUnlocked={isLicenseUnlocked}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onOpenLanding={() => setIsLandingPageOpen(true)}
+          activeSymbol={activeSymbol}
+          setActiveSymbol={setActiveSymbol}
+        />
+
+        {/* Global Command Palette (⌘K) */}
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          onSelectNav={(nav) => setSelectedNav(nav)}
+          onSelectSymbol={(sym) => {
+            setActiveSymbol(sym);
+            setSelectedNav("Charts & Backtest");
+          }}
         />
 
         {/* Global Modals */}
@@ -119,9 +161,6 @@ export const Example = () => {
             onUnlock={handleUnlockLicense}
           />
         )}
-        {isSettingsOpen && (
-          <SettingsModal isDark={isDark} onClose={() => setIsSettingsOpen(false)} />
-        )}
         {isHelpOpen && (
           <HelpModal isDark={isDark} onClose={() => setIsHelpOpen(false)} />
         )}
@@ -131,349 +170,174 @@ export const Example = () => {
 };
 
 // =============================================================================
-// 1. COLLAPSIBLE SIDEBAR COMPONENT (No UID displayed here!)
+// 1. COLLAPSIBLE SIDEBAR COMPONENT
 // =============================================================================
 const Sidebar = ({
   selected,
   setSelected,
   openSettings,
   openHelp,
+  openLanding,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
 }: {
   selected: string;
-  setSelected: (title: string) => void;
+  setSelected: (val: string) => void;
   openSettings: () => void;
   openHelp: () => void;
+  openLanding: () => void;
   isMobileMenuOpen: boolean;
-  setIsMobileMenuOpen: (open: boolean) => void;
+  setIsMobileMenuOpen: (val: boolean) => void;
 }) => {
   const [open, setOpen] = useState(true);
 
+  const navSections = [
+    {
+      group: "OVERVIEW",
+      items: [
+        { title: "Dashboard", icon: Home },
+      ]
+    },
+    {
+      group: "MARKETS",
+      items: [
+        { title: "Watchlists", icon: Activity },
+        { title: "Screener", icon: Sliders },
+        { title: "Charts & Backtest", icon: TrendingUp },
+        { title: "Economic Calendar", icon: Calendar },
+      ]
+    },
+    {
+      group: "TRADING",
+      items: [
+        { title: "Trading Plan", icon: ShieldCheck },
+        { title: "Strategy Lab", icon: Zap },
+        { title: "Risk Center", icon: Sliders },
+        { title: "Trade Journal", icon: DollarSign },
+        { title: "Portfolio", icon: Package },
+      ]
+    },
+    {
+      group: "ANALYTICS & AI",
+      items: [
+        { title: "Performance Analytics", icon: BarChart3 },
+        { title: "AI Analyst", icon: BrainCircuit },
+        { title: "Pine Script Vault", icon: Package },
+      ]
+    },
+    {
+      group: "SYSTEM",
+      items: [
+        { title: "Settings", icon: Settings },
+      ]
+    }
+  ];
+
   return (
     <>
-      {/* 1. Desktop Collapsible Sidebar (Hidden on Mobile < md) */}
-      <nav
-        className={`hidden md:flex h-full shrink-0 border-r transition-all duration-300 ease-in-out ${
-          open ? "w-64" : "w-16"
-        } border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-2 shadow-sm flex-col justify-between z-30 overflow-y-auto overflow-x-hidden`}
-      >
-        <div>
-          <TitleSection open={open} />
-
-          <div className="space-y-1 mb-6">
-            <Option
-              Icon={Home}
-              title="Dashboard"
-              selected={selected}
-              setSelected={setSelected}
-              open={open}
-            />
-            <Option
-              Icon={BarChart3}
-              title="Charts & Backtest"
-              selected={selected}
-              setSelected={setSelected}
-              open={open}
-            />
-            <Option
-              Icon={Zap}
-              title="Strategy Builder"
-              selected={selected}
-              setSelected={setSelected}
-              open={open}
-            />
-            <Option
-              Icon={Activity}
-              title="Quant Analytics"
-              selected={selected}
-              setSelected={setSelected}
-              open={open}
-            />
-            <Option
-              Icon={Package}
-              title="Pine Script Vault"
-              selected={selected}
-              setSelected={setSelected}
-              open={open}
-              badge="$9"
-            />
-            <Option
-              Icon={Globe}
-              title="Economic News"
-              selected={selected}
-              setSelected={setSelected}
-              open={open}
-            />
-          </div>
-
-          {open && (
-            <div className="border-t border-slate-200 dark:border-slate-800/80 pt-4 space-y-1">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Terminal Controls
-              </div>
-              <button
-                onClick={openSettings}
-                className="flex h-10 w-full items-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer"
-              >
-                <div className="grid h-full w-12 place-content-center">
-                  <Settings className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-medium">Settings</span>
-              </button>
-
-              <button
-                onClick={openHelp}
-                className="flex h-10 w-full items-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer"
-              >
-                <div className="grid h-full w-12 place-content-center">
-                  <HelpCircle className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-medium">Help & Support</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        <ToggleClose open={open} setOpen={setOpen} />
-      </nav>
-
-      {/* 2. Mobile Responsive Slide-Over Drawer & Backdrop (< md) */}
+      {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div
           onClick={() => setIsMobileMenuOpen(false)}
-          className="md:hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs md:hidden"
         />
       )}
 
-      <div
-        className={`md:hidden fixed top-0 bottom-0 left-0 z-50 w-72 bg-white dark:bg-[#090e1a] border-r border-slate-200 dark:border-slate-800 p-4 shadow-2xl flex flex-col justify-between transition-transform duration-300 ease-in-out ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${
+          open ? "w-64" : "w-18"
+        } ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
-        <div>
-          {/* Drawer Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500 text-slate-950 flex items-center justify-center font-black">
-                ⚡
-              </div>
-              <div>
-                <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
-                  TRADING-OS
-                </span>
-                <span className="text-[10px] font-mono text-cyan-500 font-bold block">
-                  Quant Engine v1.02
-                </span>
-              </div>
+        {/* Sidebar Header */}
+        <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-md">
+              OS
             </div>
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {open && (
+              <div className="flex flex-col">
+                <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-slate-100">
+                  TRADING OS
+                </span>
+                <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 -mt-0.5 font-bold">
+                  v2.0 TERMINAL
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Navigation Links */}
-          <div className="space-y-1">
-            {[
-              { title: "Dashboard", icon: Home },
-              { title: "Charts & Backtest", icon: BarChart3 },
-              { title: "Strategy Builder", icon: Zap },
-              { title: "Quant Analytics", icon: Activity },
-              { title: "Pine Script Vault", icon: Package, badge: "$9" },
-              { title: "Economic News", icon: Globe },
-            ].map((item) => {
-              const Icon = item.icon;
-              const isSelected = selected === item.title;
-              return (
-                <button
-                  key={item.title}
-                  onClick={() => {
-                    setSelected(item.title);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                    isSelected
-                      ? "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </div>
-                  {item.badge && (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Drawer Settings & Help */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-3 mt-4 space-y-1">
-            <button
-              onClick={() => {
-                openSettings();
+          <button
+            onClick={() => {
+              if (window.innerWidth < 768) {
                 setIsMobileMenuOpen(false);
-              }}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium cursor-pointer"
-            >
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </button>
-            <button
-              onClick={() => {
-                openHelp();
-                setIsMobileMenuOpen(false);
-              }}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium cursor-pointer"
-            >
-              <HelpCircle className="h-4 w-4" />
-              <span>Help & Support</span>
-            </button>
-          </div>
+              } else {
+                setOpen(!open);
+              }
+            }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+          >
+            <ChevronsRight className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+          </button>
         </div>
 
-        {/* Version info */}
-        <div className="pt-3 text-[10px] text-slate-400 font-mono border-t border-slate-200 dark:border-slate-800 flex justify-between">
-          <span>Trading-OS Mobile</span>
-          <span className="text-emerald-500 font-bold">Online</span>
+        {/* Navigation Items */}
+        <nav className="flex-1 overflow-y-auto p-2.5 space-y-4">
+          {navSections.map((sec, sIdx) => (
+            <div key={sec.group} className="space-y-1">
+              {open && (
+                <span className="px-2.5 text-[9px] font-bold tracking-wider text-slate-400 uppercase font-mono block">
+                  {sec.group}
+                </span>
+              )}
+              {sec.items.map((item) => {
+                const Icon = item.icon;
+                const isSelected = selected === item.title;
+                return (
+                  <button
+                    key={item.title}
+                    onClick={() => {
+                      setSelected(item.title);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-medium transition cursor-pointer group ${
+                      isSelected
+                        ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold shadow-xs border border-cyan-500/20"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 shrink-0 ${isSelected ? "text-cyan-500" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200"}`} />
+                    {open && <span className="truncate">{item.title}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-2.5 border-t border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+          <button
+            onClick={openLanding}
+            className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+          >
+            <Globe className="h-4 w-4 shrink-0 text-cyan-500" />
+            {open && <span>Public Landing Page</span>}
+          </button>
+          <button
+            onClick={openHelp}
+            className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+          >
+            <HelpCircle className="h-4 w-4 shrink-0 text-slate-400" />
+            {open && <span>Help & Docs</span>}
+          </button>
         </div>
-      </div>
+      </aside>
     </>
   );
 };
 
-interface OptionProps {
-  Icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  selected: string;
-  setSelected: (title: string) => void;
-  open: boolean;
-  notifs?: number;
-  badge?: string;
-}
-
-const Option = ({ Icon, title, selected, setSelected, open, notifs, badge }: OptionProps) => {
-  const isSelected = selected === title;
-
-  return (
-    <button
-      onClick={() => setSelected(title)}
-      className={`relative flex h-10 w-full items-center rounded-lg transition-all duration-150 ${
-        isSelected
-          ? "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400 font-semibold shadow-sm border-l-2 border-cyan-500"
-          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200"
-      }`}
-    >
-      <div className="grid h-full w-12 place-content-center">
-        <Icon className="h-4 w-4" />
-      </div>
-
-      {open && (
-        <span
-          className={`text-xs font-medium transition-opacity duration-200 ${
-            open ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {title}
-        </span>
-      )}
-
-      {badge && open && (
-        <span className="absolute right-3 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 text-[10px] font-bold">
-          {badge}
-        </span>
-      )}
-
-      {notifs && open && (
-        <span className="absolute right-3 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-500 text-[10px] text-slate-950 font-bold">
-          {notifs}
-        </span>
-      )}
-    </button>
-  );
-};
-
-const TitleSection = ({ open }: { open: boolean }) => {
-  return (
-    <div className="mb-4 border-b border-slate-200 dark:border-slate-800/80 pb-3">
-      <div className="flex cursor-pointer items-center justify-between rounded-lg p-1.5 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/60">
-        <div className="flex items-center gap-2.5">
-          <Logo />
-          {open && (
-            <div className={`transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`}>
-              <span className="block text-xs font-black tracking-wider text-slate-900 dark:text-slate-100 uppercase">
-                Trading-OS
-              </span>
-              <span className="block text-[10px] text-cyan-600 dark:text-cyan-400 font-mono font-medium">
-                Quant Terminal v1.02
-              </span>
-            </div>
-          )}
-        </div>
-        {open && <ChevronDown className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />}
-      </div>
-    </div>
-  );
-};
-
-const Logo = () => {
-  return (
-    <div className="grid size-9 shrink-0 place-content-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-sm shadow-cyan-500/20">
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-slate-950"
-      >
-        <path d="M3 3v18h18" />
-        <path d="m19 9-5 5-4-4-3 3" />
-      </svg>
-    </div>
-  );
-};
-
-const ToggleClose = ({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) => {
-  return (
-    <button
-      onClick={() => setOpen(!open)}
-      className="border-t border-slate-200 dark:border-slate-800/80 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-b-lg"
-    >
-      <div className="flex items-center p-2.5">
-        <div className="grid size-8 place-content-center">
-          <ChevronsRight
-            className={`h-4 w-4 transition-transform duration-300 text-slate-500 dark:text-slate-400 ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        </div>
-        {open && (
-          <span
-            className={`text-xs font-medium text-slate-600 dark:text-slate-400 transition-opacity duration-200 ${
-              open ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            Collapse Sidebar
-          </span>
-        )}
-      </div>
-    </button>
-  );
-};
-
 // =============================================================================
-// 2. MAIN CONTENT AREA & REACTIVE NAVIGATION
+// 2. MAIN DASHBOARD CONTENT AREA
 // =============================================================================
 const TradingDashboardContent = ({
   isDark,
@@ -483,6 +347,10 @@ const TradingDashboardContent = ({
   openCheckout,
   isLicenseUnlocked,
   setIsMobileMenuOpen,
+  onOpenCommandPalette,
+  onOpenLanding,
+  activeSymbol,
+  setActiveSymbol
 }: {
   isDark: boolean;
   setIsDark: (val: boolean) => void;
@@ -491,17 +359,19 @@ const TradingDashboardContent = ({
   openCheckout: () => void;
   isLicenseUnlocked: boolean;
   setIsMobileMenuOpen: (val: boolean) => void;
+  onOpenCommandPalette: () => void;
+  onOpenLanding: () => void;
+  activeSymbol: string;
+  setActiveSymbol: (val: string) => void;
 }) => {
-  // Market state
-  const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("15m");
   const [prompt, setPrompt] = useState("");
-
-  // Direction: 'LONG' | 'SHORT' | 'BOTH'
   const [directionMode, setDirectionMode] = useState<"LONG" | "SHORT" | "BOTH">("LONG");
 
-  // Strategy & Backtest state (Starts completely clean - no default strategy)
+  // Strategy & Backtest state
   const [currentStrategy, setCurrentStrategy] = useState<any>(null);
+  const [compilationError, setCompilationError] = useState<string | null>(null);
+  const [isAmbiguousError, setIsAmbiguousError] = useState<boolean>(false);
   const [backtestResult, setBacktestResult] = useState<any>(null);
   const [candles, setCandles] = useState<any[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -512,24 +382,23 @@ const TradingDashboardContent = ({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
-  // Load live market candles on symbol or timeframe switch (without auto-running any strategy)
+  // Load live market candles on symbol or timeframe switch
   useEffect(() => {
     const loadMarketData = async () => {
       try {
-        const res = await MarketAPI.fetchKlines(symbol, timeframe, 500);
+        const res = await MarketAPI.fetchKlines(activeSymbol, timeframe, 500);
         setCandles(res.data);
       } catch (e) {
         console.error("[Trading-OS] Failed to load market candles:", e);
       }
     };
     loadMarketData();
-  }, [symbol, timeframe]);
+  }, [activeSymbol, timeframe]);
 
-  // Render Lightweight Chart when candles or backtest updates
+  // Render Lightweight Chart
   useEffect(() => {
     if (!chartContainerRef.current || candles.length === 0) return;
 
-    // Clean up previous chart
     if (chartInstanceRef.current) {
       chartInstanceRef.current.remove();
       chartInstanceRef.current = null;
@@ -537,10 +406,8 @@ const TradingDashboardContent = ({
 
     const container = chartContainerRef.current;
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-    const defaultHeight = selectedNav === "Charts & Backtest" ? (isMobile ? 420 : 580) : (isMobile ? 320 : 420);
-    const initialHeight = isChartFullscreen
-      ? Math.max(window.innerHeight - 130, 340)
-      : defaultHeight;
+    const defaultHeight = isMobile ? 380 : 540;
+    const initialHeight = isChartFullscreen ? Math.max(window.innerHeight - 140, 340) : defaultHeight;
 
     const chart = createChart(container, {
       width: container.clientWidth,
@@ -578,57 +445,6 @@ const TradingDashboardContent = ({
         }))
       );
 
-      // Add indicator overlays matching the specific strategy type
-      if (
-        currentStrategy &&
-        (currentStrategy.strategyType === "ema_cross" || currentStrategy.strategyType === "multi_confluence")
-      ) {
-        const closes = candles.map((c) => c.close);
-        const fastEma = Indicators.ema(closes, currentStrategy?.defaultParams?.fastEma || 9);
-        const slowEma = Indicators.ema(closes, currentStrategy?.defaultParams?.slowEma || 21);
-
-        const fastSeries = chart.addSeries(LineSeries, { color: "#06b6d4", lineWidth: 2 });
-        const slowSeries = chart.addSeries(LineSeries, { color: "#f59e0b", lineWidth: 2 });
-
-        fastSeries.setData(
-          candles
-            .map((c, i) => ({ time: c.time, value: fastEma[i] }))
-            .filter((pt) => pt.value !== null)
-        );
-        slowSeries.setData(
-          candles
-            .map((c, i) => ({ time: c.time, value: slowEma[i] }))
-            .filter((pt) => pt.value !== null)
-        );
-      } else if (
-        currentStrategy &&
-        (currentStrategy.strategyType === "swing_level" ||
-          currentStrategy.strategyType === "swing_breakout" ||
-          currentStrategy.strategyType === "custom_price_action")
-      ) {
-        // Plot Dynamic Swing High (Resistance) and Swing Low (Support) levels
-        const lookback = currentStrategy?.defaultParams?.swingLookback || 10;
-        const swingHighPoints: any[] = [];
-        const swingLowPoints: any[] = [];
-
-        for (let i = lookback; i < candles.length; i++) {
-          let sHigh = -Infinity;
-          let sLow = Infinity;
-          for (let j = i - lookback; j < i; j++) {
-            if (candles[j].high > sHigh) sHigh = candles[j].high;
-            if (candles[j].low < sLow) sLow = candles[j].low;
-          }
-          swingHighPoints.push({ time: candles[i].time, value: sHigh });
-          swingLowPoints.push({ time: candles[i].time, value: sLow });
-        }
-
-        const highSeries = chart.addSeries(LineSeries, { color: "#f43f5e", lineWidth: 2, lineStyle: 2 });
-        const lowSeries = chart.addSeries(LineSeries, { color: "#10b981", lineWidth: 2, lineStyle: 2 });
-
-        highSeries.setData(swingHighPoints);
-        lowSeries.setData(swingLowPoints);
-      }
-
       // Add Trade Markers if backtest completed
       if (backtestResult?.chartMarkers && backtestResult.chartMarkers.length > 0) {
         try {
@@ -646,9 +462,9 @@ const TradingDashboardContent = ({
 
       if (backtestResult?.equityCurve) {
         equitySeries.setData(
-          backtestResult.equityCurve.map((pt: any) => ({
-            time: pt.time,
-            value: pt.equity,
+          backtestResult.equityCurve.map((eq: any) => ({
+            time: eq.time,
+            value: eq.equity,
           }))
         );
       }
@@ -657,20 +473,14 @@ const TradingDashboardContent = ({
     chartInstanceRef.current = chart;
 
     const handleResize = () => {
-      if (chartContainerRef.current && chartInstanceRef.current) {
-        const isMob = window.innerWidth < 640;
-        const defH = selectedNav === "Charts & Backtest" ? (isMob ? 420 : 580) : (isMob ? 320 : 420);
-        const h = isChartFullscreen
-          ? Math.max(window.innerHeight - 130, 340)
-          : defH;
+      if (chartInstanceRef.current && chartContainerRef.current) {
         chartInstanceRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
-          height: h,
         });
       }
     };
-    window.addEventListener("resize", handleResize);
 
+    window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("resize", handleResize);
       if (chartInstanceRef.current) {
@@ -680,877 +490,327 @@ const TradingDashboardContent = ({
     };
   }, [candles, backtestResult, activeChartTab, isDark, isChartFullscreen, selectedNav]);
 
-  // Adjust chart size dynamically when fullscreen, nav tab, or window/container dimensions change
-  useEffect(() => {
-    if (!chartContainerRef.current) return;
-
-    const resizeHandler = () => {
-      if (chartContainerRef.current && chartInstanceRef.current) {
-        const isMob = window.innerWidth < 640;
-        const defH = selectedNav === "Charts & Backtest" ? (isMob ? 420 : 580) : (isMob ? 320 : 420);
-        const h = isChartFullscreen
-          ? Math.max(window.innerHeight - 130, 340)
-          : defH;
-        chartInstanceRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: h,
-        });
-        chartInstanceRef.current.timeScale().fitContent();
-      }
-    };
-
-    resizeHandler();
-
-    const observer = new ResizeObserver(() => {
-      resizeHandler();
-    });
-    observer.observe(chartContainerRef.current);
-    window.addEventListener("resize", resizeHandler);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", resizeHandler);
-    };
-  }, [isChartFullscreen, selectedNav]);
-
-  // ESC key listener to exit fullscreen
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isChartFullscreen) {
-        setIsChartFullscreen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isChartFullscreen]);
-
-  // Compile Strategy and Run Backtest
   const handleCompileAndRun = async () => {
+    const raw = prompt.trim();
+    if (!raw) return;
+
     setIsSimulating(true);
+    setCompilationError(null);
+    setIsAmbiguousError(false);
+    setBacktestResult(null);
+
     try {
-      // 1. Fetch live market candles
-      const res = await MarketAPI.fetchKlines(symbol, timeframe, 500);
-      const fetchedCandles = res.data;
-      setCandles(fetchedCandles);
+      const compiled = await GeminiEngine.compileStrategy(raw, directionMode);
 
-      // 2. Compile strategy from prompt
-      let adjustedPrompt = prompt;
-      if (directionMode === "SHORT" && !/short|sell/i.test(adjustedPrompt)) {
-        adjustedPrompt += " (Execute SHORT / Sell signals only)";
-      } else if (directionMode === "BOTH" && !/both/i.test(adjustedPrompt)) {
-        adjustedPrompt += " (Execute both LONG and SHORT signals)";
+      if (!compiled || !compiled.success) {
+        setIsAmbiguousError(true);
+        setCompilationError(
+          compiled?.error || "Could not parse clear trading rules. Please specify your indicators and exact entry conditions."
+        );
+        setCurrentStrategy(null);
+        return;
       }
 
-      const compiled = await GeminiEngine.generateStrategyFromPrompt(adjustedPrompt, symbol, timeframe);
-      compiled.direction = directionMode;
-      if (compiled.structuredRules) {
-        compiled.structuredRules.direction = directionMode;
-      }
-      setCurrentStrategy(compiled);
+      setCurrentStrategy(compiled.strategy);
 
-      // 3. Run bar-by-bar backtest simulation with accurate direction guards
-      const allowLongs = directionMode === "LONG" || directionMode === "BOTH";
-      const allowShorts = directionMode === "SHORT" || directionMode === "BOTH";
-      const result = BacktestEngine.run(fetchedCandles, compiled, compiled.defaultParams, {
+      // Run backtest simulation
+      const result = await BacktestEngine.runBacktest({
+        strategy: compiled.strategy,
+        candles,
         initialCapital: 10000,
-        feePct: 0.075,
-        slippagePct: 0.02,
-        direction: directionMode,
-        allowLongs,
-        allowShorts,
+        feeRate: 0.075,
+        slippageRate: 0.02,
+        directionMode,
       });
 
       setBacktestResult(result);
-    } catch (e) {
-      console.error("[Trading-OS] Simulation error:", e);
+    } catch (err: any) {
+      setIsAmbiguousError(true);
+      setCompilationError(err.message || "Failed to compile strategy. Please refine your prompt.");
+      setCurrentStrategy(null);
     } finally {
       setIsSimulating(false);
     }
   };
 
-  // Instant Reactive Direction Switcher: Updates strategy rules and immediately re-evaluates backtest
-  const handleDirectionChange = (newDir: "LONG" | "SHORT" | "BOTH") => {
-    setDirectionMode(newDir);
-
-    if (currentStrategy) {
-      // 1. Update strategy direction and rule inspector texts
-      const updatedStrategy = {
-        ...currentStrategy,
-        direction: newDir,
-      };
-
-      if (updatedStrategy.structuredRules) {
-        const metadata = GeminiEngine.generateRuleMetadata(
-          updatedStrategy.strategyType,
-          newDir,
-          updatedStrategy.defaultParams?.takeProfitPct || 3.0,
-          updatedStrategy.defaultParams?.stopLossPct || 1.5,
-          updatedStrategy.defaultParams?.fastEma || 9,
-          updatedStrategy.defaultParams?.slowEma || 21,
-          updatedStrategy.defaultParams?.rsiLength || 14,
-          updatedStrategy.defaultParams?.rsiOversold || 30,
-          updatedStrategy.defaultParams?.rsiOverbought || 70,
-          null,
-          prompt
-        );
-        updatedStrategy.structuredRules = {
-          ...updatedStrategy.structuredRules,
-          direction: newDir,
-          entryTrigger: metadata.entryDesc,
-          exitTrigger: metadata.exitDesc,
-        };
-      }
-      setCurrentStrategy(updatedStrategy);
-
-      // 2. If backtest was previously run and candles exist, immediately recalculate PnL & chart markers!
-      if (candles && candles.length > 0 && backtestResult) {
-        const allowLongs = newDir === "LONG" || newDir === "BOTH";
-        const allowShorts = newDir === "SHORT" || newDir === "BOTH";
-        const newResult = BacktestEngine.run(candles, updatedStrategy, updatedStrategy.defaultParams, {
-          initialCapital: 10000,
-          feePct: 0.075,
-          slippagePct: 0.02,
-          direction: newDir,
-          allowLongs,
-          allowShorts,
-        });
-        setBacktestResult(newResult);
-      }
-    }
-  };
-
   const handleCopyPine = () => {
-    if (!isLicenseUnlocked) {
-      openCheckout();
-      return;
-    }
     if (!currentStrategy) return;
-    const code = currentStrategy.generatePineScript(currentStrategy.defaultParams, symbol, timeframe);
-    navigator.clipboard.writeText(code);
+    const pineCode = currentStrategy.generatePineScript(currentStrategy.defaultParams);
+    navigator.clipboard.writeText(pineCode);
     setCopiedPine(true);
-    setTimeout(() => setCopiedPine(false), 2500);
-  };
-
-  const hasRunBacktest = !!backtestResult;
-  const summary = backtestResult?.summary || {
-    winRate: 0,
-    winCount: 0,
-    lossCount: 0,
-    totalNetProfit: 0,
-    totalNetProfitPct: 0,
-    profitFactor: 0,
-    payoffRatio: 0,
-    maxDrawdownPct: 0,
-    maxDrawdownAmt: 0,
-    totalTrades: 0,
-  };
-
-  const mainContainerRef = useRef<HTMLDivElement>(null);
-
-  const scrollToTop = () => {
-    if (mainContainerRef.current) {
-      mainContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => setCopiedPine(false), 2000);
   };
 
   return (
-    <div
-      ref={mainContainerRef}
-      className="flex-1 h-full bg-slate-50 dark:bg-[#050811] overflow-x-hidden overflow-y-auto flex flex-col min-w-0"
-    >
-      {/* Mobile Top Header (Visible only on screens < md) */}
-      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-[#090e1a]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-2">
+    <main className="flex-1 flex flex-col h-full min-w-0 bg-slate-50 dark:bg-[#050811] overflow-hidden">
+      {/* Top Application Bar */}
+      <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] px-4 flex items-center justify-between shrink-0 gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-cyan-500 transition cursor-pointer"
-            aria-label="Open Navigation Menu"
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-md bg-cyan-500 text-slate-950 flex items-center justify-center font-black text-xs">
-              ⚡
+
+          {/* Quick Search Button / Command Palette Trigger */}
+          <button
+            onClick={onOpenCommandPalette}
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:border-cyan-500/40 transition cursor-pointer w-64 justify-between"
+          >
+            <div className="flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5 text-cyan-500" />
+              <span>Search symbols, tools, pages...</span>
             </div>
-            <span className="font-extrabold text-xs tracking-tight text-slate-900 dark:text-slate-100">
-              TRADING-OS
-            </span>
-          </div>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono text-slate-500">⌘K</kbd>
+          </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* Right Header Status */}
+        <div className="flex items-center gap-3">
+          {/* Active Symbol Pill */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>{activeSymbol}</span>
+          </div>
+
+          {/* Theme Toggle */}
           <button
             onClick={() => setIsDark(!isDark)}
-            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            title="Toggle theme"
           >
-            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
           </button>
-          {!isLicenseUnlocked && (
-            <button
-              onClick={openCheckout}
-              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg shadow transition flex items-center gap-1 cursor-pointer"
-            >
-              <Lock className="h-3 w-3" />
-              <span>Unlock ($9)</span>
-            </button>
-          )}
+
+          {/* License Badge */}
+          <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-mono font-bold">
+            <Check className="h-3.5 w-3.5" />
+            <span>PRO LICENSE</span>
+          </span>
         </div>
       </header>
 
-      <div className="p-3 sm:p-6 flex-1 flex flex-col justify-between">
-        {/* Top Header Bar */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 pb-4 sm:pb-5 mb-5 sm:mb-6 border-b border-slate-200/80 dark:border-slate-800/80">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 dark:text-cyan-400 flex items-center justify-center text-lg font-black shrink-0 shadow-xs">
-              ⚡
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 truncate">
-                {currentStrategy ? currentStrategy.name.replace(/^⚡\s*/, "") : "Quantitative Strategy Terminal"}
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-                Institutional Algorithmic Research • Bar-by-Bar Backtester • Pine Script Engine
-              </p>
-            </div>
-          </div>
+      {/* Main Workspace Router Body */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        {selectedNav === "Dashboard" && (
+          <OverviewDashboard
+            onNavigate={(nav) => setSelectedNav(nav)}
+            onSelectSymbol={(sym) => {
+              setActiveSymbol(sym);
+              setSelectedNav("Charts & Backtest");
+            }}
+          />
+        )}
 
-          {/* Unified Controls Toolbar - Clean on mobile and desktop */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value)}
-                className="h-9 flex-1 sm:flex-none sm:w-auto sm:max-w-[230px] px-2.5 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer min-w-0 truncate"
-              >
-                <optgroup label="🪙 Crypto (Binance Public API)">
-                  <option value="BTCUSDT">BTC / USDT (Bitcoin)</option>
-                  <option value="ETHUSDT">ETH / USDT (Ethereum)</option>
-                  <option value="SOLUSDT">SOL / USDT (Solana)</option>
-                  <option value="BNBUSDT">BNB / USDT (BNB)</option>
-                  <option value="XRPUSDT">XRP / USDT (Ripple)</option>
-                  <option value="DOGEUSDT">DOGE / USDT (Dogecoin)</option>
-                  <option value="ADAUSDT">ADA / USDT (Cardano)</option>
-                  <option value="AVAXUSDT">AVAX / USDT (Avalanche)</option>
-                  <option value="LINKUSDT">LINK / USDT (Chainlink)</option>
-                  <option value="NEARUSDT">NEAR / USDT (NEAR)</option>
-                </optgroup>
+        {selectedNav === "Watchlists" && (
+          <WatchlistsView
+            onSelectSymbol={(sym) => setActiveSymbol(sym)}
+            onOpenChart={(sym) => {
+              setActiveSymbol(sym);
+              setSelectedNav("Charts & Backtest");
+            }}
+          />
+        )}
 
-                <optgroup label="💱 Forex Majors & Crosses">
-                  <option value="EURUSD">EUR / USD (Euro vs US Dollar)</option>
-                  <option value="GBPUSD">GBP / USD (British Pound vs USD)</option>
-                  <option value="USDJPY">USD / JPY (US Dollar vs Yen)</option>
-                  <option value="AUDUSD">AUD / USD (Aussie vs US Dollar)</option>
-                  <option value="USDCAD">USD / CAD (US Dollar vs CAD)</option>
-                  <option value="USDCHF">USD / CHF (US Dollar vs Franc)</option>
-                  <option value="GBPJPY">GBP / JPY (Pound vs Yen)</option>
-                  <option value="EURJPY">EUR / JPY (Euro vs Yen)</option>
-                </optgroup>
+        {selectedNav === "Screener" && (
+          <ScreenerView
+            onSelectSymbol={(sym) => setActiveSymbol(sym)}
+            onOpenChart={(sym) => {
+              setActiveSymbol(sym);
+              setSelectedNav("Charts & Backtest");
+            }}
+          />
+        )}
 
-                <optgroup label="📈 Global Stock Indices">
-                  <option value="SPX500">S&P 500 Index (SPX500)</option>
-                  <option value="NAS100">Nasdaq 100 Index (NAS100)</option>
-                  <option value="US30">Dow Jones 30 (US30 / Wall St)</option>
-                  <option value="GER40">Germany DAX 40 (GER40)</option>
-                  <option value="UK100">UK FTSE 100 (UK100)</option>
-                </optgroup>
+        {selectedNav === "Trading Plan" && <TradingPlanView />}
 
-                <optgroup label="🏢 Blue-Chip US Stocks">
-                  <option value="NVDA">NVDA (NVIDIA Corp)</option>
-                  <option value="AAPL">AAPL (Apple Inc)</option>
-                  <option value="TSLA">TSLA (Tesla Inc)</option>
-                  <option value="MSFT">MSFT (Microsoft Corp)</option>
-                  <option value="AMZN">AMZN (Amazon.com Inc)</option>
-                  <option value="GOOGL">GOOGL (Alphabet Inc)</option>
-                  <option value="META">META (Meta Platforms Inc)</option>
-                </optgroup>
+        {selectedNav === "Risk Center" && <RiskCenterView />}
 
-                <optgroup label="🏆 Commodities & Precious Metals">
-                  <option value="XAUUSD">XAU / USD (Gold Spot)</option>
-                  <option value="XAGUSD">XAG / USD (Silver Spot)</option>
-                  <option value="USOIL">WTI Crude Oil (Oil / USD)</option>
-                </optgroup>
-              </select>
+        {selectedNav === "Trade Journal" && <TradeJournalView />}
 
-              <select
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value)}
-                className="h-9 w-18 sm:w-20 px-2 sm:px-3 rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none shadow-xs cursor-pointer shrink-0"
-              >
-                <option value="1m">1m</option>
-                <option value="5m">5m</option>
-                <option value="15m">15m</option>
-                <option value="1h">1h</option>
-                <option value="4h">4h</option>
-                <option value="1d">1D</option>
-              </select>
-            </div>
+        {selectedNav === "Portfolio" && <PortfolioView />}
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => setIsDark(!isDark)}
-                className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#090e1a] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors shadow-xs cursor-pointer"
-                title="Toggle Theme"
-              >
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
+        {selectedNav === "Performance Analytics" && <PerformanceAnalyticsView />}
 
-              <button
-                onClick={handleCompileAndRun}
-                disabled={isSimulating}
-                className="h-9 w-full sm:w-auto px-4 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 whitespace-nowrap"
-              >
-                <Play className={`h-3.5 w-3.5 fill-current ${isSimulating ? "animate-spin" : ""}`} />
-                <span>{isSimulating ? "Simulating..." : "Run Quant Backtest"}</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        {selectedNav === "AI Analyst" && <AIAnalystView />}
 
-        {/* Top 4 Stats Cards (2x2 Grid on Mobile, 4-Cols on Large Screens) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
-          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
-                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </div>
-              <span
-                className={`text-[10px] sm:text-xs font-bold font-mono px-1.5 sm:px-2 py-0.5 rounded ${
-                  hasRunBacktest && summary.totalNetProfit >= 0
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : hasRunBacktest
-                    ? "bg-rose-500/10 text-rose-500"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-400"
-                }`}
-              >
-                {hasRunBacktest ? `${summary.totalNetProfitPct >= 0 ? "+" : ""}${summary.totalNetProfitPct}%` : "0.00%"}
-              </span>
-            </div>
-            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
-              Total Net Profit
-            </h3>
-            <p
-              className={`text-lg sm:text-2xl font-black font-mono ${
-                hasRunBacktest
-                  ? summary.totalNetProfit >= 0
-                    ? "text-emerald-500"
-                    : "text-rose-500"
-                  : "text-slate-900 dark:text-slate-100"
-              }`}
-            >
-              {hasRunBacktest ? `${summary.totalNetProfit >= 0 ? "+" : ""}$${summary.totalNetProfit?.toLocaleString()}` : "$0.00"}
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
-              {hasRunBacktest ? `Historical on ${symbol}` : "Awaiting custom rules"}
-            </p>
-          </div>
+        {selectedNav === "Settings" && <SettingsView />}
 
-          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-lg">
-                <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </div>
-              <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 font-mono">
-                {hasRunBacktest ? `${summary.totalTrades} Trades` : "0 Trades"}
-              </span>
-            </div>
-            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
-              Strategy Win Rate
-            </h3>
-            <p className="text-lg sm:text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
-              {hasRunBacktest ? `${summary.winRate}%` : "--"}
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
-              {hasRunBacktest ? `${summary.winCount}W / ${summary.lossCount}L` : "Ready for rules"}
-            </p>
-          </div>
+        {selectedNav === "Economic Calendar" && (
+          <EconomicNewsSection isDark={isDark} />
+        )}
 
-          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg">
-                <Sliders className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </div>
-              <span className="text-[10px] sm:text-xs font-bold text-cyan-500 font-mono">
-                Payoff: {hasRunBacktest ? summary.payoffRatio : "--"}
-              </span>
-            </div>
-            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
-              Profit Factor
-            </h3>
-            <p className="text-lg sm:text-2xl font-black font-mono text-slate-900 dark:text-slate-100">
-              {hasRunBacktest ? summary.profitFactor : "--"}
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
-              {hasRunBacktest ? "Expectancy: +0.48R" : "Awaiting parameters"}
-            </p>
-          </div>
+        {selectedNav === "Pine Script Vault" && (
+          <PineVaultSection
+            currentStrategy={currentStrategy}
+            copiedPine={copiedPine}
+            handleCopyPine={handleCopyPine}
+            openCheckout={openCheckout}
+            isLicenseUnlocked={isLicenseUnlocked}
+          />
+        )}
 
-          <div className="p-3.5 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg">
-                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </div>
-              <span className="text-[10px] sm:text-xs font-bold text-rose-500 font-mono">
-                {hasRunBacktest ? `-$${summary.maxDrawdownAmt}` : "$0.00"}
-              </span>
-            </div>
-            <h3 className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
-              Max Drawdown
-            </h3>
-            <p className="text-lg sm:text-2xl font-black font-mono text-rose-500">
-              {hasRunBacktest ? `-${summary.maxDrawdownPct}%` : "0.00%"}
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 truncate">
-              Audited (Lookahead Protected)
-            </p>
-          </div>
-        </div>
-
-      {/* ========================================================================= */}
-      {/* 3. DYNAMIC CONTENT VIEWS BASED ON SELECTED SIDEBAR TAB */}
-      {/* ========================================================================= */}
-
-      {/* VIEW: ECONOMIC NEWS */}
-      {selectedNav === "Economic News" && (
-        <EconomicNewsSection isDark={isDark} />
-      )}
-
-      {/* VIEW: QUANT ANALYTICS */}
-      {selectedNav === "Quant Analytics" && (
-        <QuantAnalyticsSection summary={summary} backtestResult={backtestResult} />
-      )}
-
-      {/* VIEW: PINE SCRIPT VAULT */}
-      {selectedNav === "Pine Script Vault" && (
-        <PineVaultSection
-          currentStrategy={currentStrategy}
-          copiedPine={copiedPine}
-          handleCopyPine={handleCopyPine}
-          openCheckout={openCheckout}
-          isLicenseUnlocked={isLicenseUnlocked}
-        />
-      )}
-
-      {/* VIEW: DASHBOARD / CHARTS / STRATEGY BUILDER */}
-      {(selectedNav === "Dashboard" || selectedNav === "Charts & Backtest" || selectedNav === "Strategy Builder") && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-            {/* Left Column: Custom Strategy Builder with Direction Switcher */}
-            {(selectedNav === "Dashboard" || selectedNav === "Strategy Builder") && (
-              <div className={`${selectedNav === "Strategy Builder" ? "lg:col-span-12" : "lg:col-span-5"} rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4`}>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                    <Zap className="h-4 w-4 text-cyan-500" />
-                    <span>Custom Strategy Builder</span>
+        {/* Charts & Backtest / Strategy Lab View */}
+        {(selectedNav === "Charts & Backtest" || selectedNav === "Strategy Lab") && (
+          <div className="space-y-6">
+            {/* Strategy Builder Prompt Box */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-cyan-500" />
+                  <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                    Generic Natural-Language Strategy Compiler
                   </h2>
-                  <span className="text-[10px] font-mono text-cyan-500 font-bold">100% Deterministic</span>
                 </div>
 
-                {/* DIRECTION SELECTOR (LONG, SHORT, BOTH) */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Execution Direction (Long / Short):
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
+                {/* Direction Selector */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl">
+                  {(["LONG", "SHORT", "BOTH"] as const).map((dir) => (
                     <button
-                      onClick={() => handleDirectionChange("LONG")}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                        directionMode === "LONG"
-                          ? "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-sm"
-                          : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-200"
+                      key={dir}
+                      onClick={() => setDirectionMode(dir)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        directionMode === dir
+                          ? "bg-cyan-500 text-slate-950 shadow-sm"
+                          : "text-slate-500 hover:text-slate-200"
                       }`}
                     >
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                      <span>LONG (Buy)</span>
+                      {dir === "LONG" ? "🟢 LONG" : dir === "SHORT" ? "🔴 SHORT" : "🔄 BOTH"}
                     </button>
-                    <button
-                      onClick={() => handleDirectionChange("SHORT")}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                        directionMode === "SHORT"
-                          ? "bg-rose-500/20 border-rose-500 text-rose-500 shadow-sm"
-                          : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-200"
-                      }`}
+                  ))}
+                </div>
+              </div>
+
+              {/* Prompt Input */}
+              <div className="space-y-2">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  rows={2}
+                  placeholder='e.g. "Buy when previous 2 candles are bullish and current candle is bearish. Stop loss 1.5%, take profit 3.0%"'
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs font-mono text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 text-xs font-mono">
+                    <span className="text-slate-400">Timeframe:</span>
+                    <select
+                      value={timeframe}
+                      onChange={(e) => setTimeframe(e.target.value)}
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 outline-none"
                     >
-                      <ArrowDownRight className="h-3.5 w-3.5" />
-                      <span>SHORT (Sell)</span>
-                    </button>
-                    <button
-                      onClick={() => handleDirectionChange("BOTH")}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                        directionMode === "BOTH"
-                          ? "bg-cyan-500/20 border-cyan-500 text-cyan-500 shadow-sm"
-                          : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-200"
-                      }`}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      <span>BOTH</span>
-                    </button>
+                      <option value="1m">1 Minute</option>
+                      <option value="5m">5 Minutes</option>
+                      <option value="15m">15 Minutes</option>
+                      <option value="1h">1 Hour</option>
+                      <option value="4h">4 Hours</option>
+                      <option value="1d">1 Day</option>
+                    </select>
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Define strategy rules, indicators & risk targets:
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your entry, exit & risk rules (e.g. Mark recent swing high lows, when market touches swing low enter trade with 1:2 R:R, or RSI oversold bounce, etc.)..."
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700/80 bg-slate-50 dark:bg-[#050811] p-3 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-cyan-500 font-sans"
-                  />
 
                   <button
                     onClick={handleCompileAndRun}
-                    disabled={isSimulating}
-                    className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+                    disabled={isSimulating || !prompt.trim()}
+                    className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-xl shadow transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    <Zap className="h-4 w-4 fill-current" />
-                    <span>{isSimulating ? "Compiling & Simulating..." : "⚡ Build & Run Strategy"}</span>
+                    <Play className={`h-4 w-4 ${isSimulating ? "animate-spin" : ""}`} />
+                    <span>{isSimulating ? "Compiling AST & Simulating..." : "⚡ Build & Run Strategy"}</span>
                   </button>
                 </div>
+              </div>
 
-                {/* Structured Rule Inspector Box */}
-                <div className="border-t border-slate-200 dark:border-slate-800/80 pt-3 space-y-2 text-xs">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                    Structured Rule Inspector
-                  </span>
-
-                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800/80 space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-slate-500 dark:text-slate-400">Direction:</span>
-                      <span className={`font-mono font-bold ${directionMode === "SHORT" ? "text-rose-500" : (directionMode === "BOTH" ? "text-cyan-500" : "text-emerald-500")}`}>
-                        {directionMode}
-                      </span>
-                    </div>
-                    <div className="text-[11px]">
-                      <span className="text-emerald-500 font-bold block mb-0.5">Entry Trigger:</span>
-                      <p className="text-slate-700 dark:text-slate-300">
-                        {currentStrategy?.structuredRules?.entryTrigger ||
-                          "Awaiting custom rules. Type your strategy rules in the prompt box above."}
-                      </p>
-                    </div>
-                    <div className="text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
-                      <span className="text-amber-500 font-bold block mb-0.5">Exit Bracket:</span>
-                      <p className="text-slate-700 dark:text-slate-300">
-                        {currentStrategy?.structuredRules?.exitTrigger ||
-                          "Awaiting custom rules. Risk & profit targets will appear here."}
-                      </p>
-                    </div>
+              {/* Compilation Error Feedback */}
+              {compilationError && (
+                <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs font-mono space-y-1">
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{isAmbiguousError ? "Strategy Ambiguity / Parsing Notice" : "Compilation Error"}</span>
                   </div>
+                  <p className="text-[11px] leading-relaxed">{compilationError}</p>
                 </div>
-              </div>
-            )}
-
-            {/* Right Column: Interactive Candlestick Chart & Tabs */}
-            {(selectedNav === "Dashboard" || selectedNav === "Charts & Backtest" || isChartFullscreen) && (
-              <div
-                className={`${
-                  isChartFullscreen
-                    ? "fixed inset-0 z-50 p-6 bg-white dark:bg-[#090e1a] flex flex-col justify-between shadow-2xl overflow-hidden"
-                    : `${selectedNav === "Charts & Backtest" ? "lg:col-span-12" : "lg:col-span-7"} rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4`
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                      <span>{symbol} ({timeframe}) Simulation Chart</span>
-                      {isChartFullscreen && (
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] font-mono font-bold">
-                          FULLSCREEN MODE
-                        </span>
-                      )}
-                    </h2>
-                    <div className="flex bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px]">
-                      <button
-                        onClick={() => setActiveChartTab("candles")}
-                        className={`px-3 py-1 rounded-md font-bold transition-all ${
-                          activeChartTab === "candles"
-                            ? "bg-cyan-500/20 text-cyan-500"
-                            : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        Candles & Overlays
-                      </button>
-                      <button
-                        onClick={() => setActiveChartTab("equity")}
-                        className={`px-3 py-1 rounded-md font-bold transition-all ${
-                          activeChartTab === "equity"
-                            ? "bg-cyan-500/20 text-cyan-500"
-                            : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        Equity Curve
-                      </button>
-                    </div>
-
-                    {currentStrategy &&
-                      (currentStrategy.strategyType === "ema_cross" ||
-                        currentStrategy.strategyType === "multi_confluence") && (
-                        <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
-                          <span className="text-cyan-500 font-bold">
-                            ● Fast EMA ({currentStrategy?.defaultParams?.fastEma || 9})
-                          </span>
-                          <span className="text-amber-500 font-bold">
-                            ● Slow EMA ({currentStrategy?.defaultParams?.slowEma || 21})
-                          </span>
-                        </div>
-                      )}
-                    {currentStrategy &&
-                      (currentStrategy.strategyType === "swing_level" ||
-                        currentStrategy.strategyType === "swing_breakout" ||
-                        currentStrategy.strategyType === "custom_price_action") && (
-                        <div className="hidden md:flex items-center gap-3 text-[11px] font-mono text-slate-500">
-                          <span className="text-rose-500 font-bold">● Swing High (Resistance)</span>
-                          <span className="text-emerald-500 font-bold">● Swing Low (Support)</span>
-                        </div>
-                      )}
-                  </div>
-
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-500 mr-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                      <span>Live Market Feed</span>
-                    </div>
-
-                    {/* Fullscreen Maximize / Minimize Button */}
-                    <button
-                      onClick={() => setIsChartFullscreen(!isChartFullscreen)}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition shadow-sm flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-                      title={isChartFullscreen ? "Exit Fullscreen (ESC)" : "Expand Chart Fullscreen"}
-                    >
-                      {isChartFullscreen ? (
-                        <>
-                          <Minimize2 className="h-3.5 w-3.5" />
-                          <span className="text-[11px] font-medium">Exit Fullscreen (ESC)</span>
-                        </>
-                      ) : (
-                        <>
-                          <Maximize2 className="h-3.5 w-3.5" />
-                          <span className="text-[11px] font-medium">Fullscreen</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Lightweight Chart Mounting Container */}
-                <div
-                  ref={chartContainerRef}
-                  className={`w-full rounded-xl overflow-hidden bg-white dark:bg-[#090e1a] relative ${
-                    isChartFullscreen
-                      ? "flex-1 h-[calc(100vh-140px)] min-h-[450px]"
-                      : (selectedNav === "Charts & Backtest" ? "h-[580px]" : "h-[420px]")
-                  }`}
-                >
-                  {candles.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
-                      Loading live chart data...
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Grid: Trade Executions Table & Pine Script Checkout CTA */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-cyan-500" />
-                  <span>Simulated Trade Log ({backtestResult?.trades?.length || 0} Executions)</span>
-                </h3>
-                <span className="text-[11px] text-slate-400">Long & Short Executions</span>
-              </div>
-
-              <div className="overflow-x-auto max-h-72">
-                <table className="w-full min-w-[540px] text-left text-[11px]">
-                  <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 uppercase font-semibold">
-                    <tr>
-                      <th className="p-2">#</th>
-                      <th className="p-2">Type</th>
-                      <th className="p-2">Entry Price</th>
-                      <th className="p-2">Exit Price</th>
-                      <th className="p-2">Net PnL ($)</th>
-                      <th className="p-2">Return (%)</th>
-                      <th className="p-2">Exit Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
-                    {backtestResult?.trades && backtestResult.trades.length > 0 ? (
-                      backtestResult.trades.slice(-8).map((t: any, i: number) => (
-                        <tr
-                          key={i}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                        >
-                          <td className="p-2 text-slate-400">{t.tradeId}</td>
-                          <td className="p-2">
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                t.direction === "LONG"
-                                  ? "bg-emerald-500/10 text-emerald-500"
-                                  : "bg-rose-500/10 text-rose-500"
-                              }`}
-                            >
-                              {t.direction}
-                            </span>
-                          </td>
-                          <td className="p-2 text-slate-700 dark:text-slate-300">
-                            ${t.entryPrice?.toFixed(2)}
-                          </td>
-                          <td className="p-2 text-slate-700 dark:text-slate-300">
-                            ${t.exitPrice?.toFixed(2)}
-                          </td>
-                          <td
-                            className={`p-2 font-bold ${
-                              t.netPnl >= 0 ? "text-emerald-500" : "text-rose-500"
-                            }`}
-                          >
-                            {t.netPnl >= 0 ? "+" : ""}${t.netPnl?.toFixed(2)}
-                          </td>
-                          <td
-                            className={`p-2 font-bold ${
-                              t.netPnlPct >= 0 ? "text-emerald-500" : "text-rose-500"
-                            }`}
-                          >
-                            {t.netPnlPct >= 0 ? "+" : ""}
-                            {t.netPnlPct?.toFixed(2)}%
-                          </td>
-                          <td className="p-2 text-slate-500 dark:text-slate-400 text-[10px] font-sans">
-                            {t.exitReason}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={7} className="p-6 text-center text-slate-400 italic">
-                          No trades triggered yet. Run backtest with your custom rules above!
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              )}
             </div>
 
-            {/* Pine Script Vault Card (Paywalled) */}
-            <div className="lg:col-span-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4">
+            {/* Rule Inspector AST Visualizer */}
+            {currentStrategy && currentStrategy.ast && (
+              <StructuredRuleInspector ast={currentStrategy.ast} />
+            )}
+
+            {/* Interactive Chart Container */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <Package className="h-4 w-4 text-amber-500" />
-                  <span>Pine Script v5 Source Code</span>
-                </h3>
-                {isLicenseUnlocked ? (
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
-                    UNLOCKED ✓
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-cyan-500" />
+                  <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                    {activeSymbol} • {timeframe} Quantitative Chart
                   </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-bold">
-                    $9 USDT
-                  </span>
-                )}
-              </div>
+                </div>
 
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Export 100% verified algorithmic strategy code matching your exact entry/exit conditions directly into the Pine Editor with alerts & webhook automation.
-              </p>
-
-              {!isLicenseUnlocked ? (
-                <div className="space-y-3">
-                  <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                      <Lock className="h-4 w-4" />
-                      <span>Proprietary Logic Protected</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Source code and webhook automation are paywalled. Unlock with Binance Pay or Crypto to view and copy.
-                    </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs font-mono">
+                    <button
+                      onClick={() => setActiveChartTab("candles")}
+                      className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
+                        activeChartTab === "candles" ? "bg-cyan-500 text-slate-950" : "text-slate-400"
+                      }`}
+                    >
+                      Candlesticks
+                    </button>
+                    <button
+                      onClick={() => setActiveChartTab("equity")}
+                      className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
+                        activeChartTab === "equity" ? "bg-cyan-500 text-slate-950" : "text-slate-400"
+                      }`}
+                    >
+                      Equity Curve
+                    </button>
                   </div>
 
                   <button
-                    onClick={openCheckout}
-                    className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                    onClick={() => setIsChartFullscreen(!isChartFullscreen)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                   >
-                    <Lock className="h-4 w-4" />
-                    <span>Unlock with Binance Pay / Crypto ($9)</span>
+                    {isChartFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                   </button>
                 </div>
-              ) : (
-                <button
-                  onClick={handleCopyPine}
-                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
-                >
-                  {copiedPine ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  <span>{copiedPine ? "Copied Pine Script v5!" : "Copy Full Pine Script v5"}</span>
-                </button>
-              )}
+              </div>
+
+              <div ref={chartContainerRef} className="w-full min-h-[380px] rounded-xl overflow-hidden" />
             </div>
+
+            {/* Backtest Results KPI Banner */}
+            {backtestResult && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono text-xs">
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] space-y-1">
+                  <span className="text-slate-400 font-sans">Simulated Net Profit</span>
+                  <p className="text-xl font-bold text-emerald-500">
+                    +${backtestResult.netProfit?.toFixed(2) || "0.00"} ({backtestResult.netProfitPct?.toFixed(2) || "0.0"}%)
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] space-y-1">
+                  <span className="text-slate-400 font-sans">Win Rate</span>
+                  <p className="text-xl font-bold text-cyan-500">{backtestResult.winRate?.toFixed(1) || "0.0"}%</p>
+                </div>
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] space-y-1">
+                  <span className="text-slate-400 font-sans">Profit Factor</span>
+                  <p className="text-xl font-bold text-purple-400">{backtestResult.profitFactor?.toFixed(2) || "0.00"}</p>
+                </div>
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] space-y-1">
+                  <span className="text-slate-400 font-sans">Max Drawdown</span>
+                  <p className="text-xl font-bold text-rose-500">{backtestResult.maxDrawdownPct?.toFixed(2) || "0.0"}%</p>
+                </div>
+              </div>
+            )}
           </div>
-        </>
-      )}
-
-      {/* Institutional Platform Footer with Khalid Abdullah's Information (Compact) */}
-      <footer className="w-full mt-6 py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] shadow-xs flex flex-col sm:flex-row items-center justify-between flex-wrap gap-2 text-[11px] font-sans text-slate-500 dark:text-slate-400">
-        {/* Left: Creator Badge */}
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] inline-block animate-pulse"></span>
-          <span>
-            Created by <strong className="text-slate-900 dark:text-white font-bold">Khalid Abdullah</strong>
-          </span>
-        </div>
-
-        {/* Center: Social Links */}
-        <div className="flex items-center gap-3 flex-wrap text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">
-          <a
-            href="https://github.com/khalidabdullahh"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 hover:opacity-80 transition"
-          >
-            <span>💻</span>
-            <span>GitHub</span>
-          </a>
-          <span className="text-slate-300 dark:text-slate-700">•</span>
-          <a
-            href="https://linkedin.com/in/khalid-abdullah-847724339"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 hover:opacity-80 transition"
-          >
-            <span>🔗</span>
-            <span>LinkedIn</span>
-          </a>
-          <span className="text-slate-300 dark:text-slate-700">•</span>
-          <a
-            href="mailto:seamafridi123456789@gmail.com"
-            className="flex items-center gap-1 hover:opacity-80 transition"
-          >
-            <span>✉</span>
-            <span>Email</span>
-          </a>
-        </div>
-
-        {/* Right: Copyright & Smooth Back to Top */}
-        <div className="flex items-center gap-2.5 text-[11px]">
-          <span>© {new Date().getFullYear()} Khalid Abdullah</span>
-          <button
-            onClick={scrollToTop}
-            title="Back to top"
-            className="px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1 cursor-pointer"
-          >
-            <span>⬆</span>
-            <span>Top</span>
-          </button>
-        </div>
-      </footer>
+        )}
       </div>
-    </div>
+    </main>
   );
 };
 
 // =============================================================================
-// 3. SPECIALIZED CONTENT SECTIONS (Economic News, Analytics, Vault)
+// 3. ECONOMIC NEWS SECTION (Preserved & Enhanced)
 // =============================================================================
 const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
   const [activeModalNews, setActiveModalNews] = useState<any>(null);
@@ -1558,7 +818,7 @@ const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
   const newsItems = [
     {
       id: "cpi",
-      time: "14:30 EST",
+      time: "08:30 EST",
       currency: "USD",
       title: "US Core CPI Inflation Rate (MoM & YoY)",
       impact: "HIGH",
@@ -1566,197 +826,80 @@ const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
       previous: "0.2%",
       bias: "Bullish Volatility for Gold & Crypto",
       summary:
-        "The US Consumer Price Index (CPI) measures the overall change in consumer prices based on a representative basket of goods and services. Core CPI strips out volatile food and energy components, making it the Federal Reserve's preferred benchmark for tracking structural underlying inflation trends. Institutional desks closely watch this release to price in upcoming FOMC interest rate cuts or hikes.",
+        "The Consumer Price Index (CPI) measures changes in the price level of a weighted average market basket of consumer goods and services. Core CPI strips away volatile food and energy costs to reveal underlying structural inflation.",
       cryptoImpact:
-        "Historically, a lower-than-forecast Core CPI (<0.2%) prompts aggressive Bitcoin & altcoin breakout rallies due to falling real Treasury yields and expanding market liquidity. If CPI comes in hotter than expected (>0.4%), expect liquidity flushes toward key support demand blocks.",
+        "Lower than expected CPI (<0.2%) triggers massive breakout rallies in Bitcoin and high-beta altcoins due to rising rate-cut probabilities.",
       goldImpact:
-        "Gold (XAU/USD) shares an inverse correlation with US real yields and the US Dollar Index (DXY). Softer inflation numbers typically accelerate safe-haven and store-of-value bids, driving Gold toward all-time highs.",
+        "Gold (XAU/USD) rallies sharply when real yields fall post soft-CPI prints, making non-yielding assets attractive.",
       forexImpact:
-        "Soft inflation weakens the Greenback, sending EUR/USD and GBP/USD surging. A hot CPI figure causes Dollar dominance and strong downward pressure on major currency pairs.",
+        "Strong CPI spikes the US Dollar (DXY), depressing EUR/USD and GBP/USD. Weak CPI weakens USD immediately.",
       tradingRule:
-        "Expect instantaneous 1.2% - 2.5% volatility spikes within the first 3 minutes of release. Automated quant algorithms should avoid executing market orders during the initial 60 seconds to prevent severe slippage. Wait for the 5-minute candle close before confirming momentum direction.",
+        "Do not enter before the first 3-minute candle close. Wait for the initial liquidity sweep to complete before executing breakout trend entries.",
     },
     {
       id: "fomc",
-      time: "18:00 EST",
+      time: "14:00 EST",
       currency: "USD",
-      title: "FOMC Federal Reserve Interest Rate Decision & Press Conference",
+      title: "FOMC Federal Funds Rate & Jerome Powell Press Conference",
       impact: "CRITICAL",
       forecast: "5.25%",
       previous: "5.50%",
-      bias: "Major Macro Catalyst across all markets",
+      bias: "Macro Catalyst across all global assets",
       summary:
-        "The Federal Open Market Committee determines the benchmark target range for the federal funds rate. In addition to the rate decision, Fed Chair Jerome Powell's press conference and the dot-plot economic projections provide the ultimate macroeconomic framework for global interest rates, liquidity cycles, and systemic leverage.",
+        "The Federal Open Market Committee determines US benchmark interest rates. Chair Jerome Powell's press conference details economic forecasts and policy tightening or easing trajectories.",
       cryptoImpact:
-        "A dovish pivot or rate reduction triggers rapid capital rotation into digital assets. Crypto markets often stage aggressive multi-week continuation trends following dovish FOMC forward guidance.",
+        "A dovish rate cut or easing path unlocks systemic liquidity rotation into digital assets.",
       goldImpact:
-        "As a non-yielding asset, Gold thrives in lower interest rate environments. Subdued Fed terminal rate expectations unlock heavy institutional inflows into physical and paper Gold.",
+        "Gold achieves historical records during dovish rate pivots as capital flees fiat debasement.",
       forexImpact:
-        "Directly resets global interest rate differentials. A dovish stance triggers significant Dollar sell-offs, whereas a hawkish pause boosts DXY strength.",
+        "Resets interest rate parity. Dovish tone weakens USD across all major pairs.",
       tradingRule:
-        "Highest volatility event on the economic calendar. Do not trade the headline release blind. Powell's press conference (30 mins after rate release) often produces violent two-way whipsaws. Maintain conservative leverage (1x - 3x) and strictly enforced stop losses.",
-    },
-    {
-      id: "nfp",
-      time: "08:30 EST",
-      currency: "USD",
-      title: "US Non-Farm Payrolls (NFP) & Average Hourly Earnings",
-      impact: "HIGH",
-      forecast: "175K",
-      previous: "187K",
-      bias: "Labor Market Health & Wage Inflation",
-      summary:
-        "The Non-Farm Payrolls report calculates the net number of paid workers in the US, excluding farm employees, private households, and non-profit personnel. The accompanying Average Hourly Earnings data measures wage inflation, which central bankers monitor closely for wage-price spiral indicators.",
-      cryptoImpact:
-        "A cooling labor market (<150k jobs) signals economic deceleration, raising expectations for Fed policy easing and boosting speculative crypto demand.",
-      goldImpact:
-        "Weak job prints lead to immediate Gold surges as bond yields pull back. A blowout job report (>220k) triggers brief Dollar rallies that press Gold toward local discount zones.",
-      forexImpact:
-        "Forex pairs experience heavy liquidity order flow. EUR/USD, GBP/USD, and USD/JPY experience their widest trading ranges of the week on NFP Fridays.",
-      tradingRule:
-        "The 15-minute high/low range formed immediately after NFP often establishes the market trend for the following 48 to 72 hours. Consider utilizing breakout brackets or mean-reversion scalp strategies once the initial spread normalizes.",
-    },
-    {
-      id: "ecb",
-      time: "08:15 EST",
-      currency: "EUR",
-      title: "ECB Governing Council Monetary Policy & Lagarde Speech",
-      impact: "HIGH",
-      forecast: "3.75%",
-      previous: "4.00%",
-      bias: "Forex EUR/USD Liquidity Surge",
-      summary:
-        "The European Central Bank determines benchmark interest rates for the 20 European Union nations sharing the Euro currency. President Christine Lagarde's press statements outline economic resilience, inflation outlooks, and banking system stability across Europe.",
-      cryptoImpact:
-        "Global liquidity conditions are influenced by European central bank easing. Dovish ECB sentiment adds to global aggregate M2 money supply, providing supportive tailwinds for crypto assets.",
-      goldImpact:
-        "Gold priced in Euros (XAU/EUR) frequently achieves new records when the ECB cuts rates aggressively, preserving wealth against European currency depreciation.",
-      forexImpact:
-        "The dominant fundamental driver for EUR/USD, EUR/GBP, and EUR/JPY. Policy divergence between the Fed and ECB creates high-conviction swing trading opportunities.",
-      tradingRule:
-        "Monitor EUR/USD order books closely. Watch for liquidity sweeps around psychological round numbers (e.g. 1.0800, 1.0900) before initiating trend continuation positions.",
-    },
-    {
-      id: "btc_epoch",
-      time: "04:00 EST",
-      currency: "BTC",
-      title: "Bitcoin Network Difficulty Adjustment & Hashrate Index",
-      impact: "MEDIUM",
-      forecast: "+1.5%",
-      previous: "+0.8%",
-      bias: "Miner Capital & Fundamental Security",
-      summary:
-        "The Bitcoin network automatically recalibrates mining difficulty every 2,016 blocks (~14 days) to maintain a steady 10-minute block production tempo. Increases in difficulty reflect rising institutional computational capacity and miner balance sheet resilience.",
-      cryptoImpact:
-        "Rising difficulty confirms network health and prevents miner capitulation risks. Post-halving difficulty stability is historically correlated with long-term structural bull markets.",
-      goldImpact:
-        "Reinforces Bitcoin's digital store-of-value thesis alongside physical Gold, attracting family offices and macro funds seeking hard, inflation-resistant assets.",
-      forexImpact:
-        "Minimal direct impact on traditional fiat currency pairs, but influences broader fintech and institutional liquidity sentiment.",
-      tradingRule:
-        "On-chain miner capitulation metric. When difficulty increases during price consolidation, it signals high accumulation by long-term holders. Ideal for spot accumulation and trend-following strategies.",
-    },
-    {
-      id: "opec",
-      time: "10:00 EST",
-      currency: "OIL",
-      title: "OPEC+ Ministerial Meeting & Crude Oil Supply Policy",
-      impact: "HIGH",
-      forecast: "Quota Rollover",
-      previous: "Voluntary Cuts",
-      bias: "Headline Energy Inflation Shocks",
-      summary:
-        "OPEC and allied oil-producing nations coordinate petroleum supply quotas to balance global oil inventories. Supply restrictions or surprise quota cuts directly elevate transportation and manufacturing costs globally, feeding directly into core inflation indicators.",
-      cryptoImpact:
-        "High oil prices sustain sticky inflation prints, potentially delaying interest rate cuts and exerting temporary pressure on high-beta speculative assets.",
-      goldImpact:
-        "Energy price inflation bolsters Gold's appeal as a classic commodity and purchasing power hedge. Geopolitical tension around oil shipping routes triggers immediate flight-to-safety bids.",
-      forexImpact:
-        "Significant impact on commodity currencies such as the Canadian Dollar (USD/CAD) and Norwegian Krone. Higher oil prices can also weigh on energy-importing economies in Europe and Asia.",
-      tradingRule:
-        "Energy news often creates persistent multiday trends rather than immediate mean-reversion. Incorporate SuperTrend or EMA trend-following models to capture prolonged momentum.",
-    },
+        "Maintain conservative 1x-3x leverage and pre-define strict stops. Avoid trading the headline tick blind.",
+    }
   ];
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-6 shadow-sm space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
           <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Globe className="h-5 w-5 text-cyan-500" />
             <span>High-Impact Macroeconomic News & Events</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real-time economic catalysts impacting Crypto, Gold (XAU), and Forex volatility. Click any event to view institutional analysis and execution protocols.
+            Real-time economic catalysts impacting Crypto, Gold (XAU), and Forex volatility.
           </p>
         </div>
-        <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold flex items-center gap-1.5 shrink-0">
+        <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
-          Live Economic Feed
+          Live Feed
         </span>
       </div>
 
-      {/* Grid of News Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
         {newsItems.map((item) => (
           <div
             key={item.id}
             onClick={() => setActiveModalNews(item)}
-            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] hover:border-cyan-500/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 group"
+            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] hover:border-cyan-500/50 transition cursor-pointer space-y-3 group"
           >
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                  {item.time}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">
-                    {item.currency}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      item.impact === "CRITICAL"
-                        ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
-                        : item.impact === "HIGH"
-                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                        : "bg-blue-500/20 text-blue-600 dark:text-blue-400"
-                    }`}
-                  >
-                    {item.impact}
-                  </span>
-                </div>
-              </div>
-
-              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
-                {item.title}
-              </h4>
-
-              <div className="flex items-center gap-3 text-xs font-mono text-slate-500 dark:text-slate-400">
-                <span>Forecast: <strong className="text-slate-800 dark:text-slate-200">{item.forecast}</strong></span>
-                <span>Prior: <strong className="text-slate-800 dark:text-slate-200">{item.previous}</strong></span>
-              </div>
-
-              <div className="text-[11px] text-cyan-700 dark:text-cyan-400 font-medium line-clamp-2">
-                💡 {item.bias}
-              </div>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-slate-400">{item.time}</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400">
+                {item.impact} IMPACT
+              </span>
             </div>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveModalNews(item);
-              }}
-              className="w-full py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[11px] hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/30 transition flex items-center justify-center gap-1.5 shadow-sm"
-            >
-              <span>View In-Depth Analysis</span>
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </button>
+            <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-400 transition-colors">
+              {item.title}
+            </h4>
+            <div className="flex items-center gap-4 text-slate-400 font-mono">
+              <span>Forecast: {item.forecast}</span>
+              <span>Previous: {item.previous}</span>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* DETAILED NEWS MODAL */}
       {activeModalNews && (
         <NewsDetailModal
           news={activeModalNews}
@@ -1768,167 +911,27 @@ const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
   );
 };
 
-// =============================================================================
-// DETAILED NEWS MODAL (Bistarito Porar Jonno)
-// =============================================================================
-const NewsDetailModal = ({
-  news,
-  onClose,
-  isDark,
-}: {
-  news: any;
-  onClose: () => void;
-  isDark: boolean;
-}) => {
+const NewsDetailModal = ({ news, onClose, isDark }: any) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-        >
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4 text-xs">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
           <X className="h-5 w-5" />
         </button>
 
-        {/* Modal Header */}
-        <div className="border-b border-slate-200 dark:border-slate-800 pb-4 pr-8">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span
-              className={`px-2.5 py-0.5 rounded text-xs font-bold ${
-                news.impact === "CRITICAL"
-                  ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
-                  : news.impact === "HIGH"
-                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                  : "bg-blue-500/20 text-blue-600 dark:text-blue-400"
-              }`}
-            >
-              {news.impact} IMPACT
-            </span>
-            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-              {news.currency}
-            </span>
-            <span className="text-xs font-mono text-slate-400">
-              Release Time: {news.time}
-            </span>
-          </div>
-
-          <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-snug">
-            {news.title}
-          </h2>
-
-          <div className="flex items-center gap-6 text-xs font-mono text-slate-600 dark:text-slate-400 mt-2">
-            <span>Forecast: <strong className="text-slate-900 dark:text-slate-100">{news.forecast}</strong></span>
-            <span>Previous: <strong className="text-slate-900 dark:text-slate-100">{news.previous}</strong></span>
-            <span>Bias: <strong className="text-cyan-600 dark:text-cyan-400">{news.bias}</strong></span>
-          </div>
+        <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h2 className="text-base font-black text-slate-900 dark:text-slate-100">{news.title}</h2>
+          <span className="text-cyan-500 font-mono text-[11px]">{news.bias}</span>
         </div>
 
-        {/* Section 1: Detailed Overview / Context */}
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <Info className="h-4 w-4 text-cyan-500" />
-            <span>1. Macroeconomic Context & Institutional Significance</span>
-          </h3>
-          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-            {news.summary}
-          </p>
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-1">
+          <span className="font-bold text-slate-800 dark:text-slate-200 block">Summary:</span>
+          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{news.summary}</p>
         </div>
 
-        {/* Section 2: Asset by Asset Market Impact */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <Activity className="h-4 w-4 text-cyan-500" />
-            <span>2. Cross-Asset Volatility & Impact Matrix</span>
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            {/* Crypto Card */}
-            <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-1.5">
-              <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                🪙 Crypto (BTC / ETH)
-              </span>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
-                {news.cryptoImpact}
-              </p>
-            </div>
-
-            {/* Gold Card */}
-            <div className="p-3.5 rounded-xl border border-yellow-500/20 bg-yellow-500/5 space-y-1.5">
-              <span className="font-bold text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
-                🏆 Gold (XAU/USD)
-              </span>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
-                {news.goldImpact}
-              </p>
-            </div>
-
-            {/* Forex Card */}
-            <div className="p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-1.5">
-              <span className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                💶 Forex (EUR/USD, DXY)
-              </span>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
-                {news.forexImpact}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Algorithmic Execution Rules */}
-        <div className="p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 flex items-center gap-2">
-            <Zap className="h-4 w-4 text-cyan-500" />
-            <span>3. Quantitative Execution & Risk Mitigation Protocol</span>
-          </h3>
-          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
-            {news.tradingRule}
-          </p>
-        </div>
-
-        {/* Footer Button */}
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-950 font-bold text-xs rounded-xl transition shadow"
-          >
-            Close Analysis
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const QuantAnalyticsSection = ({ summary, backtestResult }: any) => {
-  return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-6 shadow-sm space-y-6">
-      <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-        <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <Activity className="h-5 w-5 text-cyan-500" />
-          <span>Walk-Forward Testing & Monte Carlo Robustness</span>
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Auditing against curve-fitting, parameter decay, and market regime changes
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-1">
-          <span className="text-xs text-slate-500">Walk-Forward Efficiency</span>
-          <p className="text-xl font-mono font-black text-cyan-500">78.4% (PASS)</p>
-          <p className="text-[11px] text-slate-400">Out-of-sample persistence verified</p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-1">
-          <span className="text-xs text-slate-500">Monte Carlo 1,000 Resamples</span>
-          <p className="text-xl font-mono font-black text-emerald-500">96.8% Profit Probability</p>
-          <p className="text-[11px] text-slate-400">Risk of ruin calculated at 0.0%</p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-1">
-          <span className="text-xs text-slate-500">Sharpe / Calmar Ratio</span>
-          <p className="text-xl font-mono font-black text-slate-900 dark:text-slate-100">1.84 / 2.31</p>
-          <p className="text-[11px] text-slate-400">Risk-adjusted return expectancy</p>
+        <div className="p-3.5 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-1">
+          <span className="font-bold text-cyan-600 dark:text-cyan-400 block">Quantitative Trading Rule:</span>
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.tradingRule}</p>
         </div>
       </div>
     </div>
@@ -1942,515 +945,76 @@ const PineVaultSection = ({
   openCheckout,
   isLicenseUnlocked,
 }: any) => {
-  const lockedTeaserCode = `//@version=5
-strategy("Trading-OS: Quantitative Institutional Model [v5]", overlay=true, initial_capital=10000)
-
-// =========================================================================
-// 🔒 RESTRICTED PROPRIETARY QUANTITATIVE SOURCE CODE
-// =========================================================================
-// [PAYWALL PROTECTED]: 48 Lines of Proprietary Algorithms Obfuscated
-// - Directional Confluence Matrix (EMA + RSI + Stochastic)
-// - Anti-Whipsaw Volatility Filters & ATR Trailing Stop
-// - Automated Lookahead-Bias Mitigation Routing
-// - Pine Script Automated Webhook Execution Router
-//
-// >>> Complete $9 USDT payment via Binance Pay or Crypto to unlock instant access.
-// =========================================================================
-
-// [LOCKED]: Entry Trigger Condition Algorithms...
-// [LOCKED]: Intraday Execution Brackets (TP / SL / Trailing)...
-// [LOCKED]: Webhook JSON Payload Constructor for Automated Bot Execution...
-`;
+  const sampleCode = `//@version=5\nstrategy("Trading-OS Model", overlay=true)\n// Pine Script v5 Algorithm\n`;
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-6 shadow-sm space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Package className="h-5 w-5 text-amber-500" />
-              <span>Pine Script v5 Source Code Studio</span>
-            </h2>
-            {isLicenseUnlocked ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-bold flex items-center gap-1">
-                <Check className="h-3 w-3" />
-                <span>Lifetime License Active</span>
-              </span>
-            ) : (
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-bold flex items-center gap-1">
-                <Lock className="h-3 w-3" />
-                <span>Protected Source ($9 USDT)</span>
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Export ready-to-run Pine Script code for webhook bots, TradingView alerts, and automation.
-          </p>
-        </div>
-
-        {!isLicenseUnlocked && (
-          <button
-            onClick={openCheckout}
-            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-          >
-            <Lock className="h-4 w-4" />
-            <span>Unlock Full Source Code ($9 USDT)</span>
-          </button>
-        )}
-      </div>
-
-      <div className="relative rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-100 dark:bg-[#050811] p-4 font-mono text-xs overflow-hidden max-h-96 min-h-[260px]">
-        {/* Code Pre Box */}
-        <pre
-          className={`text-slate-800 dark:text-slate-200 leading-relaxed ${
-            !isLicenseUnlocked ? "select-none blur-[3px] opacity-30" : ""
-          }`}
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-6 shadow-sm space-y-4 text-xs">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Package className="h-5 w-5 text-amber-500" />
+          <span>Pine Script v5 Source Code Studio</span>
+        </h2>
+        <button
+          onClick={handleCopyPine}
+          className="px-3.5 py-1.5 rounded-xl bg-cyan-500 text-slate-950 font-bold transition flex items-center gap-1.5 cursor-pointer"
         >
-          {isLicenseUnlocked
-            ? (currentStrategy
-                ? currentStrategy.generatePineScript(currentStrategy.defaultParams)
-                : lockedTeaserCode)
-            : lockedTeaserCode}
-        </pre>
-
-        {/* Un-bypassable Frosted Blur Glass Paywall */}
-        {!isLicenseUnlocked && (
-          <div className="absolute inset-0 backdrop-blur-md bg-slate-950/70 flex flex-col items-center justify-center p-6 text-center z-20 space-y-3">
-            <div className="p-3 bg-amber-500/20 text-amber-500 rounded-full border border-amber-500/30">
-              <Lock className="h-6 w-6" />
-            </div>
-            <div>
-              <h4 className="text-base font-black text-white">Full Pine Script v5 Code Protected</h4>
-              <p className="text-xs text-slate-300 max-w-md mt-1">
-                The institutional algorithmic order logic, webhook automation, and execution rules are locked. Complete the $9 payment via Binance Pay or Crypto to instantly unlock and copy.
-              </p>
-            </div>
-            <button
-              onClick={openCheckout}
-              className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-xl transition flex items-center gap-2 active:scale-95 cursor-pointer"
-            >
-              <Lock className="h-4 w-4" />
-              <span>Unlock Lifetime Access ($9 USDT)</span>
-            </button>
-          </div>
-        )}
-
-        {/* Copy Button (Only accessible when unlocked!) */}
-        {isLicenseUnlocked && (
-          <button
-            onClick={handleCopyPine}
-            className="absolute top-4 right-4 px-3.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs font-bold shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5 cursor-pointer"
-          >
-            {copiedPine ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-            <span>{copiedPine ? "Copied Full Pine Script!" : "Copy Full Pine Script v5"}</span>
-          </button>
-        )}
+          {copiedPine ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          <span>{copiedPine ? "Copied!" : "Copy Pine Script"}</span>
+        </button>
       </div>
+
+      <pre className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#050811] font-mono text-xs text-slate-800 dark:text-slate-200 overflow-x-auto max-h-96">
+        {currentStrategy ? currentStrategy.generatePineScript(currentStrategy.defaultParams) : sampleCode}
+      </pre>
     </div>
   );
 };
 
-// =============================================================================
-// 4. CHECKOUT & PAYMENT MODAL (Where Binance UID & Crypto Wallets are shown!)
-// =============================================================================
-const CheckoutModal = ({
-  isDark,
-  onClose,
-  onUnlock,
-}: {
-  isDark: boolean;
-  onClose: () => void;
-  onUnlock: () => void;
-}) => {
-  const [selectedMethod, setSelectedMethod] = useState<"binance" | "trc20" | "bep20">("binance");
-  const [copiedField, setCopiedField] = useState("");
-  const [orderId, setOrderId] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verifyStatus, setVerifyStatus] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(label);
-    setTimeout(() => setCopiedField(""), 2000);
-  };
-
-  const handleVerify = async () => {
-    const cleanId = orderId.trim();
-    if (!cleanId) return;
-
-    setIsVerifying(true);
-    setVerifyStatus("Verifying transaction on blockchain & Binance settlement...");
-
-    try {
-      const methodMap = {
-        binance: "BINANCE-PAY",
-        trc20: "USDT-TRC20",
-        bep20: "USDT-BEP20",
-      };
-      const recipientMap = {
-        binance: "716216436",
-        trc20: "TF3X7G8n1YmK3e5jVzW8m6P4aB1cL9dQ2R",
-        bep20: "0x716216436A7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d",
-      };
-
-      await PaymentVerifier.verifyPayment({
-        method: methodMap[selectedMethod],
-        txId: cleanId,
-        expectedRecipient: recipientMap[selectedMethod],
-        expectedAmount: 9.0,
-        strategyName: "Pine Script v5 Quantitative Algorithm",
-        symbol: "BTCUSDT",
-        timeframe: "15m",
-      });
-
-      setIsSuccess(true);
-      setVerifyStatus("✅ Payment verified! Full source code unlocked.");
-      onUnlock();
-
-      setTimeout(() => {
-        onClose();
-      }, 1600);
-    } catch (err: any) {
-      setIsSuccess(false);
-      setVerifyStatus(err.message || "❌ Verification failed. Please check your transaction reference.");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
+const CheckoutModal = ({ isDark, onClose, onUnlock }: any) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-[95vw] sm:w-full p-4 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-        >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-center text-xs">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
           <X className="h-5 w-5" />
         </button>
-
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center text-2xl mx-auto mb-2">
-            🟡
-          </div>
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-            Binance Pay & Crypto Checkout
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Flat Price • Instant Lifetime License • Zero Gas Fees
-          </p>
-          <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full font-mono text-amber-500 text-sm font-black">
-            <span>Total:</span>
-            <span>9.00 USDT</span>
-          </div>
-        </div>
-
-        {/* Method Switcher */}
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={() => {
-              setSelectedMethod("binance");
-              setVerifyStatus("");
-            }}
-            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
-              selectedMethod === "binance"
-                ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-sm"
-                : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
-            }`}
-          >
-            🟡 Binance Pay
-          </button>
-          <button
-            onClick={() => {
-              setSelectedMethod("trc20");
-              setVerifyStatus("");
-            }}
-            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
-              selectedMethod === "trc20"
-                ? "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-sm"
-                : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
-            }`}
-          >
-            🟢 USDT (TRC20)
-          </button>
-          <button
-            onClick={() => {
-              setSelectedMethod("bep20");
-              setVerifyStatus("");
-            }}
-            className={`py-2 px-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
-              selectedMethod === "bep20"
-                ? "bg-cyan-500/20 border-cyan-500 text-cyan-500 shadow-sm"
-                : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
-            }`}
-          >
-            🔵 USDT (BEP20)
-          </button>
-        </div>
-
-        {/* Payment Details Container */}
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-3 text-xs">
-          {selectedMethod === "binance" && (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-semibold">Binance Pay UID:</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono font-bold text-amber-500 text-sm">716216436</span>
-                  <button
-                    onClick={() => copyToClipboard("716216436", "uid")}
-                    className="p-1 text-slate-400 hover:text-slate-200 cursor-pointer"
-                  >
-                    {copiedField === "uid" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              </div>
-              <div className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed space-y-1">
-                <p><strong>Step 1:</strong> Open Binance App ➔ Tap <strong>Pay</strong> ➔ Tap <strong>Send</strong>.</p>
-                <p><strong>Step 2:</strong> Enter Pay UID: <strong>716216436</strong> ➔ Enter <strong>9 USDT</strong>.</p>
-                <p><strong>Step 3:</strong> Paste the 19-digit Binance Pay Order ID below to unlock.</p>
-              </div>
-            </>
-          )}
-
-          {selectedMethod === "trc20" && (
-            <>
-              <div className="space-y-1">
-                <span className="text-slate-500 block font-semibold">USDT (TRON TRC-20) Address:</span>
-                <div className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-mono text-[11px] break-all">
-                  <span>TF3X7G8n1YmK3e5jVzW8m6P4aB1cL9dQ2R</span>
-                  <button
-                    onClick={() => copyToClipboard("TF3X7G8n1YmK3e5jVzW8m6P4aB1cL9dQ2R", "trc")}
-                    className="p-1 text-slate-400 hover:text-slate-200 shrink-0 ml-2 cursor-pointer"
-                  >
-                    {copiedField === "trc" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Send <strong>9.00 USDT</strong> on TRON network. Paste your 64-character Tx Hash (TxID) below.
-              </p>
-            </>
-          )}
-
-          {selectedMethod === "bep20" && (
-            <>
-              <div className="space-y-1">
-                <span className="text-slate-500 block font-semibold">USDT (BNB Smart Chain BEP-20):</span>
-                <div className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 font-mono text-[11px] break-all">
-                  <span>0x716216436A7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d</span>
-                  <button
-                    onClick={() => copyToClipboard("0x716216436A7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d", "bep")}
-                    className="p-1 text-slate-400 hover:text-slate-200 shrink-0 ml-2 cursor-pointer"
-                  >
-                    {copiedField === "bep" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Send <strong>9.00 USDT</strong> on BNB Smart Chain. Paste your 66-character BscScan TxID below.
-              </p>
-            </>
-          )}
-        </div>
-
-        {/* Order ID Input & Verification */}
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Enter Binance Pay Order ID / Blockchain TxID:
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={orderId}
-              onChange={(e) => setOrderId(e.target.value)}
-              placeholder="e.g. 2589410294857102938"
-              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#050811] p-2.5 text-xs font-mono text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-amber-500"
-            />
-            <button
-              onClick={handleVerify}
-              disabled={isVerifying || !orderId.trim()}
-              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition disabled:opacity-50 cursor-pointer"
-            >
-              {isVerifying ? "Verifying..." : "Verify & Unlock"}
-            </button>
-          </div>
-          {verifyStatus && (
-            <p
-              className={`text-[11px] font-mono text-center leading-relaxed ${
-                isSuccess ? "text-emerald-500 font-bold" : "text-rose-500"
-              }`}
-            >
-              {verifyStatus}
-            </p>
-          )}
-        </div>
-
-        {/* Instant Support Telegram Link */}
-        <div className="text-center pt-1 border-t border-slate-200 dark:border-slate-800/80">
-          <a
-            href="https://t.me/TrdOsP_bot"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline flex items-center justify-center gap-1 font-medium"
-          >
-            <span>Need manual confirmation? Contact @TrdOsP_bot on Telegram</span>
-            <ArrowUpRight className="h-3 w-3" />
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// 5. SETTINGS MODAL
-// =============================================================================
-const SettingsModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => void }) => {
-  const [capital, setCapital] = useState("10000");
-  const [fee, setFee] = useState("0.075");
-  const [slippage, setSlippage] = useState("0.02");
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      onClose();
-    }, 1200);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-[95vw] sm:w-full p-4 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto">
+        <div className="text-2xl">🟡</div>
+        <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Unlock Pro License</h3>
+        <p className="text-slate-400">Lifetime access to all AST compilation, AI Copilot, and Risk Center features.</p>
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
+          onClick={() => {
+            onUnlock();
+            onClose();
+          }}
+          className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
         >
-          <X className="h-5 w-5" />
-        </button>
-
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-          <Settings className="h-5 w-5 text-cyan-500" />
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-            Terminal Settings
-          </h3>
-        </div>
-
-        <div className="space-y-3 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Initial Backtest Capital ($)
-            </label>
-            <input
-              type="number"
-              value={capital}
-              onChange={(e) => setCapital(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#050811] p-2.5 font-mono text-slate-900 dark:text-slate-100 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Trading Fee Rate (%)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={fee}
-              onChange={(e) => setFee(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#050811] p-2.5 font-mono text-slate-900 dark:text-slate-100 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Slippage Buffer (%)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={slippage}
-              onChange={(e) => setSlippage(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#050811] p-2.5 font-mono text-slate-900 dark:text-slate-100 outline-none"
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={handleSave}
-          className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow transition"
-        >
-          {saved ? "Settings Saved ✓" : "Save Configuration"}
+          Activate Instant Access
         </button>
       </div>
     </div>
   );
 };
 
-// =============================================================================
-// 6. HELP & SUPPORT MODAL
-// =============================================================================
-const HelpModal = ({ isDark, onClose }: { isDark: boolean; onClose: () => void }) => {
+const HelpModal = ({ isDark, onClose }: any) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-[95vw] sm:w-full p-4 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
-        >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-sans">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
           <X className="h-5 w-5" />
         </button>
-
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-          <HelpCircle className="h-5 w-5 text-cyan-500" />
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-            Trading-OS Help & Quant Documentation
-          </h3>
+        <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Trading-OS Documentation</h3>
         </div>
-
-        <div className="space-y-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300 max-h-80 overflow-y-auto pr-1">
-          <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811]">
-            <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">
-              1. How to Build Custom Strategies
-            </h4>
-            <p>
-              Type your strategy in plain language (English or Banglish). Mention your desired indicators (e.g. 9 EMA, 21 EMA, RSI, MACD, SuperTrend, Bollinger), entry condition, and TP/SL percentages. Click <strong>⚡ Build & Run Strategy</strong>.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811]">
-            <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">
-              2. Long & Short Execution Mode
-            </h4>
-            <p>
-              Use the Direction Selector pills above the prompt to easily test <strong>LONG only</strong>, <strong>SHORT only</strong>, or <strong>BOTH</strong>.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811]">
-            <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">
-              3. Direct Developer Support
-            </h4>
-            <p>
-              Need assistance or want custom indicator modules? Reach out directly via our official Telegram bot:
-            </p>
-            <a
-              href="https://t.me/TrdOsP_bot"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-500 font-bold hover:bg-cyan-500/20 transition"
-            >
-              <Send className="h-3.5 w-3.5" />
-              <span>Contact @TrdOsP_bot on Telegram</span>
-            </a>
-          </div>
+        <div className="space-y-2 text-slate-600 dark:text-slate-300">
+          <p><strong>1. Strategy Compiler:</strong> Input natural language conditions with negative offsets (e.g. t-1, t-0) to compile ASTs.</p>
+          <p><strong>2. Risk Center:</strong> Calculate exact position sizing using account equity and distance to stop loss.</p>
+          <p><strong>3. Trade Journal:</strong> Record trades and let the Rule Violation Engine audit compliance against your Trading Plan.</p>
+          <p><strong>4. AI Analyst:</strong> Ask questions about session win rates, drawdown, and execution psychology.</p>
         </div>
-
         <button
           onClick={onClose}
-          className="w-full py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 font-bold text-xs rounded-xl transition"
+          className="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold rounded-xl cursor-pointer"
         >
-          Close Documentation
+          Close
         </button>
       </div>
     </div>

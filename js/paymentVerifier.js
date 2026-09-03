@@ -7,19 +7,6 @@
  */
 
 const PaymentVerifier = {
-    // Admin Telegram Alert Configuration
-    TELEGRAM_CONFIG: {
-        _getBotToken() {
-            try {
-                return atob('ODg3MDgwNjI5MTpBQUd5amdxLWlPUnRBbzBxRXE1OUkxamI2aW5UU3FqWGd0SQ==');
-            } catch (e) {
-                return '';
-            }
-        },
-        chatId: '5334373578', // Khalid Abdullah (@khalid_abdullahhh)
-        enabled: true
-    },
-
     // Permanent Anti-Fraud Cache: Prevents Double-Spending & Repeated TxIDs
     usedTransactions: new Set(),
 
@@ -68,18 +55,6 @@ const PaymentVerifier = {
                 storedUsed.push(cleanTxId);
                 localStorage.setItem('trading_os_used_txs', JSON.stringify(storedUsed));
             } catch (e) {}
-
-            // Trigger Instant Telegram Notification to Admin
-            this.sendTelegramAlert({
-                strategyName,
-                symbol,
-                timeframe,
-                amount: expectedAmount,
-                method,
-                txId: cleanTxId,
-                recipient: expectedRecipient,
-                details: verificationResult.details
-            }).catch(err => console.warn('[Trading-OS] Telegram Alert Dispatch:', err));
         }
 
         return verificationResult;
@@ -215,59 +190,6 @@ const PaymentVerifier = {
                 throw e;
             }
             return { verified: true, details: 'EVM Network Verified' };
-        }
-    },
-
-    /**
-     * 4. Instant Telegram Bot Notification System
-     */
-    async sendTelegramAlert({ strategyName, symbol, timeframe, amount, method, txId, recipient, details }) {
-        const botToken = localStorage.getItem('trading_os_tg_bot_token') || this.TELEGRAM_CONFIG._getBotToken();
-        const chatId = localStorage.getItem('trading_os_tg_chat_id') || this.TELEGRAM_CONFIG.chatId;
-
-        if (!botToken || !chatId) {
-            console.log(`[Trading-OS Alert Log] 🔔 New Sale! Strategy: "${strategyName}" for $${amount} USDT. TxID: ${txId}`);
-            return;
-        }
-
-        const message = `
-🚀 *NEW TRADING-OS SALE COMPLETED!* 💰
-━━━━━━━━━━━━━━━━━━━━
-📦 *Strategy:* ${strategyName}
-🎯 *Asset / Timeframe:* ${symbol} (${timeframe})
-💵 *Amount Paid:* $${amount}.00 USDT
-🟡 *Method:* ${method}
-👤 *Recipient:* \`${recipient}\`
-🔗 *Verified Reference / TxID:*
-\`${txId}\`
-🛡️ *Verification Result:* ${details || 'Verified'}
-🕒 *Time:* ${new Date().toLocaleString()}
-━━━━━━━━━━━━━━━━━━━━
-✅ *Pine Script v5 Source Code has been UNLOCKED for customer.*
-        `;
-
-        const tgUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-        try {
-            const resp = await fetch(tgUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: message,
-                    parse_mode: 'Markdown'
-                })
-            });
-            const resData = await resp.json();
-            if (!resData.ok) {
-                console.warn('[Trading-OS] Telegram Bot Response:', resData);
-                if (resData.description && resData.description.includes("bot can't initiate conversation")) {
-                    console.info("💡 Telegram Tip: You must search your bot on Telegram and tap 'START' once so the bot has permission to message you!");
-                }
-            } else {
-                console.log('✅ [Trading-OS] Telegram Alert Delivered Successfully!');
-            }
-        } catch (e) {
-            console.warn('[Trading-OS] Telegram dispatch network error:', e.message);
         }
     }
 };

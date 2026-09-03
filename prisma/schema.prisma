@@ -1,0 +1,541 @@
+// Trading-OS v2.0 - Production Normalized PostgreSQL Database Schema
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ELITE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+enum TradeDirection {
+  LONG
+  SHORT
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  CANCELED
+}
+
+enum MarketCategory {
+  CRYPTO
+  FOREX
+  INDICES
+  STOCKS
+  COMMODITIES
+}
+
+enum AlertType {
+  PRICE
+  INDICATOR
+  STRATEGY
+  RISK
+  DRAWDOWN
+  NEWS
+  ECONOMIC
+  BEHAVIORAL
+}
+
+enum AlertStatus {
+  ACTIVE
+  TRIGGERED
+  MUTED
+  ARCHIVED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile           Profile?
+  subscription      Subscription?
+  tradingPreferences TradingPreferences?
+  accounts          TradingAccount[]
+  watchlists        Watchlist[]
+  trades            Trade[]
+  journalEntries    JournalEntry[]
+  strategies        Strategy[]
+  tradingPlans      TradingPlan[]
+  riskSettings      RiskSettings?
+  portfolioPositions PortfolioPosition[]
+  alerts            Alert[]
+  aiRequests        AIRequest[]
+  userInsights      UserInsight[]
+  psychologyEntries PsychologyEntry[]
+  reports           Report[]
+  usageRecords      UsageRecord[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  fullName    String?
+  avatarUrl   String?
+  bio         String?
+  country     String?
+  experience  String?  // Beginner, Intermediate, Advanced, Institutional
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Subscription {
+  id              String             @id @default(uuid())
+  userId          String             @unique
+  tier            SubscriptionTier   @default(FREE)
+  status          SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime        @default(now())
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd Boolean          @default(false)
+  provider        String?            // Stripe, BinancePay, Crypto
+  customerId      String?
+  subscriptionId  String?
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model TradingPreferences {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  defaultCurrency   String   @default("USD")
+  timezone          String   @default("UTC")
+  theme             String   @default("dark")
+  defaultRiskModel  String   @default("percent_equity")
+  defaultRiskPct    Float    @default(1.0)
+  defaultStopLossPct Float   @default(1.5)
+  defaultTakeProfitPct Float @default(3.0)
+  chartLayout       Json?
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trading_preferences")
+}
+
+model TradingAccount {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  broker        String?
+  accountType   String   @default("LIVE") // DEMO, LIVE, PROP
+  currency      String   @default("USD")
+  balance       Float    @default(10000.0)
+  equity        Float    @default(10000.0)
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades        Trade[]
+  positions     PortfolioPosition[]
+
+  @@map("trading_accounts")
+}
+
+model Instrument {
+  id          String         @id @default(uuid())
+  symbol      String         @unique
+  name        String
+  category    MarketCategory
+  exchange    String?
+  basePrice   Float
+  currency    String         @default("USD")
+  isActive    Boolean        @default(true)
+
+  watchlistItems WatchlistItem[]
+  trades         Trade[]
+  positions      PortfolioPosition[]
+
+  @@map("instruments")
+}
+
+model Watchlist {
+  id          String          @id @default(uuid())
+  userId      String
+  name        String
+  isDefault   Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       WatchlistItem[]
+
+  @@map("watchlists")
+}
+
+model WatchlistItem {
+  id            String      @id @default(uuid())
+  watchlistId   String
+  instrumentId  String
+  sortOrder     Int         @default(0)
+  addedAt       DateTime    @default(now())
+
+  watchlist     Watchlist   @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  instrument    Instrument  @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, instrumentId])
+  @@map("watchlist_items")
+}
+
+model Trade {
+  id              String         @id @default(uuid())
+  userId          String
+  accountId       String
+  instrumentId    String?
+  symbol          String
+  direction       TradeDirection
+  status          TradeStatus    @default(CLOSED)
+  entryPrice      Float
+  exitPrice       Float?
+  quantity        Float
+  stopLoss        Float?
+  takeProfit      Float?
+  fee             Float          @default(0.0)
+  netPnl          Float          @default(0.0)
+  netPnlPct       Float          @default(0.0)
+  rMultiple       Float?
+  session         String?        // London, New York, Asian
+  setupType       String?
+  strategyId      String?
+  entryTime       DateTime       @default(now())
+  exitTime        DateTime?
+  exitReason      String?
+  ruleAdherence   Boolean        @default(true)
+  emotionState    String?        // Calm, FOMO, Revenge, Hesitant, Greedy
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  instrument      Instrument?    @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+  strategy        Strategy?      @relation(fields: [strategyId], references: [id], onDelete: SetNull)
+  entries         TradeEntry[]
+  exits           TradeExit[]
+  tradeNotes      TradeNote[]
+  journalEntries  JournalEntry[]
+
+  @@map("trades")
+}
+
+model TradeEntry {
+  id          String    @id @default(uuid())
+  tradeId     String
+  price       Float
+  quantity    Float
+  fee         Float     @default(0.0)
+  timestamp   DateTime  @default(now())
+
+  trade       Trade     @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@map("trade_entries")
+}
+
+model TradeExit {
+  id          String    @id @default(uuid())
+  tradeId     String
+  price       Float
+  quantity    Float
+  fee         Float     @default(0.0)
+  pnl         Float
+  reason      String?
+  timestamp   DateTime  @default(now())
+
+  trade       Trade     @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@map("trade_exits")
+}
+
+model TradeNote {
+  id          String    @id @default(uuid())
+  tradeId     String
+  content     String
+  createdAt   DateTime  @default(now())
+
+  trade       Trade     @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@map("trade_notes")
+}
+
+model JournalEntry {
+  id            String    @id @default(uuid())
+  userId        String
+  tradeId       String?
+  title         String
+  date          DateTime  @default(now())
+  marketContext String?
+  psychology    String?
+  mistakes      String?
+  lessons       String?
+  rating        Int?      // 1-5 rating of process execution
+  content       String
+  screenshots   Screenshot[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trade         Trade?    @relation(fields: [tradeId], references: [id], onDelete: SetNull)
+
+  @@map("journal_entries")
+}
+
+model Screenshot {
+  id              String        @id @default(uuid())
+  journalEntryId  String
+  url             String
+  caption         String?
+  createdAt       DateTime      @default(now())
+
+  journalEntry    JournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@map("screenshots")
+}
+
+model Strategy {
+  id          String            @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  category    String?
+  direction   TradeDirection    @default(LONG)
+  isArchived  Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions    StrategyVersion[]
+  trades      Trade[]
+
+  @@map("strategies")
+}
+
+model StrategyVersion {
+  id          String    @id @default(uuid())
+  strategyId  String
+  versionNum  Int       @default(1)
+  ast         Json
+  summary     String?
+  pineScript  String?
+  changeLog   String?
+  createdAt   DateTime  @default(now())
+
+  strategy    Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([strategyId, versionNum])
+  @@map("strategy_versions")
+}
+
+model TradingPlan {
+  id                  String   @id @default(uuid())
+  userId              String
+  title               String   @default("Institutional Trading Constitution")
+  isActive            Boolean  @default(true)
+  maxDailyLossPct     Float    @default(3.0)
+  maxRiskPerTradePct  Float    @default(1.0)
+  maxTradesPerDay     Int      @default(5)
+  allowedSessions     Json     // ["London", "New York"]
+  allowedMarkets      Json     // ["Crypto", "Forex", "Commodities"]
+  entryCriteria       Json?
+  exitCriteria        Json?
+  forbiddenRules      Json?    // ["No revenge trading", "No trading without stop loss"]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trading_plans")
+}
+
+model RiskSettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  maxAccountRiskPct   Float    @default(6.0)
+  dailyLossLimitPct   Float    @default(3.0)
+  maxOpenPositions    Int      @default(3)
+  trailingStopDefault Float    @default(1.0)
+  breakEvenThreshold  Float    @default(1.5)
+  enforceStrictRisk   Boolean  @default(true)
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("risk_settings")
+}
+
+model PortfolioPosition {
+  id              String         @id @default(uuid())
+  userId          String
+  accountId       String
+  instrumentId    String?
+  symbol          String
+  direction       TradeDirection
+  entryPrice      Float
+  currentPrice    Float
+  quantity        Float
+  unrealizedPnl   Float          @default(0.0)
+  unrealizedPnlPct Float         @default(0.0)
+  stopLoss        Float?
+  takeProfit      Float?
+  openedAt        DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  instrument      Instrument?    @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+
+  @@map("portfolio_positions")
+}
+
+model Alert {
+  id            String       @id @default(uuid())
+  userId        String
+  type          AlertType
+  status        AlertStatus  @default(ACTIVE)
+  symbol        String?
+  title         String
+  message       String
+  conditions    Json
+  lastTriggered DateTime?
+  createdAt     DateTime     @default(now())
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("alerts")
+}
+
+model NewsArticle {
+  id          String    @id @default(uuid())
+  title       String
+  source      String
+  url         String?
+  publishedAt DateTime  @default(now())
+  category    String?
+  impact      String?   // HIGH, MEDIUM, LOW
+  summary     String?
+  aiAnalysis  String?
+  symbols     Json?     // ["BTCUSDT", "ETHUSDT"]
+  createdAt   DateTime  @default(now())
+
+  @@map("news_articles")
+}
+
+model EconomicEvent {
+  id          String    @id @default(uuid())
+  event       String
+  country     String
+  currency    String
+  date        DateTime
+  impact      String    // HIGH, MEDIUM, LOW, CRITICAL
+  forecast    String?
+  previous    String?
+  actual      String?
+  bias        String?
+  createdAt   DateTime  @default(now())
+
+  @@map("economic_events")
+}
+
+model AIRequest {
+  id          String    @id @default(uuid())
+  userId      String
+  type        String    // COMPILER, ANALYST, TRADE_REVIEW, WEEKLY_REVIEW, INSIGHT
+  promptText  String
+  responseJson Json?
+  tokensUsed  Int       @default(0)
+  costUsd     Float     @default(0.0)
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_requests")
+}
+
+model UserInsight {
+  id          String    @id @default(uuid())
+  userId      String
+  category    String    // SESSION, RISK, BEHAVIOR, STRATEGY
+  title       String
+  content     String
+  evidence    Json?
+  confidence  Float     @default(0.85)
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_insights")
+}
+
+model PsychologyEntry {
+  id          String    @id @default(uuid())
+  userId      String
+  date        DateTime  @default(now())
+  trigger     String    // Consecutive Losses, Missed Entry, Big Win
+  emotion     String    // FOMO, Revenge, Greed, Fear, Euphoria, Calm
+  reaction    String
+  resolution  String
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("psychology_entries")
+}
+
+model Report {
+  id          String    @id @default(uuid())
+  userId      String
+  type        String    // WEEKLY, MONTHLY, QUARTERLY, AUDIT
+  title       String
+  dateRange   Json
+  metrics     Json
+  aiSummary   String?
+  pdfUrl      String?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model UsageRecord {
+  id          String    @id @default(uuid())
+  userId      String
+  feature     String    // AI_COMPILER, BACKTEST, SCREENER, AI_ANALYST
+  units       Int       @default(1)
+  cost        Float     @default(0.0)
+  timestamp   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("usage_records")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String
+  action      String    // LOGIN, STRATEGY_CREATE, TRADE_DELETE, RISK_UPDATE
+  details     Json?
+  ipAddress   String?
+  timestamp   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}

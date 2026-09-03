@@ -5,14 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build:client": "tsc && vite build",
+    "build:server": "npx tsc --target ES2022 --module CommonJS --moduleResolution node --outDir dist-server --noEmit false src/server/server.ts src/server/db.ts src/server/auth.ts src/server/env.ts src/server/aiService.ts src/services/strategyCompiler.ts src/services/strategyValidator.ts src/services/analytics/performanceAnalytics.ts src/services/trading/ruleViolationEngine.ts src/types/domain.ts src/types/strategy.ts && echo '{\"type\": \"commonjs\"}' > dist-server/package.json",
+    "build": "npm run build:client && npm run build:server",
+    "start": "node server.cjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/pg": "^8.23.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "lightweight-charts": "^5.2.1",
     "lucide-react": "^1.16.0",
+    "pg": "^8.23.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.6.0"
