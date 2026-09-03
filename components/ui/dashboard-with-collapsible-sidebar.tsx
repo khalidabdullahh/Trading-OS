@@ -374,7 +374,9 @@ const Sidebar = ({
                     <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] truncate">
                       {currentUser.fullName || currentUser.email.split("@")[0]}
                     </span>
-                    <span className="text-[9px] font-mono text-cyan-400 font-bold">PRO SUBSCRIBER</span>
+                    <span className="text-[9px] font-mono font-bold text-amber-400">
+                      {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO SUBSCRIBER"}
+                    </span>
                   </div>
                 )}
               </div>
@@ -689,8 +691,12 @@ const TradingDashboardContent = ({
                 <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate hidden md:inline">
                   {currentUser.email.split("@")[0]}
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  PRO
+                <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${
+                  currentUser.email?.toLowerCase().includes("seamafridi")
+                    ? "bg-amber-400/20 text-amber-400 border border-amber-400/50 shadow-xs"
+                    : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                }`}>
+                  {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO"}
                 </span>
               </div>
               <button
