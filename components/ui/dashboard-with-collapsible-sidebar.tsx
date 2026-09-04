@@ -93,7 +93,19 @@ export const Example = () => {
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isLandingPageOpen, setIsLandingPageOpen] = useState(false);
+  const [isLandingPageOpen, setIsLandingPageOpen] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("auth_token") || urlParams.get("app") === "true" || window.location.hash === "#app") {
+          return false;
+        }
+      }
+      return true; // Default: show Landing Page first on root visit
+    } catch (e) {
+      return true;
+    }
+  });
 
   const handleSelectNav = (tab: string) => {
     setSelectedNav(tab);
@@ -354,6 +366,7 @@ const Sidebar = ({
     {
       group: "OVERVIEW",
       items: [
+        { title: "Landing Page / Home", icon: Globe },
         { title: "Dashboard", icon: Home },
         { title: "Pricing & Plans ($9)", icon: Sparkles },
       ]
@@ -456,6 +469,11 @@ const Sidebar = ({
                   <button
                     key={item.title}
                     onClick={() => {
+                      if (item.title === "Landing Page / Home") {
+                        openLanding();
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
                       if (item.title === "Pricing & Plans ($9)") {
                         openPricing();
                         setIsMobileMenuOpen(false);
