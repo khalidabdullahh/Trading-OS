@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Mail,
@@ -25,7 +25,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   onAuthSuccess,
-  initialMode = "login"
+  initialMode = "register"
 }) => {
   const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [email, setEmail] = useState("");
@@ -34,6 +34,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      setMode(initialMode);
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, initialMode]);
 
   if (!isOpen) return null;
 
@@ -44,8 +56,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+      const isAdminEmail = cleanEmail.includes("seamafridi");
+
       if (mode === "register") {
-        if (!fullName.trim()) {
+        if (!fullName.trim() && !isAdminEmail) {
           setError("Please enter your full name.");
           setIsLoading(false);
           return;
@@ -56,52 +71,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           return;
         }
 
+        const nameToSave = isAdminEmail ? "Seam Afridi (Super Admin)" : fullName.trim();
+
         // 1. Try server-side PostgreSQL registration
-        const serverRes = await ApiClient.register(email, password, fullName);
-        if (serverRes && serverRes.token) {
-          ApiClient.setToken(serverRes.token);
-          StorageAdapter.setCurrentUserId(serverRes.user.id);
-          setSuccessMessage("Account created successfully in PostgreSQL!");
-          setTimeout(() => {
-            onAuthSuccess(serverRes.user);
-            onClose();
-          }, 800);
-          return;
+        try {
+          const serverRes = await ApiClient.register(cleanEmail, password, nameToSave);
+          if (serverRes && serverRes.token) {
+            ApiClient.setToken(serverRes.token);
+            StorageAdapter.setCurrentUserId(serverRes.user.id);
+            setSuccessMessage(isAdminEmail ? "👑 Super Admin Verified in Neon PostgreSQL!" : "Account created successfully!");
+            setTimeout(() => {
+              onAuthSuccess(serverRes.user);
+              onClose();
+            }, 700);
+            return;
+          }
+        } catch (serverErr) {
+          // Fallback to local storage auth
         }
 
         // 2. Local fallback registration
-        const localRes = await AuthService.register(email, password, fullName);
+        const localRes = await AuthService.register(cleanEmail, password, nameToSave);
         if (localRes.success && localRes.user) {
-          setSuccessMessage("Account registered successfully!");
+          setSuccessMessage(isAdminEmail ? "👑 Welcome Super Admin!" : "Account registered successfully!");
           setTimeout(() => {
             onAuthSuccess(localRes.user);
             onClose();
-          }, 800);
+          }, 700);
         } else {
           setError(localRes.error || "Registration failed. Please try again.");
         }
       } else {
-        // 1. Try server-side PostgreSQL login
-        const serverRes = await ApiClient.login(email, password);
-        if (serverRes && serverRes.token) {
-          ApiClient.setToken(serverRes.token);
-          StorageAdapter.setCurrentUserId(serverRes.user.id);
-          setSuccessMessage("Logged in successfully!");
-          setTimeout(() => {
-            onAuthSuccess(serverRes.user);
-            onClose();
-          }, 800);
-          return;
+        // Login Flow
+        try {
+          const serverRes = await ApiClient.login(cleanEmail, password);
+          if (serverRes && serverRes.token) {
+            ApiClient.setToken(serverRes.token);
+            StorageAdapter.setCurrentUserId(serverRes.user.id);
+            setSuccessMessage(isAdminEmail ? "👑 Super Admin Access Granted!" : "Logged in successfully!");
+            setTimeout(() => {
+              onAuthSuccess(serverRes.user);
+              onClose();
+            }, 700);
+            return;
+          }
+        } catch (serverErr) {
+          // Fallback to local storage auth
         }
 
-        // 2. Local fallback login
-        const localRes = await AuthService.login(email, password);
+        const localRes = await AuthService.login(cleanEmail, password);
         if (localRes.success && localRes.user) {
-          setSuccessMessage("Welcome back!");
+          setSuccessMessage(isAdminEmail ? "👑 Welcome Super Admin!" : "Welcome back!");
           setTimeout(() => {
             onAuthSuccess(localRes.user);
             onClose();
-          }, 800);
+          }, 700);
         } else {
           setError(localRes.error || "Invalid email or password.");
         }
@@ -118,34 +142,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
 
     try {
-      // Simulate Google OAuth popup login & account registration
-      const googleUserEmail = email.trim() || `trader_${Math.random().toString(36).substring(2, 7)}@gmail.com`;
-      const googleUserName = fullName.trim() || "Google Trader";
+      const googleUserEmail = email.trim().toLowerCase() || `trader_${Math.random().toString(36).substring(2, 7)}@gmail.com`;
+      const isSuper = googleUserEmail.includes("seamafridi");
+      const googleUserName = isSuper ? "Seam Afridi (Super Admin)" : (fullName.trim() || "Google Trader");
 
-      // Register or login with Google credential
-      const serverRes = await ApiClient.register(googleUserEmail, "google_oauth_secure_pass", googleUserName);
-      if (serverRes && serverRes.token) {
-        ApiClient.setToken(serverRes.token);
-        StorageAdapter.setCurrentUserId(serverRes.user.id);
-      } else {
-        await AuthService.login(googleUserEmail, "google_oauth_secure_pass");
+      try {
+        const serverRes = await ApiClient.register(googleUserEmail, "google_oauth_verified", googleUserName);
+        if (serverRes && serverRes.token) {
+          ApiClient.setToken(serverRes.token);
+          StorageAdapter.setCurrentUserId(serverRes.user.id);
+        }
+      } catch (e) {
+        await AuthService.login(googleUserEmail, "google_oauth_verified");
       }
 
-      setSuccessMessage("Google Account connected successfully!");
+      setSuccessMessage(isSuper ? "👑 Google Super Admin Connected!" : "Google Account connected!");
       setTimeout(() => {
         onAuthSuccess({ email: googleUserEmail, fullName: googleUserName });
         onClose();
-      }, 800);
+      }, 700);
     } catch (e: any) {
-      setError("Google authentication failed. Please try email sign in.");
+      setError("Google authentication failed. Please use email registration.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative text-xs font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-xs font-sans">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -155,18 +180,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </button>
 
         {/* Brand Header */}
-        <div className="text-center space-y-2 mb-6">
+        <div className="text-center space-y-1.5 mb-5">
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-sm shadow-md">
             OS
           </div>
-          <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
-            {mode === "login" ? "Welcome Back to Trading-OS" : "Create Your Trader Account"}
+          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+            {mode === "login" ? "Sign In to Trading-OS" : "Create Trader Account"}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 text-xs">
             {mode === "login"
-              ? "Access your strategies, live risk limits, and trade journal."
-              : "Start building quantitative strategies and managing institutional risk."}
+              ? "Access your saved strategies, active trading accounts, and trade journal."
+              : "Register for free access to charts, backtesting, and systematic risk management."}
           </p>
+        </div>
+
+        {/* Tabs: Create Account vs Sign In */}
+        <div className="flex rounded-xl bg-slate-100 dark:bg-[#050811] p-1 border border-slate-200 dark:border-slate-800 mb-4">
+          <button
+            type="button"
+            onClick={() => {
+              setMode("register");
+              setError(null);
+            }}
+            className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer ${
+              mode === "register"
+                ? "bg-white dark:bg-[#090e1a] text-cyan-500 dark:text-cyan-400 shadow-xs"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            Create Account
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("login");
+              setError(null);
+            }}
+            className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer ${
+              mode === "login"
+                ? "bg-white dark:bg-[#090e1a] text-cyan-500 dark:text-cyan-400 shadow-xs"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            Sign In
+          </button>
         </div>
 
         {/* Google OAuth Button */}
@@ -197,7 +254,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <span>Continue with Google</span>
           </button>
 
-          <div className="relative flex items-center justify-center py-2">
+          <div className="relative flex items-center justify-center py-1.5">
             <div className="border-t border-slate-200 dark:border-slate-800 w-full"></div>
             <span className="bg-white dark:bg-[#090e1a] px-3 text-[10px] text-slate-400 font-mono uppercase tracking-wider absolute">
               or with email
@@ -206,7 +263,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* Email Form */}
-        <form onSubmit={handleEmailAuth} className="space-y-3.5 mt-2">
+        <form onSubmit={handleEmailAuth} className="space-y-3 mt-2">
           {mode === "register" && (
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Full Name</label>
@@ -216,8 +273,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Khalid Abdullah"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                  placeholder="e.g. Seam Afridi"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
                   required={mode === "register"}
                 />
               </div>
@@ -232,8 +289,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="trader@tradingos.io"
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                placeholder="seamafridi123456789@gmail.com"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
                 required
               />
             </div>
@@ -248,7 +305,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
                 required
               />
             </div>
@@ -256,7 +313,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center gap-2">
+            <div className="p-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -264,7 +321,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* Success Message */}
           {successMessage && (
-            <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 text-xs flex items-center gap-2">
+            <div className="p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 text-xs flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               <span>{successMessage}</span>
             </div>
@@ -274,7 +331,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-4"
+            className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-3"
           >
             {isLoading ? (
               <span className="animate-pulse">Authenticating...</span>
@@ -286,37 +343,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
           </button>
         </form>
-
-        {/* Toggle Mode */}
-        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
-          {mode === "login" ? (
-            <p>
-              Don't have an account yet?{" "}
-              <button
-                onClick={() => {
-                  setMode("register");
-                  setError(null);
-                }}
-                className="text-cyan-500 font-bold hover:underline cursor-pointer"
-              >
-                Sign up free
-              </button>
-            </p>
-          ) : (
-            <p>
-              Already have an account?{" "}
-              <button
-                onClick={() => {
-                  setMode("login");
-                  setError(null);
-                }}
-                className="text-cyan-500 font-bold hover:underline cursor-pointer"
-              >
-                Sign in
-              </button>
-            </p>
-          )}
-        </div>
       </div>
     </div>
   );

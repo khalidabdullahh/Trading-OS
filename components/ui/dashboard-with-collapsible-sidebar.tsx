@@ -78,13 +78,27 @@ import { PricingModal } from "@/src/components/pricing/PricingModal";
 import { MarketPairSelector } from "@/src/components/markets/MarketPairSelector";
 import { AuthService } from "@/src/services/auth/authService";
 import { StorageAdapter } from "@/src/services/storage/storageAdapter";
+import { NewsService } from "@/src/services/market/newsService";
 
 export const Example = () => {
   const [isDark, setIsDark] = useState(true);
-  const [selectedNav, setSelectedNav] = useState("Dashboard");
+  const [selectedNav, setSelectedNav] = useState(() => {
+    try {
+      return localStorage.getItem("trading_os_active_tab") || "Dashboard";
+    } catch (e) {
+      return "Dashboard";
+    }
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isLandingPageOpen, setIsLandingPageOpen] = useState(false);
+
+  const handleSelectNav = (tab: string) => {
+    setSelectedNav(tab);
+    try {
+      localStorage.setItem("trading_os_active_tab", tab);
+    } catch (e) {}
+  };
 
   // Selected symbol for global sync
   const [activeSymbol, setActiveSymbol] = useState("BTCUSDT");
@@ -121,8 +135,19 @@ export const Example = () => {
 
   // Modals state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState<"login" | "register">("register");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  const openRegister = () => {
+    setAuthInitialMode("register");
+    setIsAuthOpen(true);
+  };
+
+  const openLogin = () => {
+    setAuthInitialMode("login");
+    setIsAuthOpen(true);
+  };
 
   // Sync dark class to html
   useEffect(() => {
@@ -142,10 +167,10 @@ export const Example = () => {
       <div className="flex h-full w-full min-w-0 bg-slate-50 dark:bg-[#050811] text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
         <Sidebar
           selected={selectedNav}
-          setSelected={setSelectedNav}
-          openSettings={() => setSelectedNav("Settings")}
+          setSelected={handleSelectNav}
+          openSettings={() => handleSelectNav("Settings")}
           openPricing={() => setIsPricingOpen(true)}
-          openAuth={() => setIsAuthOpen(true)}
+          openAuth={openRegister}
           openHelp={() => setIsHelpOpen(true)}
           openLanding={() => setIsLandingPageOpen(true)}
           currentUser={currentUser}
@@ -156,9 +181,9 @@ export const Example = () => {
           isDark={isDark}
           setIsDark={setIsDark}
           selectedNav={selectedNav}
-          setSelectedNav={setSelectedNav}
+          setSelectedNav={handleSelectNav}
           openCheckout={() => setIsPricingOpen(true)}
-          openAuth={() => setIsAuthOpen(true)}
+          openAuth={openRegister}
           openPricing={() => setIsPricingOpen(true)}
           currentUser={currentUser}
           onLogout={handleLogout}
@@ -174,16 +199,17 @@ export const Example = () => {
         <CommandPalette
           isOpen={isCommandPaletteOpen}
           onClose={() => setIsCommandPaletteOpen(false)}
-          onSelectNav={(nav) => setSelectedNav(nav)}
+          onSelectNav={(nav) => handleSelectNav(nav)}
           onSelectSymbol={(sym) => {
             setActiveSymbol(sym);
-            setSelectedNav("Charts & Backtest");
+            handleSelectNav("Charts & Backtest");
           }}
         />
 
         {/* Authentication Modal (Google OAuth & Email) */}
         <AuthModal
           isOpen={isAuthOpen}
+          initialMode={authInitialMode}
           onClose={() => setIsAuthOpen(false)}
           onAuthSuccess={(user) => setCurrentUser(user)}
         />
@@ -302,7 +328,7 @@ const Sidebar = ({
                   TRADING OS
                 </span>
                 <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 -mt-0.5 font-bold">
-                  v2.0 TERMINAL
+                  v2.01 TERMINAL
                 </span>
               </div>
             )}
@@ -685,8 +711,12 @@ const TradingDashboardContent = ({
           {currentUser && currentUser.email && currentUser.id !== "usr_demo_trader" ? (
             <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-[10px] flex items-center justify-center">
-                  {currentUser.email.charAt(0).toUpperCase()}
+                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-[10px] flex items-center justify-center overflow-hidden border border-cyan-500/30 shrink-0">
+                  {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                    <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{currentUser.email.charAt(0).toUpperCase()}</span>
+                  )}
                 </div>
                 <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate hidden md:inline">
                   {currentUser.email.split("@")[0]}
@@ -937,95 +967,170 @@ const TradingDashboardContent = ({
 };
 
 // =============================================================================
-// 3. ECONOMIC NEWS SECTION (Preserved & Enhanced)
+// 3. ECONOMIC NEWS & MACRO TERMINAL (v2.01 Enhanced)
 // =============================================================================
 const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
   const [activeModalNews, setActiveModalNews] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<"CALENDAR" | "LIVE_NEWS">("CALENDAR");
+  const [newsCategory, setNewsCategory] = useState<string>("All");
 
-  const newsItems = [
-    {
-      id: "cpi",
-      time: "08:30 EST",
-      currency: "USD",
-      title: "US Core CPI Inflation Rate (MoM & YoY)",
-      impact: "HIGH",
-      forecast: "0.3%",
-      previous: "0.2%",
-      bias: "Bullish Volatility for Gold & Crypto",
-      summary:
-        "The Consumer Price Index (CPI) measures changes in the price level of a weighted average market basket of consumer goods and services. Core CPI strips away volatile food and energy costs to reveal underlying structural inflation.",
-      cryptoImpact:
-        "Lower than expected CPI (<0.2%) triggers massive breakout rallies in Bitcoin and high-beta altcoins due to rising rate-cut probabilities.",
-      goldImpact:
-        "Gold (XAU/USD) rallies sharply when real yields fall post soft-CPI prints, making non-yielding assets attractive.",
-      forexImpact:
-        "Strong CPI spikes the US Dollar (DXY), depressing EUR/USD and GBP/USD. Weak CPI weakens USD immediately.",
-      tradingRule:
-        "Do not enter before the first 3-minute candle close. Wait for the initial liquidity sweep to complete before executing breakout trend entries.",
-    },
-    {
-      id: "fomc",
-      time: "14:00 EST",
-      currency: "USD",
-      title: "FOMC Federal Funds Rate & Jerome Powell Press Conference",
-      impact: "CRITICAL",
-      forecast: "5.25%",
-      previous: "5.50%",
-      bias: "Macro Catalyst across all global assets",
-      summary:
-        "The Federal Open Market Committee determines US benchmark interest rates. Chair Jerome Powell's press conference details economic forecasts and policy tightening or easing trajectories.",
-      cryptoImpact:
-        "A dovish rate cut or easing path unlocks systemic liquidity rotation into digital assets.",
-      goldImpact:
-        "Gold achieves historical records during dovish rate pivots as capital flees fiat debasement.",
-      forexImpact:
-        "Resets interest rate parity. Dovish tone weakens USD across all major pairs.",
-      tradingRule:
-        "Maintain conservative 1x-3x leverage and pre-define strict stops. Avoid trading the headline tick blind.",
-    }
-  ];
+  const economicEvents = NewsService.getEconomicEvents();
+  const rawArticles = NewsService.getNewsArticles();
+
+  const filteredArticles = newsCategory === "All" 
+    ? rawArticles 
+    : rawArticles.filter(a => a.category.toLowerCase() === newsCategory.toLowerCase());
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-6 shadow-sm space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#090e1a] p-5 sm:p-6 shadow-sm space-y-5">
+      {/* Terminal Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 gap-3">
         <div>
-          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Globe className="h-5 w-5 text-cyan-500" />
-            <span>High-Impact Macroeconomic News & Events</span>
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Globe className="h-5 w-5 text-cyan-500" />
+              <span>Institutional Macro Calendar & Financial News Terminal</span>
+            </h2>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              v2.01
+            </span>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real-time economic catalysts impacting Crypto, Gold (XAU), and Forex volatility.
+            Real-time macroeconomic catalysts, central bank rate decisions, and multi-asset live intelligence.
           </p>
         </div>
-        <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
-          Live Feed
-        </span>
+
+        {/* View Switcher Tabs */}
+        <div className="flex items-center bg-slate-100 dark:bg-[#050811] p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+          <button
+            onClick={() => setActiveTab("CALENDAR")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+              activeTab === "CALENDAR"
+                ? "bg-white dark:bg-[#090e1a] text-cyan-500 dark:text-cyan-400 shadow-xs border border-slate-200 dark:border-slate-700"
+                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            }`}
+          >
+            🏛️ Macro Calendar ({economicEvents.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("LIVE_NEWS")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+              activeTab === "LIVE_NEWS"
+                ? "bg-white dark:bg-[#090e1a] text-cyan-500 dark:text-cyan-400 shadow-xs border border-slate-200 dark:border-slate-700"
+                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            }`}
+          >
+            📰 Live Financial News ({rawArticles.length})
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-        {newsItems.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => setActiveModalNews(item)}
-            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] hover:border-cyan-500/50 transition cursor-pointer space-y-3 group"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-slate-400">{item.time}</span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400">
-                {item.impact} IMPACT
-              </span>
-            </div>
-            <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-400 transition-colors">
-              {item.title}
-            </h4>
-            <div className="flex items-center gap-4 text-slate-400 font-mono">
-              <span>Forecast: {item.forecast}</span>
-              <span>Previous: {item.previous}</span>
-            </div>
+      {/* View 1: Macroeconomic Calendar */}
+      {activeTab === "CALENDAR" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+            {economicEvents.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setActiveModalNews(item)}
+                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] hover:border-cyan-500/50 hover:shadow-md transition cursor-pointer space-y-3 group"
+              >
+                <div className="flex items-center justify-between font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[10px]">
+                      {item.currency}
+                    </span>
+                    <span className="text-slate-400 text-[11px]">{item.country}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    item.impact === "CRITICAL"
+                      ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                      : item.impact === "HIGH"
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                      : "bg-blue-500/20 text-blue-400"
+                  }`}>
+                    {item.impact} IMPACT
+                  </span>
+                </div>
+
+                <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-400 transition-colors">
+                  {item.event}
+                </h4>
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                  {item.summary}
+                </p>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800/80 font-mono text-[11px] text-slate-400">
+                  <div className="flex items-center gap-3">
+                    <span>Forecast: <strong className="text-slate-800 dark:text-slate-200">{item.forecast}</strong></span>
+                    <span>Prior: <strong className="text-slate-800 dark:text-slate-200">{item.previous}</strong></span>
+                  </div>
+                  <span className="text-cyan-500 font-bold text-[10px]">View Trading Rule →</span>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* View 2: Live Financial News */}
+      {activeTab === "LIVE_NEWS" && (
+        <div className="space-y-4">
+          {/* Category Filters */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            {["All", "Crypto", "Commodities", "Equities", "Forex", "Macro"].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setNewsCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition cursor-pointer shrink-0 ${
+                  newsCategory === cat
+                    ? "bg-cyan-500 text-slate-950 shadow-xs"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                {cat === "All" ? "All Markets" : cat}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+            {filteredArticles.map((article) => (
+              <div
+                key={article.id}
+                onClick={() => setActiveModalNews(article)}
+                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] hover:border-cyan-500/50 hover:shadow-md transition cursor-pointer space-y-3 group"
+              >
+                <div className="flex items-center justify-between font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px]">
+                      {article.category}
+                    </span>
+                    <span className="text-slate-400 text-[11px]">{article.source}</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400">
+                    {article.impact} IMPACT
+                  </span>
+                </div>
+
+                <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-cyan-400 transition-colors">
+                  {article.title}
+                </h4>
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {article.summary}
+                </p>
+
+                {article.aiAnalysis && (
+                  <div className="p-2.5 rounded-lg bg-cyan-500/5 border border-cyan-500/20 text-[11px] text-cyan-700 dark:text-cyan-300">
+                    <strong>AI Quantitative Angle:</strong> {article.aiAnalysis}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {activeModalNews && (
         <NewsDetailModal
@@ -1040,26 +1145,60 @@ const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
 
 const NewsDetailModal = ({ news, onClose, isDark }: any) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4 text-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4 text-xs font-sans">
         <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
           <X className="h-5 w-5" />
         </button>
 
         <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
-          <h2 className="text-base font-black text-slate-900 dark:text-slate-100">{news.title}</h2>
-          <span className="text-cyan-500 font-mono text-[11px]">{news.bias}</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono text-[10px] font-bold">
+              {news.currency || news.category || "GLOBAL"}
+            </span>
+            <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 font-mono text-[10px] font-bold">
+              {news.impact || "HIGH"} IMPACT
+            </span>
+          </div>
+          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">{news.event || news.title}</h2>
+          {news.bias && <span className="text-cyan-500 font-mono text-[11px] block mt-0.5">{news.bias}</span>}
         </div>
 
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-1">
-          <span className="font-bold text-slate-800 dark:text-slate-200 block">Summary:</span>
+          <span className="font-bold text-slate-800 dark:text-slate-200 block">Fundamental Summary:</span>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{news.summary}</p>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-1">
-          <span className="font-bold text-cyan-600 dark:text-cyan-400 block">Quantitative Trading Rule:</span>
-          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.tradingRule}</p>
-        </div>
+        {news.cryptoImpact && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-[11px]">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
+              <strong className="text-amber-400 font-sans block mb-1">🪙 Crypto Impact:</strong>
+              <p className="text-slate-400 leading-relaxed">{news.cryptoImpact}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
+              <strong className="text-amber-300 font-sans block mb-1">🏆 Gold (XAU) Impact:</strong>
+              <p className="text-slate-400 leading-relaxed">{news.goldImpact}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
+              <strong className="text-blue-400 font-sans block mb-1">💱 Forex Impact:</strong>
+              <p className="text-slate-400 leading-relaxed">{news.forexImpact}</p>
+            </div>
+          </div>
+        )}
+
+        {news.tradingRule && (
+          <div className="p-3.5 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-1">
+            <span className="font-bold text-cyan-600 dark:text-cyan-400 block font-sans">Institutional Trading Rule:</span>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.tradingRule}</p>
+          </div>
+        )}
+
+        {news.aiAnalysis && (
+          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-1">
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 block font-sans">AI Market Sentiment Analysis:</span>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.aiAnalysis}</p>
+          </div>
+        )}
       </div>
     </div>
   );

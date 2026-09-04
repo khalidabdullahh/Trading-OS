@@ -57,7 +57,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             <h1 className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <span className="text-cyan-500">TRADING OS</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 font-mono font-bold border border-cyan-500/20">
-                v2.0 PRODUCTION
+                v2.01 PRODUCTION
               </span>
             </h1>
           </div>

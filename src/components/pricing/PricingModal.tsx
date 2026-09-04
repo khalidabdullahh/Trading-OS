@@ -41,6 +41,18 @@ export const PricingModal: React.FC<PricingModalProps> = ({
   const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      setSelectedTier(initialTier);
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, initialTier]);
+
   if (!isOpen) return null;
 
   const currentSub = StorageAdapter.getSubscription();
