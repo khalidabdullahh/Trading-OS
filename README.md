@@ -156,7 +156,11 @@ Then open your browser:
 
 ## 👤 Author & Maintainer
 
-**Khalid Abdullah**
+**Khalid Abdullah** — *Lead Architect & Quantitative Software Engineer*
 - **GitHub:** [github.com/khalidabdullahh](https://github.com/khalidabdullahh)
 - **Repository:** [Trading-OS](https://github.com/khalidabdullahh/Trading-OS)
+- **Digital Lab / Portfolio:** [khalid-digital-lab.vercel.app](https://khalid-digital-lab.vercel.app/)
+- **Facebook:** [facebook.com/khalidabdullah19](https://www.facebook.com/khalidabdullah19)
 - **LinkedIn:** [Khalid Abdullah](https://bd.linkedin.com/in/khalid-abdullah-847724339)
+- **X (Twitter):** [@khalid_al_raed](https://x.com/khalid_al_raed)
+- **ORCID:** [0009-0006-8945-7593](https://orcid.org/0009-0006-8945-7593)

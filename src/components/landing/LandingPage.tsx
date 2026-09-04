@@ -1054,6 +1054,15 @@ if (longCond)
                   <svg className="h-3 w-3 fill-current text-slate-200" viewBox="0 0 16 16"><path d="M9.332 6.925 14.544 1h-1.235L8.783 6.145 5.17 1H1l5.466 7.78L1 14.993h1.235l4.78-5.433 3.816 5.433H15L9.332 6.925ZM7.64 8.848l-.554-.775L2.68 1.91h1.897l3.556 4.975.554.775 4.622 6.466h-1.897L7.64 8.848Z"/></svg>
                   <span>X (Twitter)</span>
                 </a>
+                <a
+                  href="https://www.facebook.com/khalidabdullah19"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white transition flex items-center gap-1.5 text-[11px] font-mono font-medium border border-slate-700/60 cursor-pointer"
+                >
+                  <Globe className="h-3 w-3 text-blue-400" />
+                  <span>Facebook</span>
+                </a>
               </div>
             </div>
           </div>
@@ -1260,14 +1269,14 @@ if (longCond)
                     </a>
 
                     <a
-                      href="https://www.facebook.com/share/1DeYhowQkk/"
+                      href="https://www.facebook.com/khalidabdullah19"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center justify-between text-xs cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-blue-500" />
-                        <span className="font-mono">Facebook Profile</span>
+                        <span className="font-mono">Facebook (@khalidabdullah19)</span>
                       </div>
                       <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
                     </a>
