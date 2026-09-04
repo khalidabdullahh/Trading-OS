@@ -78,6 +78,7 @@ import { AuthModal } from "@/src/components/auth/AuthModal";
 import { PricingModal } from "@/src/components/pricing/PricingModal";
 import { MarketPairSelector } from "@/src/components/markets/MarketPairSelector";
 import { AuthService } from "@/src/services/auth/authService";
+import { ApiClient } from "@/src/services/api/apiClient";
 import { StorageAdapter } from "@/src/services/storage/storageAdapter";
 import { NewsService } from "@/src/services/market/newsService";
 
@@ -104,14 +105,58 @@ export const Example = () => {
   // Selected symbol for global sync
   const [activeSymbol, setActiveSymbol] = useState("BTCUSDT");
 
-  // User auth state
+  // User auth state (default null for guests)
   const [currentUser, setCurrentUser] = useState<any>(() => {
     try {
       return AuthService.getCurrentUser();
     } catch (e) {
-      return { id: "usr_demo_trader", email: "trader@tradingos.io" };
+      return null;
     }
   });
+
+  // Handle Google OAuth Callback in URL (?auth_token=... or ?error=...)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const authToken = urlParams.get("auth_token");
+    const authError = urlParams.get("error");
+
+    if (authToken) {
+      try {
+        ApiClient.setToken(authToken);
+        const parts = authToken.split(".");
+        if (parts.length === 3) {
+          const base64Url = parts[1];
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join("")
+          );
+          const payload = JSON.parse(jsonPayload);
+          const isSuper = payload.email?.toLowerCase().includes("seamafridi");
+          const userObj = {
+            id: payload.id,
+            email: payload.email,
+            role: payload.role || (isSuper ? "SUPER_ADMIN" : "USER"),
+            fullName: isSuper ? "Seam Afridi (Super Admin)" : payload.email.split("@")[0]
+          };
+          StorageAdapter.saveUser(userObj as any);
+          StorageAdapter.setCurrentUserId(userObj.id);
+          setCurrentUser(userObj);
+        }
+      } catch (err) {
+        console.error("[Trading-OS] Failed to process OAuth token:", err);
+      } finally {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } else if (authError) {
+      console.warn("[Trading-OS] OAuth error reported:", authError);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // License state (Unlocked vs Locked)
   const [isLicenseUnlocked, setIsLicenseUnlocked] = useState<boolean>(() => {
@@ -130,8 +175,9 @@ export const Example = () => {
   };
 
   const handleLogout = () => {
+    ApiClient.clearToken();
     AuthService.logout();
-    setCurrentUser(AuthService.getCurrentUser());
+    setCurrentUser(null);
   };
 
   // Modals state

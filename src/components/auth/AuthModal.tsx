@@ -162,92 +162,63 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
-    const googleClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+    try {
+      // 1. Check server Google OAuth configuration
+      const config = await ApiClient.getAuthConfig();
 
-    // If official Google Client ID is configured, use official Google Identity Services popup
-    if (googleClientId && typeof window !== "undefined" && (window as any).google?.accounts?.id) {
-      try {
-        (window as any).google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response: any) => {
-            if (response.credential) {
-              try {
-                // Decode Google JWT payload
-                const base64Url = response.credential.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(
-                  atob(base64)
-                    .split('')
-                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                    .join('')
-                );
-                const payload = JSON.parse(jsonPayload);
+      if (!config.googleAuthEnabled) {
+        setError("Google sign-in is not configured. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the server environment.");
+        setIsLoading(false);
+        return;
+      }
 
-                const gEmail = payload.email.toLowerCase();
-                const isSuper = gEmail.includes("seamafridi");
-                const gName = isSuper ? "Seam Afridi (Super Admin)" : (payload.name || gEmail.split('@')[0]);
-                const gPicture = payload.picture;
-
-                // Register / Login in PostgreSQL
+      // 2. If GIS (Google Identity Services) is available with matching Client ID
+      if (config.googleClientId && typeof window !== "undefined" && (window as any).google?.accounts?.id) {
+        try {
+          (window as any).google.accounts.id.initialize({
+            client_id: config.googleClientId,
+            callback: async (response: any) => {
+              if (response && response.credential) {
                 try {
-                  const serverRes = await ApiClient.register(gEmail, "google_oauth_token", gName);
-                  if (serverRes?.token) {
-                    ApiClient.setToken(serverRes.token);
-                    StorageAdapter.setCurrentUserId(serverRes.user.id);
+                  setIsLoading(true);
+                  // Cryptographically verify ID token on server
+                  const serverRes = await ApiClient.verifyGoogleCredential(response.credential);
+                  if (serverRes) {
+                    const isSuper = serverRes.email?.toLowerCase().includes("seamafridi");
+                    setSuccessMessage(isSuper ? "👑 Google Super Admin Connected!" : "Google Account verified successfully!");
+                    setTimeout(() => {
+                      onAuthSuccess(serverRes);
+                      onClose();
+                    }, 600);
+                  } else {
+                    setError("Google authentication failed. Identity could not be verified by server.");
                   }
-                } catch (e) {
-                  await AuthService.login(gEmail, "google_oauth_token");
+                } catch (verifyErr: any) {
+                  setError(verifyErr.message || "Google verification failed.");
+                } finally {
+                  setIsLoading(false);
                 }
-
-                // Update avatar if provided
-                if (gPicture) {
-                  const p = StorageAdapter.getProfile(StorageAdapter.getCurrentUserId());
-                  StorageAdapter.saveProfile({ ...p, avatarUrl: gPicture });
-                }
-
-                setSuccessMessage(isSuper ? "👑 Google Super Admin Connected!" : "Google Account authenticated!");
-                setTimeout(() => {
-                  onAuthSuccess({ email: gEmail, fullName: gName });
-                  onClose();
-                }, 600);
-              } catch (decodeErr) {
-                setError("Failed to parse Google credentials.");
               }
             }
-          }
-        });
-        (window as any).google.accounts.id.prompt();
-        return;
-      } catch (err) {
-        // Fallback to seamless flow
-      }
-    }
-
-    // Default seamless Google authentication flow
-    try {
-      const googleUserEmail = email.trim().toLowerCase() || `trader_${Math.random().toString(36).substring(2, 7)}@gmail.com`;
-      const isSuper = googleUserEmail.includes("seamafridi");
-      const googleUserName = isSuper ? "Seam Afridi (Super Admin)" : (fullName.trim() || "Google Trader");
-
-      try {
-        const serverRes = await ApiClient.register(googleUserEmail, "google_oauth_verified", googleUserName);
-        if (serverRes && serverRes.token) {
-          ApiClient.setToken(serverRes.token);
-          StorageAdapter.setCurrentUserId(serverRes.user.id);
+          });
+          (window as any).google.accounts.id.prompt((notification: any) => {
+            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+              // Redirect to standard OAuth Authorization Code flow if prompt was skipped/blocked
+              window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+            }
+          });
+          return;
+        } catch (gisErr) {
+          // Fall back directly to standard OAuth redirect flow
         }
-      } catch (e) {
-        await AuthService.login(googleUserEmail, "google_oauth_verified");
       }
 
-      setSuccessMessage(isSuper ? "👑 Google Super Admin Connected!" : "Google Account connected!");
-      setTimeout(() => {
-        onAuthSuccess({ email: googleUserEmail, fullName: googleUserName });
-        onClose();
-      }, 700);
+      // 3. Standard OAuth 2.0 Authorization Code Redirect Flow
+      window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(window.location.pathname)}`;
     } catch (e: any) {
-      setError("Google authentication failed. Please use email registration.");
-    } finally {
+      setError(e.message || "Unable to initiate Google sign-in. Please try again or use email sign in.");
       setIsLoading(false);
     }
   };

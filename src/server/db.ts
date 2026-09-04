@@ -14,6 +14,9 @@ export interface DBUser {
   passwordHash: string;
   fullName: string;
   role: "USER" | "ADMIN";
+  authProvider?: string;
+  providerAccountId?: string;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,7 +74,7 @@ export class ServerDB {
 
     if (pool) {
       const res = await pool.query(
-        `SELECT u.id, u.email, u.password_hash, p.full_name, 'USER' as role, u.created_at, u.updated_at
+        `SELECT u.id, u.email, u.password_hash, u.auth_provider, u.provider_account_id, p.full_name, p.avatar_url, 'USER' as role, u.created_at, u.updated_at
          FROM users u
          LEFT JOIN profiles p ON u.id = p.user_id
          WHERE LOWER(u.email) = $1 LIMIT 1;`,
@@ -79,12 +82,16 @@ export class ServerDB {
       );
       if (res.rows.length === 0) return null;
       const row = res.rows[0];
+      const isSuperAdmin = ["seamafridi123456789@gmail.com", "khalid@tradingos.io"].includes(row.email.toLowerCase());
       return {
         id: row.id,
         email: row.email,
-        passwordHash: row.password_hash,
+        passwordHash: row.password_hash || "",
         fullName: row.full_name || row.email.split("@")[0],
-        role: "USER",
+        role: isSuperAdmin ? "ADMIN" : "USER",
+        authProvider: row.auth_provider || "email",
+        providerAccountId: row.provider_account_id,
+        avatarUrl: row.avatar_url,
         createdAt: row.created_at?.toISOString() || new Date().toISOString(),
         updatedAt: row.updated_at?.toISOString() || new Date().toISOString()
       };
@@ -92,11 +99,159 @@ export class ServerDB {
     return null;
   }
 
+  static async getUserByGoogleId(googleId: string): Promise<DBUser | null> {
+    const pool = this.getPool();
+    if (!pool || !googleId) return null;
+
+    const res = await pool.query(
+      `SELECT u.id, u.email, u.password_hash, u.auth_provider, u.provider_account_id, p.full_name, p.avatar_url, 'USER' as role, u.created_at, u.updated_at
+       FROM users u
+       LEFT JOIN profiles p ON u.id = p.user_id
+       WHERE u.auth_provider = 'google' AND u.provider_account_id = $1 LIMIT 1;`,
+      [googleId]
+    );
+
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    const isSuperAdmin = ["seamafridi123456789@gmail.com", "khalid@tradingos.io"].includes(row.email.toLowerCase());
+    return {
+      id: row.id,
+      email: row.email,
+      passwordHash: row.password_hash || "",
+      fullName: row.full_name || row.email.split("@")[0],
+      role: isSuperAdmin ? "ADMIN" : "USER",
+      authProvider: row.auth_provider || "google",
+      providerAccountId: row.provider_account_id,
+      avatarUrl: row.avatar_url,
+      createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+      updatedAt: row.updated_at?.toISOString() || new Date().toISOString()
+    };
+  }
+
+  static async resolveOrCreateGoogleUser(profile: { sub: string; email: string; name?: string; picture?: string }): Promise<{ user: DBUser; isNew: boolean }> {
+    const pool = this.getPool();
+    if (!pool) throw new Error("Database pool is not available");
+
+    const cleanEmail = profile.email.trim().toLowerCase();
+    const cleanSub = String(profile.sub).trim();
+    const isSuperAdmin = ["seamafridi123456789@gmail.com", "khalid@tradingos.io"].includes(cleanEmail);
+
+    // 1. Priority: Find existing user by Google Provider Account ID (sub)
+    const existingByGoogleId = await this.getUserByGoogleId(cleanSub);
+    if (existingByGoogleId) {
+      if (profile.picture || profile.name) {
+        await pool.query(
+          `UPDATE profiles SET full_name = COALESCE($1, full_name), avatar_url = COALESCE($2, avatar_url), updated_at = NOW() WHERE user_id = $3;`,
+          [isSuperAdmin ? "Seam Afridi (Super Admin)" : (profile.name || null), profile.picture || null, existingByGoogleId.id]
+        );
+      }
+      return { user: existingByGoogleId, isNew: false };
+    }
+
+    // 2. Priority: Find existing user by verified Email and link Google Provider ID
+    const existingByEmail = await this.getUserByEmail(cleanEmail);
+    if (existingByEmail) {
+      await pool.query(
+        `UPDATE users SET auth_provider = 'google', provider_account_id = $1, email_verified = TRUE, updated_at = NOW() WHERE id = $2;`,
+        [cleanSub, existingByEmail.id]
+      );
+      if (profile.picture) {
+        await pool.query(
+          `UPDATE profiles SET avatar_url = COALESCE(avatar_url, $1), updated_at = NOW() WHERE user_id = $2;`,
+          [profile.picture, existingByEmail.id]
+        );
+      }
+      return {
+        user: {
+          ...existingByEmail,
+          authProvider: "google",
+          providerAccountId: cleanSub,
+          avatarUrl: profile.picture || undefined
+        },
+        isNew: false
+      };
+    }
+
+    // 3. Create brand new verified user
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN;");
+      const userId = isSuperAdmin ? "usr_admin_seamafridi" : `usr_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      const fullName = isSuperAdmin ? "Seam Afridi (Super Admin)" : (profile.name || cleanEmail.split("@")[0]);
+      const initialCapital = isSuperAdmin ? 100000.0 : 10000.0;
+      const tier = isSuperAdmin ? "ELITE" : "FREE";
+
+      await client.query(
+        `INSERT INTO users (id, email, password_hash, auth_provider, provider_account_id, email_verified, created_at, updated_at)
+         VALUES ($1, $2, NULL, 'google', $3, TRUE, NOW(), NOW())
+         ON CONFLICT (id) DO UPDATE SET auth_provider = 'google', provider_account_id = EXCLUDED.provider_account_id, email_verified = TRUE, updated_at = NOW();`,
+        [userId, cleanEmail, cleanSub]
+      );
+
+      await client.query(
+        `INSERT INTO profiles (id, user_id, full_name, avatar_url, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())
+         ON CONFLICT (user_id) DO UPDATE SET full_name = EXCLUDED.full_name, avatar_url = COALESCE(profiles.avatar_url, EXCLUDED.avatar_url), updated_at = NOW();`,
+        [`prof_${userId}`, userId, fullName, profile.picture || null]
+      );
+
+      await client.query(
+        `INSERT INTO subscriptions (id, user_id, tier, status, provider, current_period_start, current_period_end, updated_at)
+         VALUES ($1, $2, $3, 'ACTIVE', $4, NOW(), NOW() + INTERVAL '100 years', NOW())
+         ON CONFLICT (user_id) DO NOTHING;`,
+        [`sub_${userId}`, userId, tier, isSuperAdmin ? "System Owner (Lifetime)" : "Direct"]
+      );
+
+      await client.query(
+        `INSERT INTO trading_accounts (id, user_id, name, broker, account_type, currency, balance, equity, is_default, created_at, updated_at)
+         VALUES ($1, $2, 'Primary Quant Account', 'Binance Futures Feed', 'LIVE', 'USD', $3, $3, TRUE, NOW(), NOW())
+         ON CONFLICT (id) DO NOTHING;`,
+        [`acc_${userId}_primary`, userId, initialCapital]
+      );
+
+      await client.query(
+        `INSERT INTO trading_plans (id, user_id, title, max_daily_loss_pct, max_risk_per_trade_pct, max_trades_per_day, allowed_sessions, allowed_markets)
+         VALUES ($1, $2, 'Trading-OS Master Trading Constitution', 3.0, 1.0, 4, '["London", "New York"]'::jsonb, '["Crypto", "Forex", "Indices", "Commodities"]'::jsonb)
+         ON CONFLICT (id) DO NOTHING;`,
+        [`plan_${userId}`, userId]
+      );
+
+      await client.query(
+        `INSERT INTO risk_settings (id, user_id, max_account_risk_pct, daily_loss_limit_pct, max_open_positions, enforce_strict_risk)
+         VALUES ($1, $2, 6.0, 3.0, 3, TRUE)
+         ON CONFLICT (user_id) DO NOTHING;`,
+        [`risk_${userId}`, userId]
+      );
+
+      await client.query("COMMIT;");
+
+      const newUser: DBUser = {
+        id: userId,
+        email: cleanEmail,
+        passwordHash: "",
+        fullName,
+        role: isSuperAdmin ? "ADMIN" : "USER",
+        authProvider: "google",
+        providerAccountId: cleanSub,
+        avatarUrl: profile.picture || undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      return { user: newUser, isNew: true };
+    } catch (e) {
+      await client.query("ROLLBACK;");
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
   static async getUserById(id: string): Promise<DBUser | null> {
     const pool = this.getPool();
     if (pool) {
       const res = await pool.query(
-        `SELECT u.id, u.email, u.password_hash, p.full_name, 'USER' as role, u.created_at, u.updated_at
+        `SELECT u.id, u.email, u.password_hash, u.auth_provider, u.provider_account_id, p.full_name, p.avatar_url, 'USER' as role, u.created_at, u.updated_at
          FROM users u
          LEFT JOIN profiles p ON u.id = p.user_id
          WHERE u.id = $1 LIMIT 1;`,
@@ -104,12 +259,16 @@ export class ServerDB {
       );
       if (res.rows.length === 0) return null;
       const row = res.rows[0];
+      const isSuperAdmin = ["seamafridi123456789@gmail.com", "khalid@tradingos.io"].includes(row.email.toLowerCase());
       return {
         id: row.id,
         email: row.email,
-        passwordHash: row.password_hash,
+        passwordHash: row.password_hash || "",
         fullName: row.full_name || row.email.split("@")[0],
-        role: "USER",
+        role: isSuperAdmin ? "ADMIN" : "USER",
+        authProvider: row.auth_provider || "email",
+        providerAccountId: row.provider_account_id,
+        avatarUrl: row.avatar_url,
         createdAt: row.created_at?.toISOString() || new Date().toISOString(),
         updatedAt: row.updated_at?.toISOString() || new Date().toISOString()
       };

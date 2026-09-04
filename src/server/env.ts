@@ -9,6 +9,9 @@ export interface ServerConfig {
   databaseUrl: string | null;
   geminiApiKey: string | null;
   authSecret: string;
+  googleClientId: string | null;
+  googleClientSecret: string | null;
+  googleCallbackUrl: string | null;
 }
 
 export class EnvValidator {
@@ -22,6 +25,9 @@ export class EnvValidator {
     const databaseUrl = process.env.DATABASE_URL || null;
     const geminiApiKey = process.env.GEMINI_API_KEY || null;
     const authSecret = process.env.AUTH_SECRET || "trading_os_default_secure_dev_jwt_secret_key_32bytes_min";
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || null;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || null;
+    const googleCallbackUrl = process.env.GOOGLE_CALLBACK_URL || null;
 
     if (nodeEnv === "production") {
       if (!process.env.AUTH_SECRET) {
@@ -40,7 +46,10 @@ export class EnvValidator {
       port,
       databaseUrl,
       geminiApiKey,
-      authSecret
+      authSecret,
+      googleClientId,
+      googleClientSecret,
+      googleCallbackUrl
     };
 
     return this.cachedConfig;
@@ -54,5 +63,15 @@ export class EnvValidator {
   static isAIConfigured(): boolean {
     const config = this.getConfig();
     return Boolean(config.geminiApiKey && config.geminiApiKey.trim().length > 10);
+  }
+
+  static isGoogleAuthConfigured(): boolean {
+    const config = this.getConfig();
+    return Boolean(
+      config.googleClientId &&
+      config.googleClientId.trim().length > 5 &&
+      config.googleClientSecret &&
+      config.googleClientSecret.trim().length > 5
+    );
   }
 }

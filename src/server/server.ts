@@ -138,6 +138,169 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // Auth Configuration (Public)
+  if (pathname === "/api/auth/config" && method === "GET") {
+    const config = EnvValidator.getConfig();
+    const isGoogleConfigured = EnvValidator.isGoogleAuthConfigured();
+    return sendJson(res, 200, {
+      googleAuthEnabled: isGoogleConfigured,
+      googleClientId: isGoogleConfigured ? config.googleClientId : null
+    });
+  }
+
+  // Google OAuth Initiation
+  if (pathname === "/api/auth/google" && method === "GET") {
+    const config = EnvValidator.getConfig();
+    if (!EnvValidator.isGoogleAuthConfigured()) {
+      res.writeHead(302, { Location: "/?error=google_not_configured" });
+      res.end();
+      return;
+    }
+
+    const proto = (req.headers["x-forwarded-proto"] as string) || "http";
+    const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || `localhost:${config.port}`;
+    const defaultCallback = `${proto}://${host}/api/auth/google/callback`;
+    const callbackUrl = config.googleCallbackUrl || defaultCallback;
+
+    const returnUrl = (parsedUrl.query.returnUrl as string) || "/";
+    const state = ServerAuth.generateOAuthState(returnUrl);
+
+    const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    googleAuthUrl.searchParams.set("client_id", config.googleClientId!.trim());
+    googleAuthUrl.searchParams.set("redirect_uri", callbackUrl.trim());
+    googleAuthUrl.searchParams.set("response_type", "code");
+    googleAuthUrl.searchParams.set("scope", "openid email profile");
+    googleAuthUrl.searchParams.set("state", state);
+    googleAuthUrl.searchParams.set("access_type", "offline");
+    googleAuthUrl.searchParams.set("prompt", "select_account");
+
+    res.writeHead(302, {
+      Location: googleAuthUrl.toString(),
+      "Set-Cookie": `trading_os_oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`
+    });
+    res.end();
+    return;
+  }
+
+  // Google OAuth Callback
+  if (pathname === "/api/auth/google/callback" && method === "GET") {
+    try {
+      const { code, state, error } = parsedUrl.query;
+
+      if (error) {
+        res.writeHead(302, { Location: `/?error=${encodeURIComponent(String(error))}` });
+        res.end();
+        return;
+      }
+
+      if (!code || !state) {
+        res.writeHead(302, { Location: "/?error=missing_oauth_parameters" });
+        res.end();
+        return;
+      }
+
+      // 1. Validate State HMAC signature and expiration
+      const stateValidation = ServerAuth.verifyOAuthState(String(state));
+      if (!stateValidation.valid) {
+        console.error("[Server OAuth Callback] State validation failed:", stateValidation.error);
+        res.writeHead(302, { Location: `/?error=${encodeURIComponent(stateValidation.error || "invalid_state")}` });
+        res.end();
+        return;
+      }
+
+      const config = EnvValidator.getConfig();
+      if (!config.googleClientId || !config.googleClientSecret) {
+        res.writeHead(302, { Location: "/?error=google_not_configured" });
+        res.end();
+        return;
+      }
+
+      const proto = (req.headers["x-forwarded-proto"] as string) || "http";
+      const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || `localhost:${config.port}`;
+      const defaultCallback = `${proto}://${host}/api/auth/google/callback`;
+      const callbackUrl = config.googleCallbackUrl || defaultCallback;
+
+      // 2. Exchange authorization code for tokens
+      const tokenData = await ServerAuth.exchangeGoogleCode(
+        String(code),
+        config.googleClientId.trim(),
+        config.googleClientSecret.trim(),
+        callbackUrl.trim()
+      );
+
+      if (!tokenData || !tokenData.access_token) {
+        res.writeHead(302, { Location: "/?error=token_exchange_failed" });
+        res.end();
+        return;
+      }
+
+      // 3. Fetch verified user identity from Google
+      const googleUser = await ServerAuth.fetchGoogleUserInfo(tokenData.access_token);
+      if (!googleUser || !googleUser.sub || !googleUser.email || !googleUser.email_verified) {
+        res.writeHead(302, { Location: "/?error=unverified_google_identity" });
+        res.end();
+        return;
+      }
+
+      // 4. Resolve or create user in Neon PostgreSQL
+      const { user } = await ServerDB.resolveOrCreateGoogleUser(googleUser);
+
+      // 5. Sign Session JWT Token
+      const token = ServerAuth.signToken({ id: user.id, email: user.email, role: user.role });
+
+      const returnUrl = stateValidation.returnUrl || "/";
+      const redirectTarget = `${returnUrl}${returnUrl.includes("?") ? "&" : "?"}auth_token=${encodeURIComponent(token)}`;
+
+      res.writeHead(302, {
+        Location: redirectTarget,
+        "Set-Cookie": "trading_os_oauth_state=; Path=/; HttpOnly; Max-Age=0"
+      });
+      res.end();
+      return;
+    } catch (e: any) {
+      console.error("[Server OAuth Callback Error]:", e);
+      res.writeHead(302, { Location: `/?error=oauth_internal_error` });
+      res.end();
+      return;
+    }
+  }
+
+  // Google ID Token Server Verification (GIS / One-Tap)
+  if (pathname === "/api/auth/google/verify" && method === "POST") {
+    try {
+      const body = await parseJsonBody(req);
+      const { credential } = body;
+
+      if (!credential || typeof credential !== "string") {
+        return sendJson(res, 400, { success: false, error: "Google credential ID token required" });
+      }
+
+      const config = EnvValidator.getConfig();
+      const verifiedGoogleUser = await ServerAuth.verifyGoogleIdToken(credential, config.googleClientId || undefined);
+
+      if (!verifiedGoogleUser || !verifiedGoogleUser.sub || !verifiedGoogleUser.email) {
+        return sendJson(res, 401, { success: false, error: "Invalid or unverified Google token" });
+      }
+
+      const { user } = await ServerDB.resolveOrCreateGoogleUser(verifiedGoogleUser);
+      const token = ServerAuth.signToken({ id: user.id, email: user.email, role: user.role });
+
+      return sendJson(res, 200, {
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          avatarUrl: user.avatarUrl
+        }
+      });
+    } catch (e: any) {
+      return sendJson(res, 500, { success: false, error: e.message });
+    }
+  }
+
   // =========================================================================
   // 2. AI STRATEGY COMPILER & PROXY (Public or Semi-Protected)
   // =========================================================================

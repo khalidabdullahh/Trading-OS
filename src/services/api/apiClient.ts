@@ -94,10 +94,29 @@ export class ApiClient {
     return null;
   }
 
+  static async getAuthConfig(): Promise<{ googleAuthEnabled: boolean; googleClientId: string | null }> {
+    const res = await this.request<{ googleAuthEnabled: boolean; googleClientId: string | null }>("/api/auth/config");
+    return res || { googleAuthEnabled: false, googleClientId: null };
+  }
+
+  static async verifyGoogleCredential(credential: string) {
+    const res = await this.request<{ success: boolean; token: string; user: any }>("/api/auth/google/verify", {
+      method: "POST",
+      body: JSON.stringify({ credential })
+    });
+
+    if (res && res.token) {
+      this.setToken(res.token);
+      StorageAdapter.setCurrentUserId(res.user.id);
+      return res.user;
+    }
+    return null;
+  }
+
   // =========================================================================
   // 2. TRADES
   // =========================================================================
-  static async getTrades(userId = "usr_demo_trader"): Promise<Trade[]> {
+  static async getTrades(userId = StorageAdapter.getCurrentUserId() || "guest"): Promise<Trade[]> {
     const res = await this.request<{ success: boolean; trades: Trade[] }>("/api/trades");
     if (res && res.trades) {
       StorageAdapter.saveTrades(res.trades, userId);
@@ -106,7 +125,7 @@ export class ApiClient {
     return StorageAdapter.getTrades(userId);
   }
 
-  static async createTrade(tradeData: Omit<Trade, "id" | "userId" | "createdAt" | "updatedAt">, userId = "usr_demo_trader"): Promise<Trade> {
+  static async createTrade(tradeData: Omit<Trade, "id" | "userId" | "createdAt" | "updatedAt">, userId = StorageAdapter.getCurrentUserId() || "guest"): Promise<Trade> {
     const res = await this.request<{ success: boolean; trade: Trade }>("/api/trades", {
       method: "POST",
       body: JSON.stringify(tradeData)
