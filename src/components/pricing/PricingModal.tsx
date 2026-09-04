@@ -151,16 +151,20 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overscroll-contain"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
-      <div className="bg-white dark:bg-[#090e1a] border-y sm:border border-slate-200 dark:border-slate-800 rounded-none sm:rounded-3xl max-w-4xl w-full min-h-screen sm:min-h-0 shadow-2xl relative my-0 sm:my-8 text-xs font-sans flex flex-col overflow-hidden">
-        {/* Sticky Top Header with Back Button */}
-        <div className="sticky top-0 z-40 bg-white/95 dark:bg-[#090e1a]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
+      <div className="min-h-full flex items-start justify-center p-2 sm:p-4 md:p-6 py-4 sm:py-8">
+        <div
+          className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl max-w-4xl w-full shadow-2xl relative text-xs font-sans flex flex-col overflow-hidden my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Sticky Top Header with Back Button */}
+          <div className="sticky top-0 z-40 bg-white/95 dark:bg-[#090e1a]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
           <button
             onClick={onClose}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition cursor-pointer active:scale-95 shadow-xs"
@@ -521,5 +525,6 @@ export const PricingModal: React.FC<PricingModalProps> = ({
       </div>
     </div>
   </div>
-);
+</div>
+  );
 };

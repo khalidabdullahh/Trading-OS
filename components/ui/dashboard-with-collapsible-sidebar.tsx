@@ -1428,60 +1428,141 @@ const EconomicNewsSection = ({ isDark }: { isDark: boolean }) => {
 
 const NewsDetailModal = ({ news, onClose, isDark }: any) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4 text-xs font-sans">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
-          <X className="h-5 w-5" />
-        </button>
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="min-h-full flex items-center justify-center p-3 sm:p-4 py-6">
+        <div
+          className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4 text-xs font-sans my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
+            <X className="h-5 w-5" />
+          </button>
 
-        <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono text-[10px] font-bold">
-              {news.currency || news.category || "GLOBAL"}
-            </span>
-            <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 font-mono text-[10px] font-bold">
-              {news.impact || "HIGH"} IMPACT
-            </span>
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono text-[10px] font-bold">
+                {news.currency || news.category || "GLOBAL"}
+              </span>
+              <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 font-mono text-[10px] font-bold">
+                {news.impact || "HIGH"} IMPACT
+              </span>
+            </div>
+            <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">{news.event || news.title}</h2>
+            {news.bias && <span className="text-cyan-500 font-mono text-[11px] block mt-0.5">{news.bias}</span>}
           </div>
-          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">{news.event || news.title}</h2>
-          {news.bias && <span className="text-cyan-500 font-mono text-[11px] block mt-0.5">{news.bias}</span>}
+
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">Fundamental Summary:</span>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{news.summary}</p>
+          </div>
+
+          {news.cryptoImpact && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-[11px]">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
+                <strong className="text-amber-400 font-sans block mb-1">🪙 Crypto Impact:</strong>
+                <p className="text-slate-400 leading-relaxed">{news.cryptoImpact}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
+                <strong className="text-amber-300 font-sans block mb-1">🏆 Gold (XAU) Impact:</strong>
+                <p className="text-slate-400 leading-relaxed">{news.goldImpact}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
+                <strong className="text-blue-400 font-sans block mb-1">💱 Forex Impact:</strong>
+                <p className="text-slate-400 leading-relaxed">{news.forexImpact}</p>
+              </div>
+            </div>
+          )}
+
+          {news.tradingRule && (
+            <div className="p-3.5 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-1">
+              <span className="font-bold text-cyan-600 dark:text-cyan-400 block font-sans">Institutional Trading Rule:</span>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.tradingRule}</p>
+            </div>
+          )}
+
+          {news.aiAnalysis && (
+            <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-1">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 block font-sans">AI Market Sentiment Analysis:</span>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.aiAnalysis}</p>
+            </div>
+          )}
         </div>
+      </div>
+    </div>
+  );
+};
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] space-y-1">
-          <span className="font-bold text-slate-800 dark:text-slate-200 block">Fundamental Summary:</span>
-          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{news.summary}</p>
+const CheckoutModal = ({ isDark, onClose, onUnlock }: any) => {
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="min-h-full flex items-center justify-center p-3 sm:p-4 py-6">
+        <div
+          className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-center text-xs my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
+            <X className="h-5 w-5" />
+          </button>
+          <div className="text-2xl">🟡</div>
+          <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Unlock Pro License</h3>
+          <p className="text-slate-400">Lifetime access to all AST compilation, AI Copilot, and Risk Center features.</p>
+          <button
+            onClick={() => {
+              onUnlock();
+              onClose();
+            }}
+            className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+          >
+            Activate Instant Access
+          </button>
         </div>
+      </div>
+    </div>
+  );
+};
 
-        {news.cryptoImpact && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-[11px]">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
-              <strong className="text-amber-400 font-sans block mb-1">🪙 Crypto Impact:</strong>
-              <p className="text-slate-400 leading-relaxed">{news.cryptoImpact}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
-              <strong className="text-amber-300 font-sans block mb-1">🏆 Gold (XAU) Impact:</strong>
-              <p className="text-slate-400 leading-relaxed">{news.goldImpact}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800">
-              <strong className="text-blue-400 font-sans block mb-1">💱 Forex Impact:</strong>
-              <p className="text-slate-400 leading-relaxed">{news.forexImpact}</p>
-            </div>
+const HelpModal = ({ isDark, onClose }: any) => {
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="min-h-full flex items-center justify-center p-3 sm:p-4 py-6">
+        <div
+          className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-sans my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
+            <X className="h-5 w-5" />
+          </button>
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Trading-OS Documentation</h3>
           </div>
-        )}
-
-        {news.tradingRule && (
-          <div className="p-3.5 rounded-xl border border-cyan-500/30 bg-cyan-500/5 space-y-1">
-            <span className="font-bold text-cyan-600 dark:text-cyan-400 block font-sans">Institutional Trading Rule:</span>
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.tradingRule}</p>
+          <div className="space-y-2 text-slate-600 dark:text-slate-300 text-left">
+            <p><strong>1. Strategy Compiler:</strong> Input natural language conditions with negative offsets (e.g. t-1, t-0) to compile ASTs.</p>
+            <p><strong>2. Risk Center:</strong> Calculate exact position sizing using account equity and distance to stop loss.</p>
+            <p><strong>3. Trade Journal:</strong> Record trades and let the Rule Violation Engine audit compliance against your Trading Plan.</p>
+            <p><strong>4. AI Analyst:</strong> Ask questions about session win rates, drawdown, and execution psychology.</p>
           </div>
-        )}
-
-        {news.aiAnalysis && (
-          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-1">
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 block font-sans">AI Market Sentiment Analysis:</span>
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{news.aiAnalysis}</p>
-          </div>
-        )}
+          <button
+            onClick={onClose}
+            className="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold rounded-xl cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1515,57 +1596,6 @@ const PineVaultSection = ({
       <pre className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#050811] font-mono text-xs text-slate-800 dark:text-slate-200 overflow-x-auto max-h-96">
         {currentStrategy ? currentStrategy.generatePineScript(currentStrategy.defaultParams) : sampleCode}
       </pre>
-    </div>
-  );
-};
-
-const CheckoutModal = ({ isDark, onClose, onUnlock }: any) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-center text-xs">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
-          <X className="h-5 w-5" />
-        </button>
-        <div className="text-2xl">🟡</div>
-        <h3 className="text-base font-black text-slate-900 dark:text-slate-100">Unlock Pro License</h3>
-        <p className="text-slate-400">Lifetime access to all AST compilation, AI Copilot, and Risk Center features.</p>
-        <button
-          onClick={() => {
-            onUnlock();
-            onClose();
-          }}
-          className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
-        >
-          Activate Instant Access
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const HelpModal = ({ isDark, onClose }: any) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-sans">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer">
-          <X className="h-5 w-5" />
-        </button>
-        <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Trading-OS Documentation</h3>
-        </div>
-        <div className="space-y-2 text-slate-600 dark:text-slate-300">
-          <p><strong>1. Strategy Compiler:</strong> Input natural language conditions with negative offsets (e.g. t-1, t-0) to compile ASTs.</p>
-          <p><strong>2. Risk Center:</strong> Calculate exact position sizing using account equity and distance to stop loss.</p>
-          <p><strong>3. Trade Journal:</strong> Record trades and let the Rule Violation Engine audit compliance against your Trading Plan.</p>
-          <p><strong>4. AI Analyst:</strong> Ask questions about session win rates, drawdown, and execution psychology.</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold rounded-xl cursor-pointer"
-        >
-          Close
-        </button>
-      </div>
     </div>
   );
 };

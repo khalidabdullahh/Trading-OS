@@ -257,12 +257,21 @@ export const TradeJournalView: React.FC = () => {
 
       {/* Manual Trade Entry Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-mono">
-            <button
-              onClick={() => setIsAddModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsAddModalOpen(false);
+          }}
+        >
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4 py-6">
+            <div
+              className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-mono my-auto"
+              onClick={(e) => e.stopPropagation()}
             >
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+              >
               <X className="h-5 w-5" />
             </button>
 
@@ -359,6 +368,7 @@ export const TradeJournalView: React.FC = () => {
             </button>
           </div>
         </div>
+      </div>
       )}
     </div>
   );

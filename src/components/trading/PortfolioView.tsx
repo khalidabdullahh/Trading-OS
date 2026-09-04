@@ -229,76 +229,90 @@ export const PortfolioView: React.FC = () => {
 
       {/* Edit Balance & Capital Modal */}
       {editingAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-sans">
-            <button
-              onClick={() => setEditingAccount(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingAccount(null);
+          }}
+        >
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4 py-6">
+            <div
+              className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-sans my-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="h-5 w-5" />
-            </button>
+              <button
+                onClick={() => setEditingAccount(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
 
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100 text-sm">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
-              <span>Customize Account Balance: {editingAccount.name}</span>
-            </div>
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100 text-sm">
+                <DollarSign className="h-4 w-4 text-emerald-500" />
+                <span>Customize Account Balance: {editingAccount.name}</span>
+              </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Quick Capital Presets:</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {presetAmounts.map(amt => (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => {
-                        setCustomBalanceInput(amt.toString());
-                        setCustomEquityInput(amt.toString());
-                      }}
-                      className="py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500/20 hover:text-cyan-400 text-slate-700 dark:text-slate-300 font-mono text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition cursor-pointer"
-                    >
-                      ${amt >= 1000 ? `${amt / 1000}k` : amt}
-                    </button>
-                  ))}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Quick Capital Presets:</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {presetAmounts.map(amt => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => {
+                          setCustomBalanceInput(amt.toString());
+                          setCustomEquityInput(amt.toString());
+                        }}
+                        className={`py-1.5 rounded-lg border text-[11px] font-mono font-bold transition cursor-pointer ${
+                          customBalanceInput === amt.toString()
+                            ? "bg-emerald-500/10 border-emerald-500 text-emerald-400"
+                            : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        ${amt >= 1000 ? `${amt / 1000}k` : amt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Cash Balance ($ USD):</label>
+                  <input
+                    type="number"
+                    step="100"
+                    value={customBalanceInput}
+                    onChange={e => setCustomBalanceInput(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none font-mono text-sm font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Total Equity ($ USD):</label>
+                  <input
+                    type="number"
+                    step="100"
+                    value={customEquityInput}
+                    onChange={e => setCustomEquityInput(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none font-mono text-sm font-bold"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Cash Balance ($ USD):</label>
-                <input
-                  type="number"
-                  step="100"
-                  value={customBalanceInput}
-                  onChange={e => setCustomBalanceInput(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none font-mono text-sm font-bold"
-                />
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setEditingAccount(null)}
+                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveBalance}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-xl shadow cursor-pointer transition"
+                >
+                  Save Capital
+                </button>
               </div>
-
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Total Equity ($ USD):</label>
-                <input
-                  type="number"
-                  step="100"
-                  value={customEquityInput}
-                  onChange={e => setCustomEquityInput(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none font-mono text-sm font-bold"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setEditingAccount(null)}
-                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveBalance}
-                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-xl shadow cursor-pointer transition"
-              >
-                Save Capital
-              </button>
             </div>
           </div>
         </div>
@@ -306,59 +320,69 @@ export const PortfolioView: React.FC = () => {
 
       {/* Add Account Modal */}
       {isAddAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-sans">
-            <button
-              onClick={() => setIsAddAccountModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsAddAccountModal(false);
+          }}
+        >
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4 py-6">
+            <div
+              className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-xs font-sans my-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="h-5 w-5" />
-            </button>
+              <button
+                onClick={() => setIsAddAccountModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
 
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100 text-sm">
-              <Wallet className="h-4 w-4 text-cyan-500" />
-              <span>Connect New Trading Account</span>
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100 text-sm">
+                <Wallet className="h-4 w-4 text-cyan-500" />
+                <span>Connect New Trading Account</span>
+              </div>
+
+              <div className="space-y-3 font-sans">
+                <div>
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Account Label / Prop Firm:</label>
+                  <input
+                    type="text"
+                    value={newAccName}
+                    onChange={e => setNewAccName(e.target.value)}
+                    placeholder="e.g. FTMO 100K Prop Challenge / Binance Futures"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Broker / Data Feed:</label>
+                  <input
+                    type="text"
+                    value={newBroker}
+                    onChange={e => setNewBroker(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Starting Capital ($ USD):</label>
+                  <input
+                    type="number"
+                    value={newBalance}
+                    onChange={e => setNewBalance(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleCreateAccount}
+                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold font-sans text-xs rounded-xl shadow transition cursor-pointer"
+              >
+                Add Trading Account
+              </button>
             </div>
-
-            <div className="space-y-3 font-sans">
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Account Label / Prop Firm:</label>
-                <input
-                  type="text"
-                  value={newAccName}
-                  onChange={e => setNewAccName(e.target.value)}
-                  placeholder="e.g. FTMO 100K Prop Challenge / Binance Futures"
-                  className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Broker / Data Feed:</label>
-                <input
-                  type="text"
-                  value={newBroker}
-                  onChange={e => setNewBroker(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Starting Capital ($ USD):</label>
-                <input
-                  type="number"
-                  value={newBalance}
-                  onChange={e => setNewBalance(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none font-mono font-bold"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleCreateAccount}
-              className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold font-sans text-xs rounded-xl shadow transition cursor-pointer"
-            >
-              Add Trading Account
-            </button>
           </div>
         </div>
       )}
