@@ -159,68 +159,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleAuth = () => {
     setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
 
-    try {
-      // 1. Check server Google OAuth configuration
-      const config = await ApiClient.getAuthConfig();
-
-      if (!config.googleAuthEnabled) {
-        setError("Google sign-in is not configured. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the server environment.");
-        setIsLoading(false);
-        return;
-      }
-
-      // 2. If GIS (Google Identity Services) is available with matching Client ID
-      if (config.googleClientId && typeof window !== "undefined" && (window as any).google?.accounts?.id) {
-        try {
-          (window as any).google.accounts.id.initialize({
-            client_id: config.googleClientId,
-            callback: async (response: any) => {
-              if (response && response.credential) {
-                try {
-                  setIsLoading(true);
-                  // Cryptographically verify ID token on server
-                  const serverRes = await ApiClient.verifyGoogleCredential(response.credential);
-                  if (serverRes) {
-                    const isSuper = serverRes.email?.toLowerCase().includes("seamafridi");
-                    setSuccessMessage(isSuper ? "👑 Google Super Admin Connected!" : "Google Account verified successfully!");
-                    setTimeout(() => {
-                      onAuthSuccess(serverRes);
-                      onClose();
-                    }, 600);
-                  } else {
-                    setError("Google authentication failed. Identity could not be verified by server.");
-                  }
-                } catch (verifyErr: any) {
-                  setError(verifyErr.message || "Google verification failed.");
-                } finally {
-                  setIsLoading(false);
-                }
-              }
-            }
-          });
-          (window as any).google.accounts.id.prompt((notification: any) => {
-            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              // Redirect to standard OAuth Authorization Code flow if prompt was skipped/blocked
-              window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(window.location.pathname)}`;
-            }
-          });
-          return;
-        } catch (gisErr) {
-          // Fall back directly to standard OAuth redirect flow
-        }
-      }
-
-      // 3. Standard OAuth 2.0 Authorization Code Redirect Flow
-      window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(window.location.pathname)}`;
-    } catch (e: any) {
-      setError(e.message || "Unable to initiate Google sign-in. Please try again or use email sign in.");
-      setIsLoading(false);
-    }
+    // Direct Google OAuth 2.0 Authorization Code Redirect Flow
+    // Guarantees Google Accounts selection screen opens directly across all browsers (Safari, Chrome, iOS)
+    window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(window.location.pathname)}`;
   };
 
   return (
