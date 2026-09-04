@@ -59,9 +59,9 @@ export class StorageAdapter {
 
   static getCurrentUserId(): string {
     try {
-      return localStorage.getItem(`${this.STORAGE_PREFIX}current_user_id`) || "usr_demo_trader";
+      return localStorage.getItem(`${this.STORAGE_PREFIX}current_user_id`) || "";
     } catch {
-      return "usr_demo_trader";
+      return "";
     }
   }
 
@@ -74,16 +74,17 @@ export class StorageAdapter {
   // =========================================================================
   // 2. PROFILE & PREFERENCES
   // =========================================================================
-  static getProfile(userId: string = this.getCurrentUserId()): UserProfile {
+  static getProfile(userId: string = this.getCurrentUserId() || "guest"): UserProfile {
     try {
-      const data = localStorage.getItem(this.getKey(userId, "profile"));
+      const activeId = userId || "guest";
+      const data = localStorage.getItem(this.getKey(activeId, "profile"));
       if (data) return JSON.parse(data);
     } catch {}
 
     const defaultProfile: UserProfile = {
-      id: `prof_${userId}`,
-      userId,
-      fullName: "Khalid Abdullah",
+      id: `prof_${userId || 'guest'}`,
+      userId: userId || "guest",
+      fullName: userId === "guest" || !userId ? "Guest Trader" : "Trader",
       country: "Global / Interbank",
       experience: "Advanced",
       bio: "Quantitative Systems & Algorithmic Momentum Trader"

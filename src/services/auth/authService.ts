@@ -28,34 +28,11 @@ export class AuthService {
     return `hash_${password}`;
   }
 
-  static getCurrentUser(): User {
+  static getCurrentUser(): User | null {
     const userId = StorageAdapter.getCurrentUserId();
+    if (!userId) return null;
     const users = StorageAdapter.getUsers();
-    const found = users.find(u => u.id === userId);
-    if (found) return found;
-
-    // Create default demo/admin user
-    const demoUser: User = {
-      id: "usr_admin_seamafridi",
-      email: "seamafridi123456789@gmail.com",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    StorageAdapter.saveUser(demoUser);
-    StorageAdapter.setCurrentUserId(demoUser.id);
-
-    // Ensure ELITE subscription
-    StorageAdapter.saveSubscription({
-      id: `sub_${demoUser.id}`,
-      userId: demoUser.id,
-      tier: "ELITE",
-      status: "ACTIVE",
-      currentPeriodStart: new Date().toISOString(),
-      cancelAtPeriodEnd: false,
-      provider: "System Owner (Lifetime)"
-    });
-
-    return demoUser;
+    return users.find(u => u.id === userId) || null;
   }
 
   static async register(email: string, password: string, fullName: string): Promise<{ success: boolean; user?: User; error?: string }> {
@@ -112,6 +89,6 @@ export class AuthService {
   }
 
   static logout(): void {
-    StorageAdapter.setCurrentUserId("usr_demo_trader");
+    StorageAdapter.setCurrentUserId("");
   }
 }
