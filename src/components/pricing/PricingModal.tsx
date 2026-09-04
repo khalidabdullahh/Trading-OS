@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Clock,
   ArrowRight,
+  ArrowLeft,
   TrendingUp,
   CreditCard,
   Lock
@@ -45,6 +46,29 @@ export const PricingModal: React.FC<PricingModalProps> = ({
     if (isOpen) {
       document.body.style.overflow = "hidden";
       setSelectedTier(initialTier);
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+
+      // Support phone back gesture
+      try {
+        window.history.pushState({ modal: "pricing" }, "");
+      } catch (e) {}
+
+      const handlePopState = () => {
+        onClose();
+      };
+      window.addEventListener("popstate", handlePopState);
+
+      return () => {
+        document.body.style.overflow = "unset";
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("popstate", handlePopState);
+      };
     } else {
       document.body.style.overflow = "unset";
     }
@@ -126,29 +150,58 @@ export const PricingModal: React.FC<PricingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-      <div className="bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-xs font-sans">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-slate-400 hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-        >
-          <X className="h-5 w-5" />
-        </button>
+    <div
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="bg-white dark:bg-[#090e1a] border-y sm:border border-slate-200 dark:border-slate-800 rounded-none sm:rounded-3xl max-w-4xl w-full min-h-screen sm:min-h-0 shadow-2xl relative my-0 sm:my-8 text-xs font-sans flex flex-col overflow-hidden">
+        {/* Sticky Top Header with Back Button */}
+        <div className="sticky top-0 z-40 bg-white/95 dark:bg-[#090e1a]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition cursor-pointer active:scale-95 shadow-xs"
+          >
+            <ArrowLeft className="h-4 w-4 text-cyan-500" />
+            <span>Back to Terminal</span>
+          </button>
 
-        {/* Modal Header */}
-        <div className="text-center space-y-2 mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 font-mono font-bold text-xs">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>INSTITUTIONAL QUANT ACCESS</span>
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100 hidden sm:inline">
+              Trading-OS Institutional Plans
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              $9 / Month
+            </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">
-            Choose Your Trading OS Plan
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
-            Upgrade to unlock deterministic AI strategy compilation, multi-asset scanning, live rule auditing, and Binance Pay instant checkout.
-          </p>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            title="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
+
+        {/* Modal Body */}
+        <div className="p-5 sm:p-8 space-y-6">
+          {/* Modal Header */}
+          <div className="text-center space-y-2 mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 font-mono font-bold text-xs">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>INSTITUTIONAL QUANT ACCESS</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">
+              Choose Your Trading OS Plan
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+              Upgrade to unlock deterministic AI strategy compilation, multi-asset scanning, live rule auditing, and Binance Pay instant checkout.
+            </p>
+          </div>
 
         {/* Plan Cards Comparison */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -454,7 +507,19 @@ export const PricingModal: React.FC<PricingModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Bottom Return Button */}
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl flex items-center justify-center gap-2 text-xs transition cursor-pointer border border-slate-200 dark:border-slate-700/60 shadow-xs"
+          >
+            <ArrowLeft className="h-4 w-4 text-cyan-500" />
+            <span>← Return to Workspace Terminal</span>
+          </button>
+        </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
