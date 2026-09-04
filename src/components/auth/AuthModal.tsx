@@ -141,6 +141,68 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     setError(null);
 
+    const googleClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+
+    // If official Google Client ID is configured, use official Google Identity Services popup
+    if (googleClientId && typeof window !== "undefined" && (window as any).google?.accounts?.id) {
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: any) => {
+            if (response.credential) {
+              try {
+                // Decode Google JWT payload
+                const base64Url = response.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                  atob(base64)
+                    .split('')
+                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                );
+                const payload = JSON.parse(jsonPayload);
+
+                const gEmail = payload.email.toLowerCase();
+                const isSuper = gEmail.includes("seamafridi");
+                const gName = isSuper ? "Seam Afridi (Super Admin)" : (payload.name || gEmail.split('@')[0]);
+                const gPicture = payload.picture;
+
+                // Register / Login in PostgreSQL
+                try {
+                  const serverRes = await ApiClient.register(gEmail, "google_oauth_token", gName);
+                  if (serverRes?.token) {
+                    ApiClient.setToken(serverRes.token);
+                    StorageAdapter.setCurrentUserId(serverRes.user.id);
+                  }
+                } catch (e) {
+                  await AuthService.login(gEmail, "google_oauth_token");
+                }
+
+                // Update avatar if provided
+                if (gPicture) {
+                  const p = StorageAdapter.getProfile(StorageAdapter.getCurrentUserId());
+                  StorageAdapter.saveProfile({ ...p, avatarUrl: gPicture });
+                }
+
+                setSuccessMessage(isSuper ? "👑 Google Super Admin Connected!" : "Google Account authenticated!");
+                setTimeout(() => {
+                  onAuthSuccess({ email: gEmail, fullName: gName });
+                  onClose();
+                }, 600);
+              } catch (decodeErr) {
+                setError("Failed to parse Google credentials.");
+              }
+            }
+          }
+        });
+        (window as any).google.accounts.id.prompt();
+        return;
+      } catch (err) {
+        // Fallback to seamless flow
+      }
+    }
+
+    // Default seamless Google authentication flow
     try {
       const googleUserEmail = email.trim().toLowerCase() || `trader_${Math.random().toString(36).substring(2, 7)}@gmail.com`;
       const isSuper = googleUserEmail.includes("seamafridi");
