@@ -23,6 +23,7 @@ import {
   X,
   Send,
   Lock,
+  ArrowRight,
   ArrowUpRight,
   ArrowDownRight,
   RefreshCw,
@@ -174,6 +175,7 @@ export const Example = () => {
           openHelp={() => setIsHelpOpen(true)}
           openLanding={() => setIsLandingPageOpen(true)}
           currentUser={currentUser}
+          onLogout={handleLogout}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
@@ -242,6 +244,7 @@ const Sidebar = ({
   openHelp,
   openLanding,
   currentUser,
+  onLogout,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
 }: {
@@ -253,6 +256,7 @@ const Sidebar = ({
   openHelp: () => void;
   openLanding: () => void;
   currentUser: any;
+  onLogout: () => void;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (val: boolean) => void;
 }) => {
@@ -389,15 +393,19 @@ const Sidebar = ({
 
         {/* Sidebar Footer */}
         <div className="p-2.5 border-t border-slate-200 dark:border-slate-800 space-y-1 text-xs">
-          {currentUser && currentUser.email && currentUser.id !== "usr_demo_trader" ? (
-            <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 mb-1 flex items-center justify-between">
+          {currentUser && currentUser.email ? (
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 mb-1 space-y-2">
               <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center shrink-0">
-                  {currentUser.email.charAt(0).toUpperCase()}
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center overflow-hidden border border-cyan-500/30 shrink-0">
+                  {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                    <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{currentUser.email.charAt(0).toUpperCase()}</span>
+                  )}
                 </div>
                 {open && (
-                  <div className="flex flex-col truncate">
-                    <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] truncate">
+                  <div className="flex flex-col truncate flex-1">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">
                       {currentUser.fullName || currentUser.email.split("@")[0]}
                     </span>
                     <span className="text-[9px] font-mono font-bold text-amber-400">
@@ -406,14 +414,28 @@ const Sidebar = ({
                   </div>
                 )}
               </div>
+              {open && (
+                <button
+                  onClick={() => {
+                    onLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full py-1.5 px-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg text-[11px] font-bold transition cursor-pointer text-center"
+                >
+                  Sign Out / Switch Account
+                </button>
+              )}
             </div>
           ) : (
             <button
-              onClick={openAuth}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold transition cursor-pointer mb-1 shadow-xs"
+              onClick={() => {
+                openAuth();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold transition cursor-pointer mb-1 shadow-xs"
             >
               <UserIcon className="h-4 w-4 shrink-0" />
-              {open && <span>Sign In / Register</span>}
+              {open && <span>Sign In / Create Account</span>}
             </button>
           )}
 
@@ -487,6 +509,7 @@ const TradingDashboardContent = ({
   const [copiedPine, setCopiedPine] = useState(false);
   const [activeChartTab, setActiveChartTab] = useState<"candles" | "equity">("candles");
   const [isChartFullscreen, setIsChartFullscreen] = useState(false);
+  const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<any>(null);
@@ -655,11 +678,12 @@ const TradingDashboardContent = ({
   return (
     <main className="flex-1 flex flex-col h-full min-w-0 bg-slate-50 dark:bg-[#050811] overflow-hidden">
       {/* Top Application Bar */}
-      <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 sm:gap-3">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090e1a] px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            className="md:hidden p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+            aria-label="Open Navigation Menu"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -673,80 +697,225 @@ const TradingDashboardContent = ({
             }}
           />
 
-          {/* Quick Search Button / Command Palette Trigger */}
+          {/* Quick Search Button / Command Palette Trigger (Desktop only) */}
           <button
             onClick={onOpenCommandPalette}
-            className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:border-cyan-500/40 transition cursor-pointer w-56 justify-between"
+            className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 hover:border-cyan-500/40 transition cursor-pointer w-52 xl:w-64 justify-between"
           >
             <div className="flex items-center gap-1.5">
               <Search className="h-3.5 w-3.5 text-cyan-500" />
-              <span>Search tools, assets...</span>
+              <span className="truncate">Search pairs, tools...</span>
             </div>
             <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono text-slate-500">⌘K</kbd>
           </button>
         </div>
 
-        {/* Right Header Status */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Upgrade to Pro ($9) Button */}
+        {/* Right Header Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Live Data Badge - Desktop only */}
+          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-mono text-emerald-500 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping"></span>
+            <span>LIVE DATA</span>
+          </div>
+
+          {/* Upgrade to Pro ($9) Button - Desktop/Tablet only */}
           <button
             onClick={openPricing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 hover:border-amber-500/60 font-bold text-xs transition cursor-pointer shadow-xs"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 hover:border-amber-500/60 font-bold text-xs transition cursor-pointer shadow-xs"
           >
             <Zap className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            <span className="hidden sm:inline">Upgrade Pro ($9)</span>
-            <span className="sm:hidden">Pro $9</span>
+            <span>Upgrade Pro ($9)</span>
           </button>
 
-          {/* Theme Toggle */}
+          {/* Theme Toggle - Desktop only */}
           <button
             onClick={() => setIsDark(!isDark)}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            className="hidden md:flex p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             title="Toggle theme"
           >
             {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
           </button>
 
-          {/* User Auth / Account Dropdown */}
-          {currentUser && currentUser.email && currentUser.id !== "usr_demo_trader" ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-[10px] flex items-center justify-center overflow-hidden border border-cyan-500/30 shrink-0">
+          {/* User Auth: Guest vs Logged In */}
+          {currentUser && currentUser.email ? (
+            <>
+              {/* Desktop User Profile Box */}
+              <div className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700/60">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-[11px] flex items-center justify-center overflow-hidden border border-cyan-500/30 shrink-0">
+                    {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                      <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{currentUser.email.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[110px] truncate leading-tight">
+                      {currentUser.fullName || currentUser.email.split("@")[0]}
+                    </span>
+                    <span className={`text-[9px] font-mono font-bold leading-none ${
+                      currentUser.email?.toLowerCase().includes("seamafridi")
+                        ? "text-amber-400"
+                        : "text-emerald-400"
+                    }`}>
+                      {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO TRADER"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="text-xs text-slate-400 hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-rose-500/10 transition cursor-pointer font-medium"
+                  title="Sign Out / Switch Account"
+                >
+                  Sign Out
+                </button>
+              </div>
+
+              {/* Mobile User Avatar Pill (Opens Mobile Profile Sheet) */}
+              <button
+                onClick={() => setIsMobileProfileOpen(true)}
+                className="md:hidden flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 cursor-pointer"
+                aria-label="User profile menu"
+              >
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center overflow-hidden border border-cyan-500/40 shrink-0">
                   {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
                     <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <span>{currentUser.email.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate hidden md:inline">
-                  {currentUser.email.split("@")[0]}
-                </span>
-                <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold ${
-                  currentUser.email?.toLowerCase().includes("seamafridi")
-                    ? "bg-amber-400/20 text-amber-400 border border-amber-400/50 shadow-xs"
-                    : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                }`}>
-                  {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO"}
-                </span>
-              </div>
-              <button
-                onClick={onLogout}
-                className="text-[11px] text-slate-400 hover:text-rose-400 transition cursor-pointer hidden sm:inline"
-              >
-                Sign Out
+                {currentUser.email?.toLowerCase().includes("seamafridi") ? (
+                  <span className="text-xs pr-1">👑</span>
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 pr-0.5" />
+                )}
               </button>
-            </div>
+            </>
           ) : (
+            /* Guest User: Clean Sign In button */
             <button
               onClick={openAuth}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer active:scale-95 whitespace-nowrap"
             >
-              <UserIcon className="h-3.5 w-3.5" />
-              <span>Sign In / Create Account</span>
+              <UserIcon className="h-3.5 w-3.5 shrink-0" />
+              <span>Sign In</span>
             </button>
           )}
         </div>
       </header>
+
+      {/* Mobile User Profile Modal Sheet */}
+      {isMobileProfileOpen && currentUser && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="fixed inset-0"
+            onClick={() => setIsMobileProfileOpen(false)}
+          />
+          <div className="relative w-full sm:max-w-md bg-white dark:bg-[#090e1a] border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl z-10 space-y-4 animate-in slide-in-from-bottom duration-200">
+            {/* Drag Handle for Mobile */}
+            <div className="w-12 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto sm:hidden" />
+
+            {/* User Profile Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-sm flex items-center justify-center overflow-hidden border-2 border-cyan-500/40 shrink-0">
+                  {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                    <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{currentUser.email.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    {currentUser.fullName || currentUser.email.split("@")[0]}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px]">
+                    {currentUser.email}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMobileProfileOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Account Tier Card */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider">Account Tier</span>
+                <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                  {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO SUBSCRIBER"}
+                </span>
+              </div>
+              <span className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold ${
+                currentUser.email?.toLowerCase().includes("seamafridi")
+                  ? "bg-amber-400/20 text-amber-400 border border-amber-400/50"
+                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+              }`}>
+                {currentUser.email?.toLowerCase().includes("seamafridi") ? "LIFETIME ELITE" : "ACTIVE"}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  setIsMobileProfileOpen(false);
+                  openPricing();
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 font-bold text-xs cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 fill-amber-400" />
+                  <span>Upgrade / Manage Plans ($9)</span>
+                </span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMobileProfileOpen(false);
+                  setSelectedNav("Settings");
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+              >
+                <span className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-cyan-500" />
+                  <span>Terminal Settings & Photo Upload</span>
+                </span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsDark(!isDark);
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+              >
+                <span className="flex items-center gap-2">
+                  {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
+                  <span>Interface Theme: {isDark ? "Dark Mode" : "Light Mode"}</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">Toggle</span>
+              </button>
+            </div>
+
+            {/* Sign Out Button */}
+            <button
+              onClick={() => {
+                setIsMobileProfileOpen(false);
+                onLogout();
+              }}
+              className="w-full py-2.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-xl text-xs font-bold transition cursor-pointer text-center"
+            >
+              Sign Out / Switch Account
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Workspace Router Body */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
