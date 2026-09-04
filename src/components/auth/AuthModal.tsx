@@ -79,7 +79,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       const cleanEmail = email.trim().toLowerCase();
-      const isAdminEmail = cleanEmail.includes("seamafridi");
+      const isAdminEmail = cleanEmail.includes("seamafridi") || cleanEmail.includes("khalid");
 
       if (mode === "register") {
         if (!fullName.trim() && !isAdminEmail) {
@@ -93,7 +93,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           return;
         }
 
-        const nameToSave = isAdminEmail ? "Seam Afridi (Super Admin)" : fullName.trim();
+        const nameToSave = fullName.trim() || (isAdminEmail ? "Khalid Abdullah (Super Admin)" : cleanEmail.split("@")[0]);
 
         // 1. Try server-side PostgreSQL registration
         try {
@@ -335,7 +335,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Seam Afridi"
+                  placeholder="e.g. Khalid Abdullah"
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
                   required={mode === "register"}
                 />
@@ -351,7 +351,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="seamafridi123456789@gmail.com"
+                placeholder="e.g. khalid@tradingos.io"
                 className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#050811] text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
                 required
               />

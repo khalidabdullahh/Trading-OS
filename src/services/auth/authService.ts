@@ -62,7 +62,7 @@ export class AuthService {
     const profile: UserProfile = {
       id: `prof_${newUser.id}`,
       userId: newUser.id,
-      fullName: isAdminUser ? "Seam Afridi (Super Admin)" : (fullName || cleanEmail.split("@")[0]),
+      fullName: fullName?.trim() || (isAdminUser ? "Khalid Abdullah (Super Admin)" : cleanEmail.split("@")[0]),
       experience: "Advanced"
     };
     StorageAdapter.saveProfile(profile);
@@ -85,7 +85,7 @@ export class AuthService {
 
   static async login(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
     const cleanEmail = email.trim().toLowerCase();
-    return this.register(cleanEmail, password, this.isAdmin(cleanEmail) ? "Seam Afridi (Super Admin)" : cleanEmail.split("@")[0]);
+    return this.register(cleanEmail, password, this.isAdmin(cleanEmail) ? "Khalid Abdullah (Super Admin)" : cleanEmail.split("@")[0]);
   }
 
   static logout(): void {

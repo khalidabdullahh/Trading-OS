@@ -3,7 +3,7 @@
  * Centralized client-side gateway for all server API requests with JWT Bearer Token
  */
 
-import { Trade, TradingPlan, RiskSettings, JournalEntry, TradingAccount } from "../../types/domain";
+import { Trade, TradingPlan, RiskSettings, JournalEntry, TradingAccount, UserProfile } from "../../types/domain";
 import { StrategyAST } from "../../types/strategy";
 import { StorageAdapter } from "../storage/storageAdapter";
 
@@ -111,6 +111,32 @@ export class ApiClient {
       return res.user;
     }
     return null;
+  }
+
+  static async updateProfile(profileData: Partial<UserProfile> & { userId?: string }) {
+    const userId = profileData.userId || StorageAdapter.getCurrentUserId();
+    if (!userId) return null;
+
+    try {
+      const res = await this.request<{ success: boolean; profile: any }>("/api/user/profile", {
+        method: "POST",
+        body: JSON.stringify({ ...profileData, userId })
+      });
+      return res?.profile || null;
+    } catch (e) {
+      console.warn("[ApiClient] Remote profile sync failed, falling back to local storage:", e);
+      return null;
+    }
+  }
+
+  static async getRemoteProfile(userId = StorageAdapter.getCurrentUserId()) {
+    if (!userId) return null;
+    try {
+      const res = await this.request<{ success: boolean; profile: any }>(`/api/user/profile?userId=${encodeURIComponent(userId)}`);
+      return res?.profile || null;
+    } catch (e) {
+      return null;
+    }
   }
 
   // =========================================================================

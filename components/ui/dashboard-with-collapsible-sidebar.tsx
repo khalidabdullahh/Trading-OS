@@ -136,12 +136,19 @@ export const Example = () => {
               .join("")
           );
           const payload = JSON.parse(jsonPayload);
-          const isSuper = payload.email?.toLowerCase().includes("seamafridi");
+          const isSuper =
+            payload.email?.toLowerCase().includes("seamafridi") ||
+            payload.email?.toLowerCase().includes("khalid") ||
+            payload.role === "SUPER_ADMIN";
+          const defaultAdminName = payload.email?.toLowerCase().includes("khalid")
+            ? "Khalid Abdullah (Super Admin)"
+            : "Seam Afridi (Super Admin)";
           const userObj = {
             id: payload.id,
             email: payload.email,
             role: payload.role || (isSuper ? "SUPER_ADMIN" : "USER"),
-            fullName: isSuper ? "Seam Afridi (Super Admin)" : payload.email.split("@")[0]
+            fullName: payload.fullName || (isSuper ? defaultAdminName : payload.email.split("@")[0]),
+            avatarUrl: payload.avatarUrl
           };
           StorageAdapter.saveUser(userObj as any);
           StorageAdapter.setCurrentUserId(userObj.id);
@@ -157,6 +164,34 @@ export const Example = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  // Real-time listener for profile updates (photo upload / name change)
+  useEffect(() => {
+    const handleProfileUpdate = (e: any) => {
+      const updatedProfile = e.detail;
+      if (updatedProfile) {
+        setCurrentUser((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            fullName: updatedProfile.fullName || prev.fullName,
+            avatarUrl: updatedProfile.avatarUrl !== undefined ? updatedProfile.avatarUrl : prev.avatarUrl
+          };
+        });
+      }
+    };
+    window.addEventListener("trading_os_profile_updated", handleProfileUpdate);
+    return () => window.removeEventListener("trading_os_profile_updated", handleProfileUpdate);
+  }, []);
+
+  // Helper to check if current user is Super Admin
+  const isSuperAdminUser = Boolean(
+    currentUser &&
+      (currentUser.email?.toLowerCase().includes("seamafridi") ||
+        currentUser.email?.toLowerCase().includes("khalid") ||
+        currentUser.role === "SUPER_ADMIN" ||
+        currentUser.fullName?.toLowerCase().includes("super admin"))
+  );
 
   // License state (Unlocked vs Locked)
   const [isLicenseUnlocked, setIsLicenseUnlocked] = useState<boolean>(() => {
@@ -307,6 +342,13 @@ const Sidebar = ({
   setIsMobileMenuOpen: (val: boolean) => void;
 }) => {
   const [open, setOpen] = useState(true);
+  const isSuperAdmin = Boolean(
+    currentUser &&
+      (currentUser.email?.toLowerCase().includes("seamafridi") ||
+        currentUser.email?.toLowerCase().includes("khalid") ||
+        currentUser.role === "SUPER_ADMIN" ||
+        currentUser.fullName?.toLowerCase().includes("super admin"))
+  );
 
   const navSections = [
     {
@@ -443,8 +485,12 @@ const Sidebar = ({
             <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 mb-1 space-y-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center overflow-hidden border border-cyan-500/30 shrink-0">
-                  {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
-                    <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  {currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span>{currentUser.email.charAt(0).toUpperCase()}</span>
                   )}
@@ -455,7 +501,7 @@ const Sidebar = ({
                       {currentUser.fullName || currentUser.email.split("@")[0]}
                     </span>
                     <span className="text-[9px] font-mono font-bold text-amber-400">
-                      {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO SUBSCRIBER"}
+                      {isSuperAdmin ? "👑 SUPER ADMIN" : "PRO SUBSCRIBER"}
                     </span>
                   </div>
                 )}
@@ -556,6 +602,14 @@ const TradingDashboardContent = ({
   const [activeChartTab, setActiveChartTab] = useState<"candles" | "equity">("candles");
   const [isChartFullscreen, setIsChartFullscreen] = useState(false);
   const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
+
+  const isSuperAdmin = Boolean(
+    currentUser &&
+      (currentUser.email?.toLowerCase().includes("seamafridi") ||
+        currentUser.email?.toLowerCase().includes("khalid") ||
+        currentUser.role === "SUPER_ADMIN" ||
+        currentUser.fullName?.toLowerCase().includes("super admin"))
+  );
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<any>(null);
@@ -789,8 +843,12 @@ const TradingDashboardContent = ({
               <div className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700/60">
                   <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-[11px] flex items-center justify-center overflow-hidden border border-cyan-500/30 shrink-0">
-                    {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
-                      <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    {currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                      <img
+                        src={currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <span>{currentUser.email.charAt(0).toUpperCase()}</span>
                     )}
@@ -799,12 +857,12 @@ const TradingDashboardContent = ({
                     <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[110px] truncate leading-tight">
                       {currentUser.fullName || currentUser.email.split("@")[0]}
                     </span>
-                    <span className={`text-[9px] font-mono font-bold leading-none ${
-                      currentUser.email?.toLowerCase().includes("seamafridi")
-                        ? "text-amber-400"
-                        : "text-emerald-400"
-                    }`}>
-                      {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO TRADER"}
+                    <span
+                      className={`text-[9px] font-mono font-bold leading-none ${
+                        isSuperAdmin ? "text-amber-400" : "text-emerald-400"
+                      }`}
+                    >
+                      {isSuperAdmin ? "👑 SUPER ADMIN" : "PRO TRADER"}
                     </span>
                   </div>
                 </div>
@@ -824,13 +882,17 @@ const TradingDashboardContent = ({
                 aria-label="User profile menu"
               >
                 <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center overflow-hidden border border-cyan-500/40 shrink-0">
-                  {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
-                    <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  {currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span>{currentUser.email.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                {currentUser.email?.toLowerCase().includes("seamafridi") ? (
+                {isSuperAdmin ? (
                   <span className="text-xs pr-1">👑</span>
                 ) : (
                   <ChevronDown className="h-3.5 w-3.5 text-slate-400 pr-0.5" />
@@ -865,8 +927,12 @@ const TradingDashboardContent = ({
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-sm flex items-center justify-center overflow-hidden border-2 border-cyan-500/40 shrink-0">
-                  {StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
-                    <img src={StorageAdapter.getProfile(currentUser.id).avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  {currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl || StorageAdapter.getProfile(currentUser.id)?.avatarUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span>{currentUser.email.charAt(0).toUpperCase()}</span>
                   )}
@@ -893,15 +959,17 @@ const TradingDashboardContent = ({
               <div className="flex flex-col">
                 <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider">Account Tier</span>
                 <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
-                  {currentUser.email?.toLowerCase().includes("seamafridi") ? "👑 SUPER ADMIN" : "PRO SUBSCRIBER"}
+                  {isSuperAdmin ? "👑 SUPER ADMIN" : "PRO SUBSCRIBER"}
                 </span>
               </div>
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold ${
-                currentUser.email?.toLowerCase().includes("seamafridi")
-                  ? "bg-amber-400/20 text-amber-400 border border-amber-400/50"
-                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-              }`}>
-                {currentUser.email?.toLowerCase().includes("seamafridi") ? "LIFETIME ELITE" : "ACTIVE"}
+              <span
+                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold ${
+                  isSuperAdmin
+                    ? "bg-amber-400/20 text-amber-400 border border-amber-400/50"
+                    : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                }`}
+              >
+                {isSuperAdmin ? "LIFETIME ELITE" : "ACTIVE"}
               </span>
             </div>
 

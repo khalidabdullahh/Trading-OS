@@ -17,6 +17,7 @@ import {
   Key
 } from "lucide-react";
 import { StorageAdapter } from "../../services/storage/storageAdapter";
+import { ApiClient } from "../../services/api/apiClient";
 import { UserProfile, TradingPreferences, UserSubscription } from "../../types/domain";
 
 export const SettingsView: React.FC = () => {
@@ -51,16 +52,43 @@ export const SettingsView: React.FC = () => {
     setProfile((prev) => ({ ...prev, avatarUrl: undefined }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     StorageAdapter.saveProfile(profile);
     StorageAdapter.saveTradingPreferences(preferences);
     StorageAdapter.saveSubscription(subscription);
+
+    // Update active user in storage
+    const users = StorageAdapter.getUsers();
+    const existing = users.find((u) => u.id === userId);
+    if (existing) {
+      existing.fullName = profile.fullName;
+      StorageAdapter.saveUser(existing);
+    }
+
+    // Broadcast instant profile update to sidebar, header, and mobile menus
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("trading_os_profile_updated", { detail: profile }));
+    }
+
+    // Sync with Neon PostgreSQL in the background
+    ApiClient.updateProfile({
+      userId,
+      fullName: profile.fullName,
+      avatarUrl: profile.avatarUrl,
+      bio: profile.bio,
+      experience: profile.experience,
+      country: profile.country
+    }).catch((err) => console.warn("Background profile sync error:", err));
 
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const isSuperAdmin = profile.fullName?.toLowerCase().includes("seamafridi") || userId.includes("seamafridi");
+  const isSuperAdmin =
+    profile.fullName?.toLowerCase().includes("seamafridi") ||
+    profile.fullName?.toLowerCase().includes("khalid") ||
+    userId.includes("seamafridi") ||
+    userId.includes("khalid");
 
   return (
     <div className="space-y-6 text-xs">
@@ -166,6 +194,7 @@ export const SettingsView: React.FC = () => {
               <input
                 type="text"
                 value={profile.fullName}
+                placeholder="e.g. Khalid Abdullah"
                 onChange={e => setProfile({ ...profile, fullName: e.target.value })}
                 className="w-full p-2.5 bg-slate-50 dark:bg-[#050811] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 outline-none"
               />
