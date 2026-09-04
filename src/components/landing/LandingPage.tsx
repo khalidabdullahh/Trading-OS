@@ -29,7 +29,10 @@ import {
   Database,
   ArrowUpRight,
   AlertTriangle,
-  Cpu
+  Cpu,
+  MapPin,
+  ExternalLink,
+  X
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -39,6 +42,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
   const [activeModuleTab, setActiveModuleTab] = useState<number>(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [isArchitectModalOpen, setIsArchitectModalOpen] = useState<boolean>(false);
 
   const modules = [
     {
@@ -973,7 +977,7 @@ if (longCond)
       {/* Regulatory & Risk Disclaimer Footer */}
       <footer className="border-t border-slate-800 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-xs text-slate-400 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-3 md:col-span-2">
+          <div className="space-y-4 md:col-span-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-black text-xs">
                 OS
@@ -986,9 +990,72 @@ if (longCond)
             <p className="text-slate-400 text-xs leading-relaxed max-w-md">
               A personal quantitative trading terminal and intelligence suite designed to bridge strategy formulation, deterministic risk calculation, execution auditing, and cognitive AI.
             </p>
-            <p className="text-[11px] text-slate-400">
-              Architected & Engineered by <span className="text-cyan-400 font-medium">Khalid Abdullah</span>.
-            </p>
+            
+            {/* Lead Architect & Engineer Bio Card */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-[#090e1a] border border-slate-800 space-y-2.5 max-w-md shadow-lg">
+              <div className="flex items-center gap-3">
+                <img
+                  src="https://avatars.githubusercontent.com/u/191352772?v=4"
+                  alt="Khalid Abdullah"
+                  className="w-11 h-11 rounded-xl border border-cyan-500/40 object-cover shadow-md"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400">Architected & Engineered by</span>
+                  </div>
+                  <button
+                    onClick={() => setIsArchitectModalOpen(true)}
+                    className="font-bold text-sm text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1.5 cursor-pointer transition truncate"
+                  >
+                    <span>Khalid Abdullah</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-mono font-bold border border-cyan-500/20">
+                      View Profile ↗
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed italic">
+                “Computer Science student with a curiosity for Technology, Mathematics, and Problem Solving — learning, building, and exploring where ideas meet code.”
+              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/80">
+                <a
+                  href="https://github.com/khalidabdullahh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white transition flex items-center gap-1.5 text-[11px] font-mono font-medium border border-slate-700/60 cursor-pointer"
+                >
+                  <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                  <span>GitHub</span>
+                </a>
+                <a
+                  href="https://khalid-digital-lab.vercel.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white transition flex items-center gap-1.5 text-[11px] font-mono font-medium border border-slate-700/60 cursor-pointer"
+                >
+                  <Globe className="h-3 w-3 text-cyan-400" />
+                  <span>Digital Lab</span>
+                </a>
+                <a
+                  href="https://bd.linkedin.com/in/khalid-abdullah-847724339"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white transition flex items-center gap-1.5 text-[11px] font-mono font-medium border border-slate-700/60 cursor-pointer"
+                >
+                  <svg className="h-3 w-3 fill-current text-blue-400" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                  <span>LinkedIn</span>
+                </a>
+                <a
+                  href="https://x.com/khalid_al_raed"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white transition flex items-center gap-1.5 text-[11px] font-mono font-medium border border-slate-700/60 cursor-pointer"
+                >
+                  <svg className="h-3 w-3 fill-current text-slate-200" viewBox="0 0 16 16"><path d="M9.332 6.925 14.544 1h-1.235L8.783 6.145 5.17 1H1l5.466 7.78L1 14.993h1.235l4.78-5.433 3.816 5.433H15L9.332 6.925ZM7.64 8.848l-.554-.775L2.68 1.91h1.897l3.556 4.975.554.775 4.622 6.466h-1.897L7.64 8.848Z"/></svg>
+                  <span>X (Twitter)</span>
+                </a>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2 text-xs">
@@ -1023,6 +1090,213 @@ if (longCond)
           </div>
         </div>
       </footer>
+
+      {/* Lead Architect & Engineer Detailed Profile Modal */}
+      {isArchitectModalOpen && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overscroll-contain"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsArchitectModalOpen(false);
+          }}
+        >
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-6 py-6 sm:py-10">
+            <div
+              className="bg-[#090e1a] border border-cyan-500/30 rounded-3xl max-w-xl w-full shadow-2xl relative text-xs font-sans overflow-hidden my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Banner Header */}
+              <div className="relative h-28 bg-gradient-to-r from-cyan-900/60 via-blue-900/40 to-purple-900/50 border-b border-slate-800 p-4 flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono text-[10px] font-bold">
+                    LEAD ARCHITECT PROFILE
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsArchitectModalOpen(false)}
+                  className="p-1.5 rounded-full bg-slate-950/70 hover:bg-slate-900 text-slate-400 hover:text-white transition cursor-pointer border border-slate-800"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Profile Card Body */}
+              <div className="px-6 pb-6 pt-0 relative space-y-5">
+                {/* Avatar & Title Row */}
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12">
+                  <div className="flex items-end gap-3.5">
+                    <img
+                      src="https://avatars.githubusercontent.com/u/191352772?v=4"
+                      alt="Khalid Abdullah"
+                      className="w-24 h-24 rounded-2xl border-2 border-cyan-400 object-cover shadow-xl bg-slate-950"
+                    />
+                    <div className="pb-1">
+                      <h3 className="text-xl font-black text-white flex items-center gap-1.5">
+                        <span>Khalid Abdullah</span>
+                        <CheckCircle2 className="h-4 w-4 text-cyan-400 fill-cyan-400/20" />
+                      </h3>
+                      <span className="text-xs text-cyan-400 font-mono font-bold block">@khalidabdullahh</span>
+                      <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5">
+                        <MapPin className="h-3 w-3 text-emerald-400" />
+                        <span>Bangladesh (UTC +06:00)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <a
+                    href="https://github.com/khalidabdullahh"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Follow on GitHub</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+
+                {/* Bio Block */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-1.5">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Official Bio
+                  </span>
+                  <p className="text-xs text-slate-200 leading-relaxed italic">
+                    “Computer Science student with a curiosity for Technology, Mathematics, and Problem Solving — learning, building, and exploring where ideas meet code.”
+                  </p>
+                </div>
+
+                {/* Core Focus & Engineering Stack */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Engineering & Quantitative Focus
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-cyan-400 shrink-0" />
+                      <span className="text-slate-200">AST Strategy Compiler</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <span className="text-slate-200">Mathematical Risk Systems</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-2">
+                      <BrainCircuit className="h-4 w-4 text-purple-400 shrink-0" />
+                      <span className="text-slate-200">Cognitive AI Auditing</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-2">
+                      <FileCode2 className="h-4 w-4 text-amber-400 shrink-0" />
+                      <span className="text-slate-200">Pine Script v5 & Python</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verified Social & Professional Networks */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Verified Social & Professional Links
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a
+                      href="https://github.com/khalidabdullahh"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center justify-between text-xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                        <span className="font-mono">GitHub (@khalidabdullahh)</span>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                    </a>
+
+                    <a
+                      href="https://khalid-digital-lab.vercel.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center justify-between text-xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-cyan-400" />
+                        <span className="font-mono">Digital Lab / Portfolio</span>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                    </a>
+
+                    <a
+                      href="https://bd.linkedin.com/in/khalid-abdullah-847724339"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center justify-between text-xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="h-4 w-4 fill-current text-blue-400" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        <span className="font-mono">LinkedIn Profile</span>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                    </a>
+
+                    <a
+                      href="https://x.com/khalid_al_raed"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center justify-between text-xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="h-4 w-4 fill-current text-slate-200" viewBox="0 0 16 16"><path d="M9.332 6.925 14.544 1h-1.235L8.783 6.145 5.17 1H1l5.466 7.78L1 14.993h1.235l4.78-5.433 3.816 5.433H15L9.332 6.925ZM7.64 8.848l-.554-.775L2.68 1.91h1.897l3.556 4.975.554.775 4.622 6.466h-1.897L7.64 8.848Z"/></svg>
+                        <span className="font-mono">X (@khalid_al_raed)</span>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                    </a>
+
+                    <a
+                      href="https://orcid.org/0009-0006-8945-7593"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center justify-between text-xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-emerald-400" />
+                        <span className="font-mono">ORCID Academic ID</span>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                    </a>
+
+                    <a
+                      href="https://www.facebook.com/share/1DeYhowQkk/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center justify-between text-xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-blue-500" />
+                        <span className="font-mono">Facebook Profile</span>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Bottom Close & Action Button */}
+                <div className="pt-3 border-t border-slate-800 flex items-center gap-3">
+                  <a
+                    href="https://github.com/khalidabdullahh/Trading-OS"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <span>View Trading-OS Repo</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  <button
+                    onClick={() => setIsArchitectModalOpen(false)}
+                    className="py-2.5 px-6 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition cursor-pointer shadow-lg shadow-cyan-500/20"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
