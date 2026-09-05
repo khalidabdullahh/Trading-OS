@@ -81,6 +81,7 @@ import { AuthService } from "@/src/services/auth/authService";
 import { ApiClient } from "@/src/services/api/apiClient";
 import { StorageAdapter } from "@/src/services/storage/storageAdapter";
 import { NewsService } from "@/src/services/market/newsService";
+import { TradingOSLogo } from "@/src/components/brand/TradingOSLogo";
 
 export const Example = () => {
   const [isDark, setIsDark] = useState(true);
@@ -366,7 +367,6 @@ const Sidebar = ({
     {
       group: "OVERVIEW",
       items: [
-        { title: "Landing Page / Home", icon: Globe },
         { title: "Dashboard", icon: Home },
         { title: "Pricing & Plans ($9)", icon: Sparkles },
       ]
@@ -424,9 +424,7 @@ const Sidebar = ({
         {/* Sidebar Header */}
         <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-md">
-              OS
-            </div>
+            <TradingOSLogo className="w-8 h-8 shrink-0" glow={true} />
             {open && (
               <div className="flex flex-col">
                 <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-slate-100">
@@ -469,11 +467,6 @@ const Sidebar = ({
                   <button
                     key={item.title}
                     onClick={() => {
-                      if (item.title === "Landing Page / Home") {
-                        openLanding();
-                        setIsMobileMenuOpen(false);
-                        return;
-                      }
                       if (item.title === "Pricing & Plans ($9)") {
                         openPricing();
                         setIsMobileMenuOpen(false);
@@ -550,14 +543,20 @@ const Sidebar = ({
           )}
 
           <button
-            onClick={openLanding}
+            onClick={() => {
+              openLanding();
+              setIsMobileMenuOpen(false);
+            }}
             className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
-            <Globe className="h-4 w-4 shrink-0 text-cyan-500" />
-            {open && <span>Public Landing Page</span>}
+            <Info className="h-4 w-4 shrink-0 text-cyan-500" />
+            {open && <span>About Us</span>}
           </button>
           <button
-            onClick={openHelp}
+            onClick={() => {
+              openHelp();
+              setIsMobileMenuOpen(false);
+            }}
             className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <HelpCircle className="h-4 w-4 shrink-0 text-slate-400" />

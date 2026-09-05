@@ -34,6 +34,7 @@ import {
   ExternalLink,
   X
 } from "lucide-react";
+import { TradingOSLogo } from "../brand/TradingOSLogo";
 
 interface LandingPageProps {
   onEnterApp: () => void;
@@ -346,9 +347,7 @@ if (longCond)
       <header className="border-b border-slate-800/80 bg-[#050811]/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-black text-sm shadow-inner shadow-cyan-500/20">
-              OS
-            </div>
+            <TradingOSLogo className="w-10 h-10 shrink-0" glow={true} />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base tracking-wider text-white">TRADING OS</span>
@@ -978,10 +977,8 @@ if (longCond)
       <footer className="border-t border-slate-800 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-xs text-slate-400 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4 md:col-span-2">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-black text-xs">
-                OS
-              </div>
+            <div className="flex items-center gap-2.5">
+              <TradingOSLogo className="w-8 h-8 shrink-0" glow={false} />
               <span className="font-black text-white text-sm tracking-wider">TRADING OS</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-mono font-bold">
                 v2.01

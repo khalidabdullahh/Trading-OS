@@ -13,6 +13,7 @@ import {
 import { AuthService } from "../../services/auth/authService";
 import { ApiClient } from "../../services/api/apiClient";
 import { StorageAdapter } from "../../services/storage/storageAdapter";
+import { TradingOSLogo } from "../brand/TradingOSLogo";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -192,9 +193,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </button>
 
         {/* Brand Header */}
-        <div className="text-center space-y-1.5 mb-5">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-sm shadow-md">
-            OS
+        <div className="text-center space-y-2 mb-5">
+          <div className="flex justify-center">
+            <TradingOSLogo className="w-12 h-12" glow={true} />
           </div>
           <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
             {mode === "login" ? "Sign In to Trading-OS" : "Create Trader Account"}
