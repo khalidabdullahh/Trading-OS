@@ -27,6 +27,29 @@ const GeminiEngine = {
     },
 
     /**
+     * Compile Natural Language Prompt into Hydrated Executable Strategy
+     */
+    async compileStrategy(promptText, directionMode = 'LONG', symbol = 'BTCUSDT', timeframe = '15m') {
+        const result = await StrategyCompiler.compile(promptText, symbol, timeframe);
+        if (!result.success) {
+            return {
+                success: false,
+                isAmbiguous: result.isAmbiguous,
+                error: result.error || "Failed to compile strategy rules into a valid AST."
+            };
+        }
+        if (directionMode && result.ast) {
+            result.ast.direction = directionMode;
+        }
+        const strategy = this.hydrateStrategyObject(result.ast, symbol, timeframe);
+        return {
+            success: true,
+            strategy,
+            ast: result.ast
+        };
+    },
+
+    /**
      * Primary Strategy Generation Entry Point for UI & Backtest Engine
      * @param {string} promptText - Natural language description (English, Bengali, Banglish)
      * @param {string} symbol - e.g. 'BTCUSDT'

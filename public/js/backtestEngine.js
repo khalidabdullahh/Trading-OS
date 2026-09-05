@@ -392,6 +392,29 @@ const BacktestEngine = {
             avgTradeDurationBars: Math.round(avgTradeDuration),
             lookaheadBiasAudited: true
         };
+    },
+
+    /**
+     * Unified object options wrapper for run()
+     */
+    runBacktest(options = {}) {
+        const {
+            strategy,
+            candles,
+            params = strategy?.defaultParams || {},
+            initialCapital = 10000,
+            feeRate = 0.075,
+            slippageRate = 0.02,
+            directionMode = 'LONG',
+            ...rest
+        } = options;
+        return this.run(candles, strategy, params, {
+            initialCapital,
+            feePct: feeRate,
+            slippagePct: slippageRate,
+            direction: directionMode,
+            ...rest
+        });
     }
 };
 

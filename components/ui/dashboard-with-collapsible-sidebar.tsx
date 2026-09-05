@@ -751,10 +751,10 @@ const TradingDashboardContent = ({
     setBacktestResult(null);
 
     try {
-      const compiled = await GeminiEngine.compileStrategy(raw, directionMode);
+      const compiled = await GeminiEngine.compileStrategy(raw, directionMode, activeSymbol, timeframe);
 
       if (!compiled || !compiled.success) {
-        setIsAmbiguousError(true);
+        setIsAmbiguousError(Boolean(compiled?.isAmbiguous));
         setCompilationError(
           compiled?.error || "Could not parse clear trading rules. Please specify your indicators and exact entry conditions."
         );
@@ -764,10 +764,28 @@ const TradingDashboardContent = ({
 
       setCurrentStrategy(compiled.strategy);
 
+      // Ensure we have candle data before simulating
+      let targetCandles = candles;
+      if (!targetCandles || targetCandles.length < 5) {
+        try {
+          const res = await MarketAPI.fetchKlines(activeSymbol, timeframe, 500);
+          if (res && res.data && res.data.length > 0) {
+            targetCandles = res.data;
+            setCandles(res.data);
+          }
+        } catch (e) {
+          console.warn("[Trading-OS] Auto-fetching candles for backtest:", e);
+        }
+      }
+
+      if (!targetCandles || targetCandles.length < 5) {
+        throw new Error("Unable to fetch candle data for " + activeSymbol + ". Please try again.");
+      }
+
       // Run backtest simulation
-      const result = await BacktestEngine.runBacktest({
+      const result = BacktestEngine.runBacktest({
         strategy: compiled.strategy,
-        candles,
+        candles: targetCandles,
         initialCapital: 10000,
         feeRate: 0.075,
         slippageRate: 0.02,
@@ -776,7 +794,7 @@ const TradingDashboardContent = ({
 
       setBacktestResult(result);
     } catch (err: any) {
-      setIsAmbiguousError(true);
+      setIsAmbiguousError(false);
       setCompilationError(err.message || "Failed to compile strategy. Please refine your prompt.");
       setCurrentStrategy(null);
     } finally {
